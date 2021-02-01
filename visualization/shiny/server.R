@@ -422,6 +422,8 @@ server <- function(input, output, session) {
     #  Warning: Error in .jcall: org.apache.commons.mail.EmailException: 
     #  javax.mail.internet.AddressException: Domain contains illegal character 
     #  in string ``kfjasklklfjlk@lksdjfkldsjfkl@lkdjfjkljlkj''
+    showMessageModal('Your message has been sent.')
+    
     send.mail(
       from=email, 
       to=c(
@@ -455,7 +457,7 @@ Contents:
     # db.write.contactForm(
     #   name=name, email=email, message=contents)
     
-    showMessageModal('Your message has been sent')
+    # showMessageModal('Your message has been sent')
   })
   
 }
