@@ -12,7 +12,7 @@ library(shinyWidgets)
 
 source('load_resources.R')
 source('server/server_utils.R')
-source('server/preset_interface.R')
+source('server/prerun_interface.R')
 
 #-- HELPERS --#
 source('ui/intervention_selector.R')
@@ -21,7 +21,7 @@ source('ui/styling_helpers.R')
 
 #-- MAIN CONTACT FILES --#
 source('ui/contact.R', local=T)
-source('ui/preset_interventions.R', local=T)
+source('ui/prerun_interventions.R', local=T)
 source('ui/custom_interventions.R', local=T)
 
 
@@ -48,8 +48,8 @@ ui = tagList(
     collapsible=F,
     tabPanel(
       style='height:100%',
-      "Preset Interventions",
-      PRESET.CONTENT
+      "Pre-Run Interventions",
+      PRERUN.CONTENT
       ),
     tabPanel(
       "Custom Interventions",

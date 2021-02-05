@@ -316,7 +316,7 @@ create.intervention.manager <- function()
          name=character())
 }
 
-RESERVED.INTERVENTION.CODES = c('baseline','seed')
+RESERVED.INTERVENTION.CODES = c('baseline','seed','full')
 
 register.intervention <- function(int, 
                                   code,
@@ -331,30 +331,35 @@ register.intervention <- function(int,
         stop(paste0("'", code, "' is a reserved keyword and cannot be used as an intervention code"))
 
     # Check if already added under a different name or code
-    mask = sapply(manager$intervention, function(comp){
-        interventions.equal(int, comp)
-    })
     
-    if (any(mask))
+    ALLOW.INTERVENTION.ALIASES = T
+    if (!ALLOW.INTERVENTION.ALIASES)
     {
-        if (manager$name[mask] == name)
+        mask = sapply(manager$intervention, function(comp){
+            interventions.equal(int, comp)
+        })
+        
+        if (any(mask))
         {
-            if (manager$code[mask] == code)
-                return (manager)
-            stop(paste0("Attempted to add an intervention (with code '",
-                        code, "') which is already present with code '",
-                        manager$code[mask], "'. There can only be one code per intervention."))
+            if (manager$name[mask] == name)
+            {
+                if (manager$code[mask] == code)
+                    return (manager)
+                stop(paste0("Attempted to add an intervention (with code '",
+                            code, "') which is already present with code '",
+                            manager$code[mask], "'. There can only be one code per intervention."))
+            }
+            else
+                stop(paste0("Attempted to add an intervention (under the name '",
+                            name, "') which is already present under the name '",
+                            manager$name[mask], "'. There can only be one name per intervention."))
         }
-        else
-            stop(paste0("Attempted to add an intervention (under the name '",
-                        name, "') which is already present under the name '",
-                        manager$name[mask], "'. There can only be one name per intervention."))
     }
     
     # Check to confirm that name and code are unique
- #   if (any(manager$name==name))
+#    if (any(manager$name==name))
  #       stop(paste0("A different intervention is already present under the name, '",
- #                   name, "'. Intervention names must be unique"))
+  #                  name, "'. Intervention names must be unique"))
     if (any(manager$code==code))
         stop(paste0("A different intervention is already present under the code, '",
                     code, "'. Intervention codes must be unique"))
@@ -505,6 +510,16 @@ get.target.populations.for.intervention <- function(int)
         
         tpops
     }
+}
+
+union.intervention.lists <- function(int.list.1, int.list.2,
+                                     manager = INTERVENTION.MANAGER.1.0)
+{
+    codes1 = sapply(int.list.1, get.intervention.code, manager = manager)
+    codes2 = sapply(int.list.2, get.intervention.code, manager = manager)
+    
+    codes.all = union(codes1, codes2)
+    lapply(codes.all, intervention.from.code, manager = manager)
 }
 
 ##------------------------------------##

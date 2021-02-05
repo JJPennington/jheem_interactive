@@ -6,7 +6,7 @@
 #'@return A named character vector. The values of the vector are 'display
 #'able' names of places; the names of the vector are the location codes to
 #' be passed to plot.simulations
-get.preset.locations <- function(version)
+get.prerun.locations <- function(version)
 {
     sims.names = sims.list()
     locations = get.locations.from.filenames(sims.names)
@@ -23,36 +23,20 @@ get.preset.locations <- function(version)
 ##-- GETTING INTERVENTIONS FROM THE CLOUD --##
 ##------------------------------------------##
 
-#returns a list with two elements
-# $location - a vector of location ids
-# $intervention - a list of interventions
-get.interventions.list <- function(include.no.intervention=F)
+get.prerun.intervention.codes <- function()
 {
     sims.names = sims.list()
     locations = get.locations.from.filenames(sims.names)
     
-    interventions = get.interventions.from.filenames(sims.names)
+    intervention.codes = get.intervention.codes.from.filenames(sims.names)
     
-    if (!include.no.intervention)
-    {
-        mask = !sapply(interventions, is.null.intervention)
-        interventions = interventions[mask]
-        locations = locations[mask]
-    }
-    
-    o = order.interventions(interventions)
-    interventions = interventions[o]
-    locations = locations[o]
-    
-    list(location=locations,
-         intervention=interventions,
-         code = sapply(interventions, get.intervention.code))
+    list(intervention.code=intervention.codes,
+         location=locations)
 }
+
 
 extract.unique.interventions.from.list <- function(interventions)
 {
-    codes = unique(interventions$code)
-    lapply(codes, intervention.from.code)
 }
 
 ##-------------##

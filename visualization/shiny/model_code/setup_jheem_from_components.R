@@ -804,10 +804,10 @@ do.setup.hiv.mortality <- function(components)
 {
     if (components$model.hiv.transmission)
     {
+        mortality.rates = get.hiv.mortality.rate.arrays(components)
+        
         components = do.calculate.suppression(components)
         suppression = calculate.suppression(components)
-        
-        mortality.rates = get.hiv.mortality.rate.arrays(components)
         
         mortality.and.suppression = merge.rates(rates1=mortality.rates$rates,
                                                 times1=mortality.rates$times,
@@ -976,7 +976,10 @@ do.setup.continuum.transitions <- function(components)
                                                                       transition.dimension = 'continuum')
         
         if (components$model.prep)
+        {
             base.transitions[,,,,,'undiagnosed_from_prep',,,'diagnosed'] = 1 / components$prep.screening.frequency
+            base.transitions[,,,,,'undiagnosed_from_prep',,,'undiagnosed'] = -log(1-components$prep.persistence)
+        }
         
         #-- HIV Testing --#
         
@@ -989,6 +992,18 @@ do.setup.continuum.transitions <- function(components)
             continuum.transitions.for.year
         })
         components$continuum.transition.years = testing.rates$times
+        
+        
+        if (!components$settings$IS_CONTINUUM_COLLAPSED)
+        {
+            # unengaged -> engaged/unsuppressed
+            # unengaged -> disengaged
+            # engaged/unsuppressed -> engaged/suppressed
+            # engaged/suppressed -> engaged/unsuppressed
+            # engaged/unsuppressed -> disengaged
+            # engaged/suppressed -> disengaged
+            # disengaged -> engaged/unsuppressed
+        }
     }
     else
     {
@@ -1012,42 +1027,55 @@ calculate.suppression <- function(components)
 
 do.calculate.suppression <- function(components)
 {
-    #Pull background suppression proportions from logistic model
-    background.suppression = get.background.proportions(base.model = components$background.suppression$model,
-                                                        years = components$background.suppression$years,
-                                                        additional.intercepts = log(components$background.suppression$additional.intercept.ors),
-                                                        additional.slopes = log(components$background.suppression$additional.slope.ors),
-                                                        future.slope = log(components$background.suppression$future.slope.or),
-                                                        future.slope.after.year = components$background.suppression$future.slope.after.year,
-                                                        idu.applies.to.in.remission = T,
-                                                        idu.applies.to.msm.idu=T,
-                                                        msm.applies.to.msm.idu=T,
-                                                        jheem=components$jheem)
-
-    #Add in zero suppression
-    
-    background.suppression.years = c(components$background.suppression$zero.suppression.year, 
-                                     components$background.suppression$years)
-    background.suppression = c(list(0 * background.suppression[[1]]), background.suppression)
-    
-    undiagnosed.states = setdiff(dimnames(background.suppression[[1]])[['continuum']], 'diagnosed')
-    background.suppression = lapply(background.suppression, function(r){
-        r[,,,,,undiagnosed.states,,] = 0
-        r
-    })
-    
-    #Overlay foreground suppression
-    suppression = get.rates.from.background.and.foreground(background.rates = background.suppression,
-                                                           background.times = background.suppression.years,
-                                                           foreground.rates = components$foreground.suppression,
-                                                           foreground.times = components$foreground.suppression.years,
-                                                           foreground.start.times = components$foreground.suppression.start.years,
-                                                           max.background.time = components$background.change.to.years$suppression,
-                                                           allow.foreground.less = F)
-    
-    
-    components$suppression.rates.and.times = suppression
-    components
+    if (components$settings$IS_CONTINUUM_COLLAPSED)
+    {
+        #Pull background suppression proportions from logistic model
+        background.suppression = get.background.proportions(base.model = components$background.suppression$model,
+                                                            years = components$background.suppression$years,
+                                                            additional.intercepts = log(components$background.suppression$additional.intercept.ors),
+                                                            additional.slopes = log(components$background.suppression$additional.slope.ors),
+                                                            future.slope = log(components$background.suppression$future.slope.or),
+                                                            future.slope.after.year = components$background.suppression$future.slope.after.year,
+                                                            idu.applies.to.in.remission = T,
+                                                            idu.applies.to.msm.idu=T,
+                                                            msm.applies.to.msm.idu=T,
+                                                            jheem=components$jheem)
+        
+        #Add in zero suppression
+        
+        background.suppression.years = c(components$background.suppression$zero.suppression.year, 
+                                         components$background.suppression$years)
+        background.suppression = c(list(0 * background.suppression[[1]]), background.suppression)
+        
+        undiagnosed.states = setdiff(dimnames(background.suppression[[1]])[['continuum']], 'diagnosed')
+        background.suppression = lapply(background.suppression, function(r){
+            r[,,,,,undiagnosed.states,,] = 0
+            r
+        })
+        
+        #Overlay foreground suppression
+        suppression = get.rates.from.background.and.foreground(background.rates = background.suppression,
+                                                               background.times = background.suppression.years,
+                                                               foreground.rates = components$foreground.suppression,
+                                                               foreground.times = components$foreground.suppression.years,
+                                                               foreground.start.times = components$foreground.suppression.start.years,
+                                                               max.background.time = components$background.change.to.years$suppression,
+                                                               allow.foreground.less = F)
+        
+        
+        components$suppression.rates.and.times = suppression
+        components
+    }
+    else
+    {
+        suppression.array = get.hiv.positive.population.skeleton(components$jheem, value=0)
+        suppression.array[,,,,,components$settings$SUPPRESSED_STATES,,] = 1
+        
+        components$suppression.rates.and.times = list(
+            rates = suppression.array,
+            times = 2000
+        )
+    }
 }
 
 calculate.testing.rates <- function(components)
@@ -1064,6 +1092,8 @@ do.calculate.testing.rates <- function(components)
                                                                 years = components$background.testing$years,
                                                                 additional.intercepts = log(components$background.testing$additional.intercept.ors),
                                                                 additional.slopes = log(components$background.testing$additional.slope.ors),
+                                                                future.slope = log(components$background.testing$future.slope.or),
+                                                                future.slope.after.year = components$background.testing$future.slope.after.year,
                                                                 idu.applies.to.in.remission = F,
                                                                 idu.applies.to.msm.idu=T,
                                                                 msm.applies.to.msm.idu=T,
@@ -1077,11 +1107,11 @@ do.calculate.testing.rates <- function(components)
                                        lapply(ramp.years, function(y){
                                            components$background.testing$ramp.up.vs.current.rr *
                                                (1/components$background.testing$ramp.up.yearly.increase)^(components$background.testing$ramp.up.year-y) *
-                                                          background.testing.proportions[[1]]
-                                                  }),
-                                                  background.testing.proportions)
+                                               background.testing.proportions[[1]]
+                                       }),
+                                       background.testing.proportions)
     background.testing.years = c(components$background.testing$first.testing.year, ramp.years,
-                                            components$background.testing$years)
+                                 components$background.testing$years)
     
     #Convert background to rates
     background.testing.rates = lapply(background.testing.proportions, function(p){
@@ -1117,8 +1147,40 @@ calculate.prep.coverage <- function(components)
 
 do.calculate.prep.coverage <- function(components)
 {
-    components$prep.rates.and.times = get.rates.from.background.and.foreground(background.rates = components$background.prep.coverage,
-                                                                               background.times = components$background.prep.years,
+    #Pull background prep proportions from logistic model
+    if (!is.null(components$background.prep$max.proportion.ors))
+    {
+        logit.max.prep.proportion = log(components$background.prep$model$max.proportion) - log(1-components$background.prep$model$max.proportion)
+        logit.max.prep.proportion = logit.max.prep.proportion + components$background.prep$model$max.p.lors
+        logit.max.prep.proportion = add.additional.betas.to.array(logit.max.prep.proportion,
+                                                                  additional.betas = log(components$background.prep$max.proportion.ors),
+                                                                  idu.applies.to.in.remission = F,
+                                                                  idu.applies.to.msm.idu=F,
+                                                                  msm.applies.to.msm.idu=F)
+        max.prep.proportion = 1 / (1+exp(-logit.max.prep.proportion))
+    }
+    else
+        max.prep.proportion = components$background.prep$model$max.proportion
+    
+    background.prep = get.background.proportions(base.model = components$background.prep$model,
+                                                 years = components$background.prep$years,
+                                                 additional.intercepts = log(components$background.prep$additional.intercept.ors),
+                                                 additional.slopes = log(components$background.prep$additional.slope.ors),
+                                                 future.slope = log(components$background.prep$future.slope.or),
+                                                 future.slope.after.year = components$background.prep$future.slope.after.year,
+                                                 idu.applies.to.in.remission = F,
+                                                 idu.applies.to.msm.idu=F,
+                                                 msm.applies.to.msm.idu=F,
+                                                 jheem=components$jheem,
+                                                 max.proportion = max.prep.proportion,
+                                                 expand.population='hiv.negative')
+    #Add in zero suppression
+    background.prep.years = c(components$background.prep$zero.prep.year, 
+                              components$background.prep$years)
+    background.prep = c(list(0 * background.prep[[1]]), background.prep)
+    
+    components$prep.rates.and.times = get.rates.from.background.and.foreground(background.rates = background.prep,
+                                                                               background.times = background.prep.years,
                                                                                foreground.rates = components$foreground.prep.coverage,
                                                                                foreground.times = components$foreground.prep.years,
                                                                                foreground.start.times = components$foreground.prep.start.years,
@@ -1133,13 +1195,14 @@ get.background.proportions <- function(base.model,
                                        additional.intercepts,
                                        additional.slopes,
                                        future.slope=0,
-                                       future.slope.after.year=base.model$anchor.year,
+                                       future.slope.after.year,
                                        idu.applies.to.in.remission=T,
                                        idu.applies.to.msm.idu=T,
                                        msm.applies.to.msm.idu=T,
-                                       transformation = function(x){base.model$max.proportion / (1+exp(-x))},
+                                       max.proportion=base.model$max.proportion,
+                                       transformation = function(x){max.proportion / (1+exp(-x))},
                                        jheem,
-                                       expand.population=T)
+                                       expand.population=c('hiv.positive','hiv.negative','none')[1])
 {
     intercept = add.additional.betas.to.array(base.model$intercept, additional.intercepts,
                                               idu.applies.to.in.remission = idu.applies.to.in.remission,
@@ -1149,11 +1212,48 @@ get.background.proportions <- function(base.model,
                                           idu.applies.to.in.remission = idu.applies.to.in.remission,
                                           idu.applies.to.msm.idu = idu.applies.to.msm.idu,
                                           msm.applies.to.msm.idu = msm.applies.to.msm.idu)
-
+    if (base.model$mixed.linear)
+    {
+        intercept = transformation(intercept)
+        pre.tx.slope = slope
+        slope = transformation(pre.tx.slope)
+        future.slope = transformation(pre.tx.slope + future.slope)
+        
+        if (base.model$use.logistic.tail)
+            logistic.tail.model = make.logistic.tail.model(intercept,
+                                                           slope=slope,
+                                                           anchor.year=base.model$anchor.year,
+                                                           additional.slope=future.slope-slope,
+                                                           additional.slope.after.year=future.slope.after.year,
+                                                           max.p=base.model$max.proportion.for.logistic.tail,
+                                                           logistic.after.frac.of.max.p=base.model$logistic.after.frac.of.max.p)
+    }
+    else
+        future.slope = slope + future.slope
+    
     lapply(years, function(year){
-        p = transformation(intercept + slope * (year-base.model$anchor.year) + future.slope * max(0,year-future.slope.after.year))
-        if (expand.population)
+        
+        if (base.model$mixed.linear && base.model$use.logistic.tail)
+        {
+            p = calculate.logistic.tail.values(logistic.tail.model, year)
+        }
+        else
+        {
+            p = intercept + 
+                slope * (min(year, future.slope.after.year) - base.model$anchor.year) +
+                future.slope * max(0,year-future.slope.after.year)
+            
+            
+            if (base.model$mixed.linear)
+                p[] = pmin(base.model$max.proportion, pmax(0, p))
+            else if (!is.null(transformation))
+                p = transformation(p)
+        }
+        
+        if (expand.population=='hiv.positive')
             expand.population.to.hiv.positive(jheem, p)
+        else if (expand.population=='hiv.negative')
+            expand.population.to.hiv.negative(jheem, p)
         else
             p
     })
@@ -1217,6 +1317,8 @@ add.additional.betas.to.array <- function(arr, additional.betas,
             arr[,,c('heterosexual_male','female'),non.idu.strata] = 
                 arr[,,c('heterosexual_male','female'),non.idu.strata] + additional.betas[name]
         
+        else if (grepl('female', name, ignore.case = T))
+            arr[,,'female',] = arr[,,'female',] + additional.betas[name]
     }
     
     arr
@@ -1231,7 +1333,7 @@ do.setup.aging <- function(components)
     components$aging.hiv.negative = get.aging.skeleton.hiv.negative(components$jheem)
     components$aging.hiv.negative[1,,,,'active_IDU',] = components$proportion.active.idu.13.24.who.are.24
     components$aging.hiv.negative[1,,,,'IDU_in_remission',] = components$proportion.prior.idu.13.24.who.are.24
-
+    
     min.time = Inf
     max.time = -Inf
     for (age.index in 1:(length(components$jheem$age$labels)))
@@ -1254,15 +1356,15 @@ do.setup.aging <- function(components)
                     times=elements[c('t.pre.spike','t.spike',paste0('t',0:3))]
                     rates=elements[c('r.pre.spike','r.spike',paste0('r',0:3))]
                 }
-
+                
                 min.time = min(min.time, as.numeric(times[!is.null(times) & !is.null(rates)]))
                 max.time = max(max.time, as.numeric(times[!is.null(times) & !is.null(rates)]))
             }
         }
     }
-
+    
     aging = get.aging.skeleton.hiv.positive(components$jheem)
-
+    
     components$aging.hiv.positive.years = min.time:max.time
     components$aging.rates.hiv.positive = lapply(components$aging.hiv.positive.years, function(year){
         for (age.index in 1:(length(components$jheem$age$labels)-1))
@@ -1285,9 +1387,9 @@ do.setup.aging <- function(components)
                         times=elements[c('t.pre.spike','t.spike',paste0('t',0:3))]
                         rates=elements[c('r.pre.spike','r.spike',paste0('r',0:3))]
                     }
-
+                    
                     aging.for.subgroup = do.get.aging.rate(year=year, times=times, rate=rates)
-
+                    
                     if (route=='msm')
                         aging[age.index, race, , 'msm', ,,,] = aging.for.subgroup
                     else if (route=='heterosexual.male')
@@ -1301,7 +1403,7 @@ do.setup.aging <- function(components)
         }
         aging
     })
-
+    
     components
 }
 
@@ -1320,11 +1422,11 @@ do.get.aging.rate <- function(year, times, rates,
         times[sapply(times, is.null)] = NA
         times = as.numeric(times)
     }
-
+    
     mask = !is.na(rates) & !is.na(times) & rates >= 0
     rates = rates[mask]
     times = times[mask]
-
+    
     n = length(rates)
     if (year <= times[1])
         rates[1]
@@ -1345,13 +1447,13 @@ do.get.aging.rate <- function(year, times, rates,
             index = (2:n)[index.mask][1]
         else
             index = n
-
+        
         fraction.before = fraction.after = fraction.between
         if (index==1)
             fraction.before = fraction.before.start
         if (index==(n-1))
             fraction.after = fraction.after.end
-
+        
         calculate.change.ratios.logistic(r0=rates[index-1], r1=rates[index],
                                          t0=times[index-1], t1=times[index],
                                          times=year,
@@ -1365,31 +1467,31 @@ get.aging.rate <- function(year,
                            base.rate, trough.rate, peak.rate,
                            t2, rate2)
 {
-     if (year < t.trough)
+    if (year < t.trough)
         calculate.change.ratios.logistic(r0=base.rate, r1=trough.rate,
                                          t0=t.pre.trough, t1=t.trough,
                                          times=year,
                                          fraction.of.asymptote.before.start = 0.05,
                                          fraction.of.asymptote.after.end = 0.025)
-#    else if (year < t.mid)
-#        calculate.change.ratios.logistic(r0=trough.rate, r1=base.rate,
-#                                         t0=t.trough, t1=t.mid,
-#                                         times=year,
-#                                         fraction.of.asymptote.before.start = 0.025,
-#                                         fraction.of.asymptote.after.end = 0.025)
-#    else if (year < t.peak && base.rate==trough.rate)
-#        calculate.change.ratios.logistic(r0=trough.rate, r1=peak.rate,
-#                                         #r0=base.rate, r1=peak.rate,
-#                                         t0=t.mid, t1=t.peak,
-#                                         #                                         t0=t.mid, t1=t.peak,
-#                                         times=year,
-#                                         fraction.of.asymptote.before.start = 0.025,
-#                                         fraction.of.asymptote.after.end = 0.025)
+    #    else if (year < t.mid)
+    #        calculate.change.ratios.logistic(r0=trough.rate, r1=base.rate,
+    #                                         t0=t.trough, t1=t.mid,
+    #                                         times=year,
+    #                                         fraction.of.asymptote.before.start = 0.025,
+    #                                         fraction.of.asymptote.after.end = 0.025)
+    #    else if (year < t.peak && base.rate==trough.rate)
+    #        calculate.change.ratios.logistic(r0=trough.rate, r1=peak.rate,
+    #                                         #r0=base.rate, r1=peak.rate,
+    #                                         t0=t.mid, t1=t.peak,
+    #                                         #                                         t0=t.mid, t1=t.peak,
+    #                                         times=year,
+    #                                         fraction.of.asymptote.before.start = 0.025,
+    #                                         fraction.of.asymptote.after.end = 0.025)
     else if (year < t.peak)
         calculate.change.ratios.logistic(r0=trough.rate, r1=peak.rate,
-            #r0=base.rate, r1=peak.rate,
+                                         #r0=base.rate, r1=peak.rate,
                                          t0=t.trough, t1=t.peak,
-#                                         t0=t.mid, t1=t.peak,
+                                         #                                         t0=t.mid, t1=t.peak,
                                          times=year,
                                          fraction.of.asymptote.before.start = 0.025,
                                          fraction.of.asymptote.after.end = 0.025)
@@ -1416,7 +1518,7 @@ do.setup.global.sexual.transmission <- function(components)
 {
     components$global.sexual.transmission.rates = components$global.sexual.trate
     components$global.sexual.transmission.years = -Inf
-
+    
     components
 }
 
@@ -1424,7 +1526,7 @@ do.setup.global.idu.transmission <- function(components)
 {
     components$global.idu.transmission.rates = components$global.idu.trate
     components$global.idu.transmission.years = -Inf
-
+    
     components
 }
 
@@ -1448,12 +1550,12 @@ calculate.changing.trates.and.times <- function(params)
 }
 
 do.calculate.changing.trates.and.times <- function(r.peak, r0, r1, r2, r0.5,
-                                                t.pre.peak, t.peak.start, t.peak.end, t0.start, t0.end, t1, t2, t0.5, t.end,
-                                                fraction.change.after.end)
+                                                   t.pre.peak, t.peak.start, t.peak.end, t0.start, t0.end, t1, t2, t0.5, t.end,
+                                                   fraction.change.after.end)
 {
     peak.years = c(t.pre.peak, t.peak.start, t.peak.end, t0.start)
     peak.rates = c(r0, r.peak, r.peak, r0)
-
+    
     ratio.years = t0.end:t.end
     if (is.null(r0.5))
         ratio.rates = calculate.change.ratios.two.logistic(r0 = r0, r1 = r1, r2 = r2,
@@ -1471,16 +1573,16 @@ do.calculate.changing.trates.and.times <- function(r.peak, r0, r1, r2, r0.5,
                                                              times = t0.5:t.end,
                                                              fraction.of.asymptote.after.end = fraction.change.after.end,
                                                              fraction.of.asymptote.before.start = 0.025)
-
+        
         ratio.rates = c(ratio.rates.a[-length(ratio.rates.a)], ratio.rates.b)
     }
-
+    
     if (t0.start==t0.end)
     {
         ratio.rates = ratio.rates[-1]
         ratio.years = ratio.years[-1]
     }
-
+    
     list(rates=c(peak.rates, ratio.rates),
          times=c(peak.years, ratio.years))
 }
@@ -1488,47 +1590,49 @@ do.calculate.changing.trates.and.times <- function(r.peak, r0, r1, r2, r0.5,
 do.setup.susceptibility <- function(components)
 {
     base.sexual.susceptibility = base.idu.susceptibility = get.hiv.negative.population.skeleton(components$jheem, 1)
-
+    
     for (age in names(components$sexual.susceptibility.rr.by.age))
         base.sexual.susceptibility[age,,,,,] = base.sexual.susceptibility[age,,,,,] *
             components$sexual.susceptibility.rr.by.age[age]
-
+    
     for (age in names(components$msm.sexual.susceptibility.rr.by.age))
         base.sexual.susceptibility[age,,,'msm',,] = base.sexual.susceptibility[age,,,'msm',,] *
             components$msm.sexual.susceptibility.rr.by.age[age]
-
-
+    
+    
     if (components$model.prep)
     {
         components = do.calculate.prep.coverage(components)
         rates.and.times = calculate.prep.coverage(components)
-
+        
         components$sexual.susceptibility = lapply(rates.and.times$rates, function(prep.coverage){
-
+            
             if (is.null(dim(prep.coverage)))
                 prep.coverage = as.numeric(prep.coverage)
             prep.coverage = expand.population.to.hiv.negative(components$jheem, prep.coverage)
-
+            
             non.prep.risk = (1-prep.coverage)
             prep.risk = prep.coverage * components$prep.rr.heterosexual
             prep.risk[,,,'msm',,] = prep.coverage[,,,'msm',,] * components$prep.rr.msm
-
+            prep.risk[,,,,'active_IDU',] = prep.coverage[,,,,'active_IDU',] * components$prep.rr.idu
+            
             susceptibility = non.prep.risk + prep.risk
             susceptibility * base.sexual.susceptibility
         })
         components$sexual.susceptibility.years = rates.and.times$times
-
+        
         if (components$model.idu)
         {
             components$idu.susceptibility = lapply(rates.and.times$rates, function(prep.coverage){
-
+                
                 if (is.null(dim(prep.coverage)))
                     prep.coverage = as.numeric(prep.coverage)
                 prep.coverage = expand.population.to.hiv.negative(components$jheem, prep.coverage)
-
+                
                 non.prep.risk = (1-prep.coverage)
                 prep.risk = prep.coverage * components$prep.rr.heterosexual
                 prep.risk[,,,'msm',,] = prep.coverage[,,,'msm',,] * components$prep.rr.msm
+                prep.risk[,,,,'active_IDU',] = prep.coverage[,,,,'active_IDU',] * components$prep.rr.idu
 
                 susceptibility = non.prep.risk + prep.risk
                 susceptibility * base.idu.susceptibility
@@ -1542,7 +1646,7 @@ do.setup.susceptibility <- function(components)
         components$idu.susceptibility = list(base.idu.susceptibility)
         components$idu.susceptibility.years = components$sexual.susceptibility.years = -Inf
     }
-
+    
     components
 }
 
@@ -1557,17 +1661,17 @@ do.setup.transmissibility <- function(components)
         transmissibility[,,,,,,components$settings$ACUTE_STATES,] =
             transmissibility[,,,,,,components$settings$ACUTE_STATES,] * acute.transmissibility.rr[,,,,,,components$settings$ACUTE_STATES,]
         sexual.transmissibility = idu.transmissibility = transmissibility
-
+        
         idu.transmissibility[,,,,,components$settings$DIAGNOSED_STATES,,] =
             idu.transmissibility[,,,,,components$settings$DIAGNOSED_STATES,,] * components$diagnosed.needle.sharing.rr
-
+        
         sexual.transmissibility[,,,'heterosexual_male',,components$settings$DIAGNOSED_STATES,,] =
             sexual.transmissibility[,,,'heterosexual_male',,components$settings$DIAGNOSED_STATES,,] * components$diagnosed.het.male.condomless.rr
         sexual.transmissibility[,,,'female',,components$settings$DIAGNOSED_STATES,,] =
             sexual.transmissibility[,,,'female',,components$settings$DIAGNOSED_STATES,,] * components$diagnosed.female.condomless.rr
         sexual.transmissibility[,,,'msm',,components$settings$DIAGNOSED_STATES,,] =
             sexual.transmissibility[,,,'msm',,components$settings$DIAGNOSED_STATES,,] * components$diagnosed.msm.condomless.rr
-
+        
         if (components$model.idu)
         {
             for (race in names(components$idu.transmissibility.rr.by.race))
@@ -1575,38 +1679,38 @@ do.setup.transmissibility <- function(components)
         }
         for (race in names(components$sexual.transmissibility.rr.by.race))
             sexual.transmissibility[,race,,,,,,] = sexual.transmissibility[,race,,,,,,] * components$sexual.transmissibility.rr.by.race[race]
-
+        
         #-- Pull year-specific suppression --#
-
-
+        
+        
         suppression = calculate.suppression(components)  
-
-
+        
+        
         #-- Put them together --#
         components$sexual.transmissibilities = lapply(suppression$rates, function(suppressed.proportions){
-
+            
             sexual.transmissibility.for.year = sexual.transmissibility
-
+            
             expanded.unsuppressed = 1 - suppressed.proportions[,,,,,components$settings$DIAGNOSED_STATES,,]
-
+            
             sexual.transmissibility.for.year[,,,,,components$settings$DIAGNOSED_STATES,,] =
                 sexual.transmissibility.for.year[,,,,,components$settings$DIAGNOSED_STATES,,] * expanded.unsuppressed
-
+            
             sexual.transmissibility.for.year
         })
         components$sexual.transmissibility.years = suppression$times
-
+        
         if (components$model.idu)
         {
             components$idu.transmissibilities = lapply(suppression$rates, function(suppressed.proportions){
-
+                
                 idu.transmissibility.for.year = idu.transmissibility
-
+                
                 expanded.unsuppressed = 1 - suppressed.proportions[,,,,,components$settings$DIAGNOSED_STATES,,]
-
+                
                 idu.transmissibility.for.year[,,,,,components$settings$DIAGNOSED_STATES,,] =
                     idu.transmissibility.for.year[,,,,,components$settings$DIAGNOSED_STATES,,] * expanded.unsuppressed
-
+                
                 idu.transmissibility.for.year
             })
             components$idu.transmissibility.years = suppression$times
@@ -1617,7 +1721,7 @@ do.setup.transmissibility <- function(components)
         components$sexual.transmissibilities = components$idu.transmissibilities = list(0)
         components$sexual.transmissibility.years = components$idu.transmissibility.years = -Inf
     }
-
+    
     components
 }
 
@@ -1627,52 +1731,52 @@ do.setup.sexual.contact <- function(components)
     {
         #-- Sex by age --#
         sexual.transmission.by.age = get.contact.array.skeleton(components$jheem, age=T, sex.to=T)
-
+        
         # Set up full census ages
         ages = min(components$settings$AGE_CUTOFFS):max(as.numeric(dimnames(components$populations$full.age.collapsed.races)[['age']]))
         age.counts = apply(components$populations$full.age.collapsed.races, 'age', sum)[as.character(ages)]
         age1.raw.counts = age.counts[1:components$jheem$age$spans[1]]
-
+        
         # reduce per sexual availability
         sexual.availability = unlist(components$sexual.availability, use.names=F)
         names(sexual.availability) = unlist(sapply(components$sexual.availability, function(x){names(x)}))
         age.counts[names(sexual.availability)] = age.counts[names(sexual.availability)] * sexual.availability
         age.1.available.counts = age.counts[1:components$jheem$age$spans[1]]
-
+        
         het.male.sex.by.age = get.age.proportions.from.age.model(components$sexual.transmission$heterosexual.male.age.model,
                                                                  ages.to.use=ages,
                                                                  age.counts=age.counts,
                                                                  age.cutoffs = components$settings$AGE_CUTO)
-
+        
         female.sex.by.age = get.age.proportions.from.age.model(components$sexual.transmission$female.age.model,
-                                                                 ages.to.use=ages,
-                                                                 age.counts=age.counts,
-                                                                 age.cutoffs = components$settings$AGE_CUTOFFS)
+                                                               ages.to.use=ages,
+                                                               age.counts=age.counts,
+                                                               age.cutoffs = components$settings$AGE_CUTOFFS)
         msm.sex.by.age = get.age.proportions.from.age.model(components$sexual.transmission$msm.age.model,
-                                                                 ages.to.use=ages,
-                                                                 age.counts=age.counts,
-                                                                 age.cutoffs = components$settings$AGE_CUTOFFS)
-
-
+                                                            ages.to.use=ages,
+                                                            age.counts=age.counts,
+                                                            age.cutoffs = components$settings$AGE_CUTOFFS)
+        
+        
         sexual.transmission.by.age[,,'heterosexual_male'] = het.male.sex.by.age
         sexual.transmission.by.age[,,'female'] = female.sex.by.age
         sexual.transmission.by.age[,,'msm'] = msm.sex.by.age
-
+        
         #inflate the transmissibility for 1st age bracket
         sexual.transmission.by.age[1,,] = sexual.transmission.by.age[1,,] *
             sum(age1.raw.counts) / sum(age.1.available.counts)
-
-
+        
+        
         #-- Sex by Race --#
-
+        
         race.counts = apply(components$populations$collapsed.races, 'race', sum)
         sexual.transmission.by.race = get.bho.race.mixing.proportions.from.parameters(oe.black.black = components$sexual.transmission$black.black.oe,
                                                                                       oe.hispanic.hispanic = components$sexual.transmission$hispanic.hispanic.oe,
                                                                                       oe.other.other = components$sexual.transmission$other.other.oe,
                                                                                       race.proportions = race.counts)
-
+        
         #-- Sex by Sex --#
-
+        
         population = stratify.males.to.msm.by.race(components$populations$collapsed,
                                                    components$proportions.msm.of.male)
         sex.counts = apply(population, 'sex', sum)
@@ -1680,7 +1784,7 @@ do.setup.sexual.contact <- function(components)
         
         mat = array(0, dim=c(sex.from=length(components$settings$SEXES), sex.to=length(components$settings$SEXES)),
                     dimnames=list(sex.from=components$settings$SEXES, sex.to=components$settings$SEXES))
-
+        
         #females
         mat['heterosexual_male','female'] = sex.counts['heterosexual_male']
         mat['msm','female'] = sex.counts['msm'] * components$sexual.transmission$oe.female.pairings.with.msm
@@ -1698,14 +1802,14 @@ do.setup.sexual.contact <- function(components)
         mat['female','heterosexual_male'] = 1 - components$sexual.transmission$fraction.heterosexual.male.pairings.with.male
         
         sexual.transmission.by.sex = calculate.column.proportions(mat)
-
+        
         #-- Sex by IDU --#
         if (components$model.idu)
         {
             population = stratify.population.idu(population,
                                                  active.idu.prevalence=components$active.idu.prevalence,
                                                  idu.ever.prevalence=components$idu.ever.prevalence)
-
+            
             #set up the mixing matrix
             n.risk.states = length(components$settings$RISK_STRATA)
             sexual.transmission.by.risk = get.contact.array.skeleton(components$jheem,
@@ -1716,43 +1820,43 @@ do.setup.sexual.contact <- function(components)
                 for (risk.to in 1:n.risk.states)
                     sexual.transmission.by.risk[risk.from,,,,risk.to] = population[,,,risk.from]
             }
-
+            
             #plug in the oe ratios
             sexual.transmission.by.risk['never_IDU',,,,'never_IDU'] = components$never.idu.sexual.oe *
                 sexual.transmission.by.risk['never_IDU',,,,'never_IDU']
-
+            
             idu.states = setdiff(components$settings$RISK_STRATA, 'never_IDU')
-
+            
             sexual.transmission.by.risk[idu.states,,,,'never_IDU'] = components$never.with.idu.sexual.oe *
                 sexual.transmission.by.risk[idu.states,,,,'never_IDU']
-
+            
             sexual.transmission.by.risk[idu.states,,,,idu.states] = components$idu.sexual.oe *
                 sexual.transmission.by.risk[idu.states,,,,idu.states]
-
+            
             #normalize to proportions
             sexual.transmission.by.risk = sexual.transmission.by.risk /
                 rep(colSums(sexual.transmission.by.risk, dims=1), each=n.risk.states)
         }
         else
             sexual.transmission.by.risk = 1
-
+        
         #-- Set up the ingredients for transmission for sex act --#
-
+        
         sexual.transmission.arrays = get.sexual.transmission.arrays(components)
-
+        
         components$sexual.contact.years = sexual.transmission.arrays$times
-
+        
         # Set up the time-specific transmission per sex act, and put together with the rest
         components$sexual.contact.arrays = lapply(1:length(components$sexual.contact.years), function(i){
-
-                # Put it all together
-                create.contact.array.from.marginals(components$jheem,
-                                                    sexual.transmission.arrays$rates[[i]],
-                                                    sexual.transmission.by.age,
-                                                    sexual.transmission.by.risk,
-                                                    sexual.transmission.by.race,
-                                                    sexual.transmission.by.sex)
-
+            
+            # Put it all together
+            create.contact.array.from.marginals(components$jheem,
+                                                sexual.transmission.arrays$rates[[i]],
+                                                sexual.transmission.by.age,
+                                                sexual.transmission.by.risk,
+                                                sexual.transmission.by.race,
+                                                sexual.transmission.by.sex)
+            
         })
     }
     else
@@ -1760,26 +1864,26 @@ do.setup.sexual.contact <- function(components)
         components$sexual.contact.arrays = list(0)
         components$sexual.contact.years = -Inf
     }
-
+    
     components
 }
 
 get.sexual.transmission.arrays <- function(components,
                                            idu.applies.to.in.remission=F)
 {
- #   sexual.transmission.skeleton = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T, risk=T)
- #   sexual.transmission.mapping = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T, risk=T, '')
+    #   sexual.transmission.skeleton = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T, risk=T)
+    #   sexual.transmission.mapping = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T, risk=T, '')
     sexual.transmission.skeleton = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T)
     sexual.transmission.mapping = get.contact.array.skeleton(components$jheem, race=T, sex=T, age=T, '')
     sexual.transmission.mapping[] = as.character(NA)
-
+    
     rates.and.times.list = list()
-
-#    if (idu.applies.to.in.remission)
-#        idu.strata = c('active_IDU','IDU_in_remission')
-#    else
-#        idu.strata = 'active_IDU'
-#    non.idu.strata = setdiff(c('never_IDU','active_IDU','IDU_in_remission'), idu.strata)
+    
+    #    if (idu.applies.to.in.remission)
+    #        idu.strata = c('active_IDU','IDU_in_remission')
+    #    else
+    #        idu.strata = 'active_IDU'
+    #    non.idu.strata = setdiff(c('never_IDU','active_IDU','IDU_in_remission'), idu.strata)
     
     for (race in components$jheem$race)
     {
@@ -1788,45 +1892,45 @@ get.sexual.transmission.arrays <- function(components,
             age = paste0('age', age.index)
             
             msm.trates = calculate.changing.trates.and.times(components$msm.trates[[race]][[age]])
-#            msm.idu.trates = calculate.changing.trates.and.times(components$msm.idu.trates[[race]][[age]])
-
+            #            msm.idu.trates = calculate.changing.trates.and.times(components$msm.idu.trates[[race]][[age]])
+            
             heterosexual.male.trates = calculate.changing.trates.and.times(components$heterosexual.male.trates[[race]][[age]])
             heterosexual.female.trates = calculate.changing.trates.and.times(components$heterosexual.female.trates[[race]][[age]])
-
+            
             msm.name = paste0(race, '.', age, '.msm')
-#            msm.idu.name = paste0(race, '.', age, '.msm.idu')
+            #            msm.idu.name = paste0(race, '.', age, '.msm.idu')
             het.male.name = paste0(race, '.', age, '.het.male')
             het.female.name = paste0(race, '.', age, '.female')
-
+            
             to.add = list(msm.trates,
- #                         msm.idu.trates,
+                          #                         msm.idu.trates,
                           heterosexual.male.trates,
                           heterosexual.female.trates)
- #           names(to.add) = c(msm.name, msm.idu.name, het.male.name, het.female.name)
+            #           names(to.add) = c(msm.name, msm.idu.name, het.male.name, het.female.name)
             names(to.add) = c(msm.name, het.male.name, het.female.name)
             rates.and.times.list = c(rates.and.times.list,
                                      to.add)
-
             
-#            sexual.transmission.mapping[,,,,age.index,race,'msm',non.idu.strata] = msm.name
-#            sexual.transmission.mapping[,,,,age.index,race,'msm',idu.strata] = msm.idu.name
-#            sexual.transmission.mapping[,,,,age.index,race,'heterosexual_male',] = het.male.name
-#            sexual.transmission.mapping[,,,,age.index,race,'female',] = het.female.name
+            
+            #            sexual.transmission.mapping[,,,,age.index,race,'msm',non.idu.strata] = msm.name
+            #            sexual.transmission.mapping[,,,,age.index,race,'msm',idu.strata] = msm.idu.name
+            #            sexual.transmission.mapping[,,,,age.index,race,'heterosexual_male',] = het.male.name
+            #            sexual.transmission.mapping[,,,,age.index,race,'female',] = het.female.name
             sexual.transmission.mapping[,,,age.index,race,'msm'] = msm.name
             sexual.transmission.mapping[,,,age.index,race,'heterosexual_male'] = het.male.name
             sexual.transmission.mapping[,,,age.index,race,'female'] = het.female.name
             
             #These lines lets msm transmission rates apply to heterosexual males engaging in sex with males
             sexual.transmission.mapping[,,c('heterosexual_male','msm'),age.index,race,'heterosexual_male'] = msm.name
-#            sexual.transmission.mapping[,,c('heterosexual_male','msm'),,age.index,race,'heterosexual_male',non.idu.strata] = msm.name
-#            sexual.transmission.mapping[,,c('heterosexual_male','msm'),,age.index,race,'heterosexual_male',idu.strata] = msm.idu.name
+            #            sexual.transmission.mapping[,,c('heterosexual_male','msm'),,age.index,race,'heterosexual_male',non.idu.strata] = msm.name
+            #            sexual.transmission.mapping[,,c('heterosexual_male','msm'),,age.index,race,'heterosexual_male',idu.strata] = msm.idu.name
         }
     }
-
+    
     sexual.transmission.arrays = array.merge.rates(skeleton.array = sexual.transmission.skeleton,
                                                    rates.and.times.list = rates.and.times.list,
                                                    array.indices.into.list = sexual.transmission.mapping)
-
+    
     sexual.transmission.arrays
 }
 
@@ -1837,39 +1941,39 @@ do.setup.idu.contact <- function(components)
         #-- SELECT OUT JUST IDU --#
         idu.to.idu = get.contact.array.skeleton(components$jheem, risk=T)
         idu.to.idu[components$settings$ACTIVE_IDU_STATE, components$settings$ACTIVE_IDU_STATE] = 1
-
+        
         #-- IDU by age --#
         ages = min(components$settings$AGE_CUTOFFS):max(as.numeric(dimnames(components$populations$full.age.collapsed.races)[['age']]))
         age.counts = apply(components$populations$full.age.collapsed.races, 'age', sum)[as.character(ages)]
-
+        
         # reduce per idu availability
         idu.availability = unlist(components$idu.availability, use.names=F)
         names(idu.availability) = unlist(sapply(components$idu.availability, function(x){names(x)}))
-
+        
         age.counts[names(idu.availability)] = age.counts[names(idu.availability)] * idu.availability
-
+        
         idu.transmission.by.age = get.age.proportions.from.age.model(age.model=components$idu.transmission$age.model,
                                                                      ages.to.use=ages,
                                                                      age.counts=age.counts,
                                                                      age.cutoffs = components$settings$AGE_CUTOFFS)
-
+        
         #-- IDU by race --#
         race.counts = apply(components$populations$collapsed.races, 'race', sum)
         idu.transmission.by.race = get.bho.race.mixing.proportions.from.parameters(oe.black.black = components$idu.transmission$black.black.oe,
-                                                                                      oe.hispanic.hispanic = components$idu.transmission$hispanic.hispanic.oe,
-                                                                                      oe.other.other = components$idu.transmission$other.other.oe,
-                                                                                      race.proportions = race.counts)
-
+                                                                                   oe.hispanic.hispanic = components$idu.transmission$hispanic.hispanic.oe,
+                                                                                   oe.other.other = components$idu.transmission$other.other.oe,
+                                                                                   race.proportions = race.counts)
+        
         #-- IDU by sex --#
         population = stratify.males.to.msm.by.race(components$populations$collapsed,
                                                    components$proportions.msm.of.male)
         sex.counts = apply(population, 'sex', sum)
         idu.transmission.by.sex = get.pairing.proportions(components$idu.transmission$sex.oes, sex.counts)
-
+        
         #-- IDU Transmission --#
-
+        
         idu.transmission.arrays = get.idu.transmission.arrays(components)
-
+        
         #-- Put it all together and set it --#
         components$idu.contact.arrays = lapply(idu.transmission.arrays$rates, function(idu.transmission)
         {
@@ -1880,7 +1984,7 @@ do.setup.idu.contact <- function(components)
                                                 idu.transmission.by.race,
                                                 idu.transmission.by.sex)
         })
-
+        
         components$idu.contact.years = idu.transmission.arrays$times
     }
     else
@@ -1888,7 +1992,7 @@ do.setup.idu.contact <- function(components)
         components$idu.contact.arrays = list(0)
         components$idu.contact.years = -Inf
     }
-
+    
     components
 }
 
@@ -1930,8 +2034,8 @@ get.idu.transmission.arrays <- function(components)
     }
     
     idu.transmission.arrays = array.merge.rates(skeleton.array = idu.transmission.skeleton,
-                                                   rates.and.times.list = rates.and.times.list,
-                                                   array.indices.into.list = idu.transmission.mapping)
+                                                rates.and.times.list = rates.and.times.list,
+                                                array.indices.into.list = idu.transmission.mapping)
     
     idu.transmission.arrays
 }
@@ -1946,24 +2050,26 @@ do.setup.new.infection.proportions <- function(components)
     else if (components$model.prep)
     {
         rates.and.times = calculate.prep.coverage(components)
-
+        
         components$new.infection.proportions = lapply(rates.and.times$rates, function(prep.coverage){
-
+            
             non.prep.risk = (1-prep.coverage)
             prep.risk = prep.coverage * components$prep.rr.heterosexual
-
+            prep.risk[,,,'msm',,] = prep.coverage[,,,'msm',,] * components$prep.rr.msm
+            prep.risk[,,,,'active_IDU',] = prep.coverage[,,,,'active_IDU',] * components$prep.rr.idu
+            
             new.infection.proportions = get.new.infection.proportions.skeleton(components$jheem)
-
-#            access(new.infection.proportions, continuum = components$settings$UNDIAGNOSED_NO_PREP, cd4 = components$settings$CD4_STRATA[1]) =
-#                non.prep.risk / (prep.risk + non.prep.risk)
+            
+            #            access(new.infection.proportions, continuum = components$settings$UNDIAGNOSED_NO_PREP, cd4 = components$settings$CD4_STRATA[1]) =
+            #                non.prep.risk / (prep.risk + non.prep.risk)
             new.infection.proportions[,,,,,,components$settings$UNDIAGNOSED_NO_PREP,components$settings$CD4_STRATA[1],] = non.prep.risk / (prep.risk + non.prep.risk)
-#            access(new.infection.proportions, continuum = components$settings$UNDIAGNOSED_FROM_PREP, cd4 = components$settings$CD4_STRATA[1]) =
-#                prep.risk / (prep.risk + non.prep.risk)
+            #            access(new.infection.proportions, continuum = components$settings$UNDIAGNOSED_FROM_PREP, cd4 = components$settings$CD4_STRATA[1]) =
+            #                prep.risk / (prep.risk + non.prep.risk)
             new.infection.proportions[,,,,,,components$settings$UNDIAGNOSED_FROM_PREP,components$settings$CD4_STRATA[1],] = prep.risk / (prep.risk + non.prep.risk)
-
+            
             new.infection.proportions
         })
-
+        
         components$new.infection.proportions.years = rates.and.times$times
     }
     else
@@ -1971,7 +2077,7 @@ do.setup.new.infection.proportions <- function(components)
         components$new.infection.proportions = list(get.uniform.new.infection.proportions(components$jheem, initial.continuum = components$settings$UNDIAGNOSED_NO_PREP))
         components$new.infection.proportions.years = -Inf
     }
-
+    
     components
 }
 
@@ -2010,9 +2116,9 @@ get.rates.from.background.and.foreground <- function(background.rates,
         
         sub.rates = numeric(length(all.times))
         names(sub.rates) = as.character(all.times)
-        
+
         raw.rates = sapply(1:length(foreground.rates[[1]]), function(i){
-            bg.rates = sub.rates = sapply(interpolated.background.rates, function(bg){bg[i]}) #start off with the backgroundr rates
+            bg.rates = sub.rates = sapply(interpolated.background.rates, function(bg){bg[i]}) #start off with the background rates
             
             from.foreground.times = as.character(foreground.times[foreground.times > foreground.start.times[i]])
             if (length(from.foreground.times)>0)
@@ -2020,17 +2126,23 @@ get.rates.from.background.and.foreground <- function(background.rates,
                 from.foreground.rates = sapply(foreground.rates[from.foreground.times], function(fg){fg[i]})
                 if (any(!is.na(from.foreground.rates)))
                 {
+                    #sub.rates[all.times>=min(from.foreground.times)] = NA #this was an error
+                    sub.rates[all.times > foreground.start.times[i]] = NA
                     sub.rates[from.foreground.times] = from.foreground.rates
                     
                     if (any(is.na(sub.rates)))
                     {
                         to.interpolate.times = all.times[is.na(sub.rates)]
-                        bg.time = foreground.start.times[i]
-                        fg.time = min(all.times[!is.na(sub.rates) & all.times>bg.time])
-                        sub.rates[is.na(sub.rates)] = interpolate.parameters(values=sub.rates[as.character(c(bg.time,fg.time))],
-                                                                             value.times=c(bg.time,fg.time),
+                        sub.rates[is.na(sub.rates)] = interpolate.parameters(values=sub.rates[!is.na(sub.rates)],
+                                                                             value.times=all.times[!is.na(sub.rates)],
                                                                              desired.times=to.interpolate.times,
-                                                                             return.list=F)
+                                                                             return.list = F)
+#                        bg.time = foreground.start.times[i]
+#                        fg.time = min(all.times[!is.na(sub.rates) & all.times>bg.time])
+#                        sub.rates[is.na(sub.rates)] = interpolate.parameters(values=sub.rates[as.character(c(bg.time,fg.time))],
+#                                                                             value.times=c(bg.time,fg.time),
+#                                                                             desired.times=to.interpolate.times,
+#                                                                             return.list=F)
                     }
                 }
             }
@@ -2047,18 +2159,18 @@ get.rates.from.background.and.foreground <- function(background.rates,
             dimnames(arr) = dim.names
             arr
         })
-            
+        
         list(rates=rates,
              times=all.times)
     }
 }
 
 OLD.get.rates.from.background.and.foreground <- function(background.rates,
-                                                    background.times,
-                                                    foreground.rates,
-                                                    foreground.times,
-                                                    max.background.time=Inf,
-                                                    allow.foreground.less=F)
+                                                         background.times,
+                                                         foreground.rates,
+                                                         foreground.times,
+                                                         max.background.time=Inf,
+                                                         allow.foreground.less=F)
 {
     if (is.null(foreground.times))
         list(rates=background.rates[background.times<=max.background.time],
@@ -2082,7 +2194,7 @@ OLD.get.rates.from.background.and.foreground <- function(background.rates,
                                       times1 = background.times,
                                       rates2 = foreground.rates,
                                       times2 = foreground.times)
-
+        
         list(rates=lapply(1:length(rates.and.times$rates1), function(i){
             foreground = rates.and.times$rates2[[i]]
             rates = background = rates.and.times$rates1[[i]]
@@ -2093,10 +2205,10 @@ OLD.get.rates.from.background.and.foreground <- function(background.rates,
                     mask = mask & foreground >= background
                 rates[mask] = foreground[mask]
             }
-
+            
             rates
         }),
-                  times=rates.and.times$times)
+        times=rates.and.times$times)
     }
 }
 
@@ -2107,32 +2219,32 @@ merge.rates <- function(rates1,
 {
     rv = list()
     rv$times = sort(unique(c(times1,times2)))
-
+    
     interpolate.fn = function(times, rates){
         lapply(rv$times, function(time){
-        n.times = length(times)
-        if (n.times==1)
-            return (rates[[1]])
-
-        index.before = (1:n.times)[times <= time]
-        index.before = index.before[length(index.before)]
-        index.after = (1:n.times)[times > time][1]
-
-        if (length(index.before)==0)
-            rates[[index.after]]
-        else if (is.na(index.after) || is.infinite(times[index.before]))
+            n.times = length(times)
+            if (n.times==1)
+                return (rates[[1]])
+            
+            index.before = (1:n.times)[times <= time]
+            index.before = index.before[length(index.before)]
+            index.after = (1:n.times)[times > time][1]
+            
+            if (length(index.before)==0)
+                rates[[index.after]]
+            else if (is.na(index.after) || is.infinite(times[index.before]))
                 rates[[index.before]]
-        else if (is.infinite(times[index.after]))
-            rates[[index.after]]
-        else
-            (rates[[index.before]] * (times[index.after] - time) +
-                 rates[[index.after]] * (time - times[index.before])) /
-            (times[index.after] - times[index.before])
+            else if (is.infinite(times[index.after]))
+                rates[[index.after]]
+            else
+                (rates[[index.before]] * (times[index.after] - time) +
+                     rates[[index.after]] * (time - times[index.before])) /
+                (times[index.after] - times[index.before])
         })}
-
+    
     rv$rates1 = interpolate.fn(times1, rates1)
     rv$rates2 = interpolate.fn(times2, rates2)
-
+    
     rv
 }
 
@@ -2142,17 +2254,17 @@ array.merge.rates <- function(skeleton.array,
 {
     rv = list()
     rv$times = unique(sort(unlist(sapply(rates.and.times.list, function(rt){rt$times}))))
-
+    
     interpolate.fn = function(times, rates){
         lapply(rv$times, function(time){
             n.times = length(times)
             if (n.times==1)
                 return (rates[[1]])
-
+            
             index.before = (1:n.times)[times <= time]
             index.before = index.before[length(index.before)]
             index.after = (1:n.times)[times > time][1]
-
+            
             if (length(index.before)==0)
                 rates[[index.after]]
             else if (is.na(index.after) || is.infinite(times[index.before]))
@@ -2164,11 +2276,11 @@ array.merge.rates <- function(skeleton.array,
                      rates[[index.after]] * (time - times[index.before])) /
                 (times[index.after] - times[index.before])
         })}
-
+    
     interpolated.rates = lapply(rates.and.times.list, function(rt){
         interpolate.fn(times=rt$times, rates=rt$rates)
     })
-
+    
     rv$rates = lapply(1:length(rv$times), function(t){
         m = skeleton.array
         for (i in 1:length(array.indices.into.list))
@@ -2176,35 +2288,35 @@ array.merge.rates <- function(skeleton.array,
             if (!is.na(array.indices.into.list[i]))
                 m[i] = interpolated.rates[[array.indices.into.list[i]]][[t]]
         }
-
+        
         dim(m) = dim(skeleton.array)
         dimnames(m) = dimnames(skeleton.array)
         m
     })
-
+    
     rv
 }
 
 merge.three.rates <- function(rates1,
-                        times1,
-                        rates2,
-                        times2,
-                        rates3,
-                        times3)
+                              times1,
+                              rates2,
+                              times2,
+                              rates3,
+                              times3)
 {
     rv = list()
     rv$times = sort(unique(c(times1,times2,times3)))
-
+    
     interpolate.fn = function(times, rates){
         lapply(rv$times, function(time){
             n.times = length(times)
             if (n.times==1)
                 return (rates[[1]])
-
+            
             index.before = (1:n.times)[times <= time]
             index.before = index.before[length(index.before)]
             index.after = (1:n.times)[times > time][1]
-
+            
             if (length(index.before)==0)
                 rates[[index.after]]
             else if (is.na(index.after) || is.infinite(times[index.before]))
@@ -2216,11 +2328,11 @@ merge.three.rates <- function(rates1,
                      rates[[index.after]] * (time - times[index.before])) /
                 (times[index.after] - times[index.before])
         })}
-
+    
     rv$rates1 = interpolate.fn(times1, rates1)
     rv$rates2 = interpolate.fn(times2, rates2)
     rv$rates3 = interpolate.fn(times3, rates3)
-
+    
     rv
 }
 

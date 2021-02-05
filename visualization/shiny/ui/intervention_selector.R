@@ -1,26 +1,31 @@
+TAB1.TITLE.COLOR = '#3c8dbc' # '#737CA1' # '#98AFC7'
+TAB1.TITLE.FONT.SIZE = '0.85em'
+
+TAB2.TITLE.COLOR = '#3c8dbc' # '#737CA1' # '#98AFC7'
+TAB2.TITLE.FONT.SIZE = '0.85em'
 
 
 create.intervention.selector.panel <- function(suffix,
                                                lump.idu=T)
 {
     print('Creating Intervention Selector Panel')
-    interventions = get.interventions.list() 
+    int.list = get.interventions.list(disregard.location=T) 
         #for now, we will not use this full list
         # and just assume that every location has every intervention
         
-    interventions = extract.unique.interventions.from.list(interventions)
-    
-    
+
     # Make the Aspect Selector
-    aspect.selector = make.intervention.aspect.selector(interventions,
-                                                        suffix=suffix)
+    aspect.selector = make.intervention.aspect.selector(int.list,
+                                                        suffix=suffix,
+                                                        include.none=T)
     
     # Make the Target Population Selector
-    tpop.selector = make.intervention.tpop.selector(interventions,
-                                                    suffix=suffix)
+    tpop.selector = conditionalPanel(condition=paste0("input.int_aspect_", suffix," != 'none"),
+                                     make.intervention.tpop.selector(int.list,
+                                                                     suffix=suffix))
     
     # Make the Final Selector
-    final.selector = make.intervention.final.selector(interventions,
+    final.selector = make.intervention.final.selector(int.list,
                                                       suffix=suffix)
     
     
@@ -32,110 +37,174 @@ create.intervention.selector.panel <- function(suffix,
     )
 }
 
-make.intervention.aspect.selector <- function(interventions,
+make.intervention.aspect.selector <- function(int.list,
                                               suffix,
                                               include.none=T)
 {
+    unique.unit.types = unique(int.list$unit.type)
+    
+    unit.choice.values = lapply(unique.unit.types, unit.type.code)
+    
+    unit.choice.names = lapply(unique.unit.types, unit.types.to.pretty.name)
+    
+    unit.choice.values = c(list('none'), unit.choice.values)
+    unit.choice.names = c(list('None'), unit.choice.names)
+    
+    names(unit.choice.values) = names(unit.choice.names) = NULL
+    
+    
     radioButtons(inputId = paste0('int_aspect_', suffix),
-                      label='Which Aspects to Intervene On',
-                      choices=c('one','two','three'))
-}
-
-make.intervention.tpop.selector <- function(interventions,
-                                            suffix)
-{
-    radioButtons(inputId = paste0('int_aspect_', suffix),
-                      label='Target Population(s):',
-                      choices=c('one','two','three'))
-}
-
-make.intervention.final.selector <- function(interventions,
-                                             suffix)
-{
-    radioButtons(inputId = paste0('int_aspect_', suffix),
-                      label='Specific Interventions:',
-                      choices=c('one','two','three'))
-}
-
-make.location.intervention.selector.panel <- function(location,
-                                                      interventions,
-                                                      suffix,
-                                                      lump.idu)
-{
-    #-- Create a mapping for interventions to target populations and target populations to interventions --#
-    
-    interventions = interventions$intervention[interventions$location == location]
-
-    if (lump.idu)
-        interventions.lumped.idu = lapply(interventions, lump.idu.for.intervention)
-    else
-        interventions.lumped.idu = interventions
-    
-    target.population.codes.for.intervention = lapply(
-        interventions.lumped.idu, function(int) {
-            sapply(
-                get.target.populations.for.intervention(int), 
-                target.population.to.code)
-        })
-    
-    unique.tpop.codes = unique(target.population.codes.for.intervention)
-    
-    interventions.for.unique.tpop.codes = lapply(
-        unique.tpop.codes, function(tpop.codes){
-            mask = sapply(target.population.codes.for.intervention, setequal, tpop.codes)
-            interventions[mask]
-        })
-    
-    lumped.idu.interventions.for.unique.tpop.codes = lapply(
-        unique.tpop.codes, function(tpop.codes){
-            mask = sapply(target.population.codes.for.intervention, setequal, tpop.codes)
-            interventions.lumped.idu[mask]
-        })
-                          
-    
-    
-    
-    #-- Create the Components for the Input --#
-    
-    # The T-Pop Selector
-    tpop.choice.names = lapply(c(list('none'),unique.tpop.codes), function(name){
-        target.population.codes.to.pretty.name(name, font.size = TAB1.TITLE.FONT.SIZE)
-    })
-    tpop.choice.values = c(list('none'), lapply(1:length(unique.tpop.codes), function(i){
-        paste0("int", num, "_tpop", i)
-    }))
-    names(tpop.choice.names) = names(tpop.choice.values) = NULL
-    
-    
-    
-    
-    
-    
-    
-    do.call(conditionalPanel, c(list(condition=paste0("input.", 'xxx'," == 'xxx")),
-                                tpop.panels))
-       
-    conditionalPanel(
-        style="height:100%",
-        condition=paste0("input.location_",suffix,"=='", location,"'"),
-        tpop.panels
+                 label='Which Aspects to Intervene On:',
+                 choiceNames=unit.choice.names,
+                 choiceValues=unit.choice.values,
+                 selected='none'
     )
 }
 
-make.tpop.intervention.selector.panel <- function()
+make.intervention.tpop.selector <- function(int.list,
+                                            suffix)
 {
+    tpop.choice.names = lapply(int.list$unique.target.population.codes, function(codes){
+        target.population.codes.to.pretty.name(codes, font.size = TAB1.TITLE.FONT.SIZE)
+    })
+
+    tpop.choice.values = 1:length(int.list$unique.target.population.codes)
     
+    names(tpop.choice.names) = names(tpop.choice.values) = NULL
+    
+    
+    radioButtons(inputId = paste0('int_tpop_', suffix),
+                 label='Target Population(s):',
+                 choiceNames=tpop.choice.names,
+                 choiceValues=tpop.choice.values,
+                 selected=tpop.choice.values[1]
+    )
 }
 
-make.aspect.intervention.selector.panel <- function()
+make.intervention.final.selector <- function(int.list,
+                                             suffix)
 {
+    unique.unit.type.codes = unique(int.list$unit.type.code)
     
+    selectors = lapply(1:length(int.list$unique.target.population.codes), function(tpop.index){
+        lapply(unique.unit.type.codes, function(unit.type.code){
+            
+            mask = int.list$target.population.index == tpop.index &
+                int.list$unit.type.code == unit.type.code
+            
+            choice.values = int.list$intervention.code[mask]
+            choice.names = lapply(int.list$intervention.lumped.idu[mask], intervention.brief.description)
+            choice.names = lapply(choice.names, function(name){tags$div(lump.idu.in.name(name))})
+            names(choice.names) = names(choice.values) = NULL
+            
+            radios = radioButtons(inputId=paste0('int_', tpop.index, "_", unit.type.code),
+                         label='Specific Interventions:',
+                         choiceNames=choice.names,
+                         choiceValues=choice.values,
+                         selected=choice.values[1])
+            
+            conditionalPanel(
+                condition = paste0("input.int_aspect_", suffix," == 'unit.type.code' && input.int_tpop_", suffix, " == ", tpop.index),
+                radios 
+            )
+            
+        })
+    })
+    
+    do.call(tags$div, selectors)
 }
 
 
 ##-------------##
 ##-- HELPERS --##
 ##-------------##
+
+##-- READING THE INTERVENTION LIST --##
+
+#returns a list with two elements
+# $location - a vector of location ids
+# $intervention - a list of interventions
+get.interventions.list <- function(include.no.intervention=F,
+                                   disregard.location=T,
+                                   lump.idu=T)
+{
+    rv = get.prerun.intervention.codes()   
+
+    if (disregard.location)
+        rv = list(intervention.code = unique(rv$intervention.code))
+
+    rv$intervention = lapply(rv$intervention.code, intervention.from.code)
+    
+    if (!include.no.intervention)
+    {
+        mask = !sapply(rv$intervention, is.null.intervention)
+        rv$intervention = rv$intervention[mask]
+        rv$intervention.code = rv$intervention.code[mask]
+        rv$location = rv$location[mask]
+    }
+    
+    o = order.interventions(rv$intervention)
+    rv$intervention = rv$intervention[o]
+    rv$intervention.code = rv$intervention.code[o]
+    rv$location = rv$location[o]
+    
+    rv$unit.type = lapply(rv$intervention, function(int){
+        sort(get.intervention.unit.types(int))
+    })
+    rv$unit.type.code = sapply(rv$unit.type, unit.type.code)
+ #   rv$unique.unit.type.codes = unique(rv$unit.type.code)
+    
+    if (lump.idu)
+        rv$intervention.lumped.idu = lapply(rv$intervention, lump.idu.for.intervention)
+    else
+        rv$intervention.lumped.idu = rv$interventions
+    
+    rv$target.population.code = lapply(
+        rv$intervention.lumped.idu, function(int) {
+            sapply(
+                get.target.populations.for.intervention(int), 
+                target.population.to.code)
+        })
+    
+    rv$unique.target.population.codes = unique(rv$target.population.code)
+    rv$target.population.index = sapply(rv$target.population.code, function(tpop1){
+        mask = sapply(rv$unique.target.population.codes, function(tpop2){
+            setequal(tpop1, tpop2)
+        })
+        (1:length(rv$unique.target.population.codes))[mask]
+    })
+    
+    
+    rv
+}
+
+##-- UNIT TYPE --##
+
+unit.types.to.pretty.name <- function(unit.types)
+{
+    unit.types = get.pretty.unit.type.names(unit.types)
+    if (length(unit.types)==1)
+        paste0(unit.types, " only")
+    else if (length(unit.types)==2)
+        paste0(unit.types[1], " and ", unit.types[2])
+    else
+        paste0(paste0(unit.types[-length(unit.types)], collapse=", "),
+               ", and ", unit.types[length(unit.types)])
+}
+
+unit.type.code <- function(unit.types)
+{
+    paste0(unit.types, collapse="_")
+}
+
+
+
+
+
+
+
+
+
 
 intervention.brief.description <- function(int, include.start.text=F)
 {
@@ -150,20 +219,6 @@ intervention.brief.description <- function(int, include.start.text=F)
                                                 pre.header = "<u>",
                                                 post.header = ":</u> "
     ))
-}
-
-unit.types.to.pretty.name <- function(unit.types, font.size='200%')
-{
-    unit.types = get.pretty.unit.type.names(unit.types)
-    if (length(unit.types)==1)
-        unit.types = paste0(unit.types, ' only')
-    #paste0("", paste0("&#149; ", sapply(tpops, target.population.name), collapse='<BR>'), "")
-    HTML(paste0("<table>", paste0("<tr><td style='vertical-align: text-top; font-size: ", font.size, 
-                                  "'>&#149;&nbsp;&nbsp;</td>",
-                                  "<td style='text-align: left; font-style: italic; font-size: ", font.size, "'>",
-                                  unit.types, 
-                                  "</td></tr>", collapse=''), 
-                "</table>"))
 }
 
 target.population.codes.to.pretty.name <- function(tpop.codes, font.size='1em')
