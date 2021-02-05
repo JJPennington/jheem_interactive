@@ -37,8 +37,12 @@ tags$td(class='controls',
 
 #-- The Action Buttons --#
 tags$tr(
+    # Left panel button
     tags$td(class='cta_holder',
             actionButton(class='cta', inputId='run_preset', label='Generate Projections')),
-    tags$td('button will be here')
+    
+    # Right panel button
+    tags$td(class='cta_holder',
+            actionButton(class='cta', inputId='redraw_preset', label='Adjust Projections')),
 )
 )

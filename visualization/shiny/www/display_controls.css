@@ -1,16 +1,17 @@
 .controls {
     width: 250px;
     max-width: 250px;
+    height: 100%;
     overflow-y: scroll;
     vertical-align: text-top;
-    padding:5px;
+    padding:10px;
     background-color: #f8f8f8;
 } 
 
 .display {
     border: 1px solid;
     height:93vh;
-    min-height:400px; 
+    min-height:100px; 
     vertical-align: text-top;
     padding:5px;
 }
@@ -29,5 +30,4 @@
 .cta_holder {
     padding:0;
     margin:0;
-    border: 1px solid black;
 }

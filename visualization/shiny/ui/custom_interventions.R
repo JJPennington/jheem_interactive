@@ -41,8 +41,12 @@ tags$td(class='controls',
 
 #-- The Action Buttons --#
 tags$tr(
-    tags$td('button will be here'),
-    tags$td('button will be here')
+    # Left panel button
+    tags$td(class='cta_holder',
+            actionButton(class='cta', inputId='run_custom', label='Simulate Interventions')),
+    
+    # Right panel button
+    tags$td(class='cta_holder',
+            actionButton(class='cta', inputId='redraw_custom', label='Adjust Projections')),
 )
-
 )
