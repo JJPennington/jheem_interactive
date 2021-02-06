@@ -1,9 +1,3 @@
-TAB1.TITLE.COLOR = '#3c8dbc' # '#737CA1' # '#98AFC7'
-TAB1.TITLE.FONT.SIZE = '0.85em'
-
-TAB2.TITLE.COLOR = '#3c8dbc' # '#737CA1' # '#98AFC7'
-TAB2.TITLE.FONT.SIZE = '0.85em'
-
 
 create.intervention.selector.panel <- function(suffix,
                                                lump.idu=T)
@@ -20,7 +14,7 @@ create.intervention.selector.panel <- function(suffix,
                                                         include.none=T)
     
     # Make the Target Population Selector
-    tpop.selector = conditionalPanel(condition=paste0("input.int_aspect_", suffix," != 'none"),
+    tpop.selector = conditionalPanel(condition=paste0("input.int_aspect_", suffix," != 'none'"),
                                      make.intervention.tpop.selector(int.list,
                                                                      suffix=suffix))
     
@@ -65,7 +59,7 @@ make.intervention.tpop.selector <- function(int.list,
                                             suffix)
 {
     tpop.choice.names = lapply(int.list$unique.target.population.codes, function(codes){
-        target.population.codes.to.pretty.name(codes, font.size = TAB1.TITLE.FONT.SIZE)
+        target.population.codes.to.pretty.name(codes)
     })
 
     tpop.choice.values = 1:length(int.list$unique.target.population.codes)
@@ -104,7 +98,7 @@ make.intervention.final.selector <- function(int.list,
                          selected=choice.values[1])
             
             conditionalPanel(
-                condition = paste0("input.int_aspect_", suffix," == 'unit.type.code' && input.int_tpop_", suffix, " == ", tpop.index),
+                condition = paste0("input.int_aspect_", suffix," == '", unit.type.code, "' && input.int_tpop_", suffix, " == ", tpop.index),
                 radios 
             )
             
@@ -198,13 +192,7 @@ unit.type.code <- function(unit.types)
 }
 
 
-
-
-
-
-
-
-
+##-- INTERVENTION --##
 
 intervention.brief.description <- function(int, include.start.text=F)
 {
@@ -221,7 +209,9 @@ intervention.brief.description <- function(int, include.start.text=F)
     ))
 }
 
-target.population.codes.to.pretty.name <- function(tpop.codes, font.size='1em')
+##-- TARGET POPULATION --##
+
+target.population.codes.to.pretty.name <- function(tpop.codes)
 {
     if (length(tpop.codes)==1 && tpop.codes=='none')
     {
@@ -230,8 +220,7 @@ target.population.codes.to.pretty.name <- function(tpop.codes, font.size='1em')
     }
     else
     {
-        bullet = paste0("<td style='vertical-align: text-top; font-size: ", font.size, 
-                        "'>&#149;&nbsp;&nbsp;</td>")
+        bullet = paste0("<td style='vertical-align: text-top;'>&#149;&nbsp;&nbsp;</td>")
         tpops = lapply(tpop.codes, target.population.from.code)
         content = sapply(tpops, function(tpop){
             lump.idu.in.name(target.population.name(tpop))})
@@ -240,16 +229,14 @@ target.population.codes.to.pretty.name <- function(tpop.codes, font.size='1em')
     HTML(paste0("<table>",
                 paste0("<tr>",
                        bullet,
-                       "<td style='text-align: left; font-style: italic; font-size: ", font.size, "'>",
+                       "<td style='text-align: left'>",
                        content,
                        "</td></tr>", collapse=''), 
                 "</table>"))
 }
 
-wrap.radioGroupButtons <- function(buttons)
-{
-    sub = buttons$children[!sapply(buttons$children, is.null)]
-}
+
+##-- LUMPING IDU --##
 
 lump.idu.for.intervention <- function(int)
 {
