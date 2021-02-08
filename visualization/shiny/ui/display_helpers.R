@@ -31,33 +31,36 @@ create.display.panel <- function(suffix)
             tabPanel(
                 title="Table",
                 HTML('This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.')
-            ),
-            tabPanel(
-                title="(Hide)",
-                ''
-            ),
-            tabPanel(
-                title="Run",
-                ''
-            ),
-            navbarMenu(
-                title="Share",
-                # Error when using icon:
-                # Warning: Error in : $ operator is invalid for atomic vectors
-                # icon='share-alt',
-                tabPanel(
-                    title="Download figure",
-                    # 'hello figure'
-                ),
-                tabPanel(
-                    title="Download table",
-                    # 'hello table'
-                ),
-                tabPanel(
-                    title="Share link",
-                    # 'hello share link'
-                )
-            )  # </navbarMenu>
+            )
+            
+            # TODO: re-add
+            # tabPanel(
+            #     title="(Hide)",
+            #     ''
+            # ),
+            # tabPanel(
+            #     title="Run",
+            #     ''
+            # ),
+            # navbarMenu(
+            #     title="Share",
+            #     # Error when using icon:
+            #     # Warning: Error in : $ operator is invalid for atomic vectors
+            #     # icon='share-alt',
+            #     tabPanel(
+            #         title="Download figure",
+            #         # 'hello figure'
+            #     ),
+            #     tabPanel(
+            #         title="Download table",
+            #         # 'hello table'
+            #     ),
+            #     tabPanel(
+            #         title="Share link",
+            #         # 'hello share link'
+            #     )
+            # )  # </navbarMenu>
+            
         )  # </navbarPage>    
     ) #</fluidRow>
 }
