@@ -11,41 +11,38 @@
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
 ##---------------------------------------------##
 
-generate.plot.and.table <- function(input, cache) 
+generate.plot.and.table <- function(input, cache, suffix) 
 {
     # Pre-processing, data fetching & caching ####
     # For now there is only one version
     version = get.version()
+    location = get.selected.location(input, suffix)
     
     #-- Pull Intervention Names from Input --#
-    if (input[['no_intervention_checkbox']])
-        intervention.codes = c('No Intervention' = get.intervention.code(NO.INTERVENTION))
-    else
-        intervention.codes = character()
     
-    intervention.codes = c(
-        intervention.codes,
-        'Intervention 1' = get.intervention.selection(1, input)
+    # Always include no intervention
+    intervention.codes = c('No Intervention' = get.intervention.code(NO.INTERVENTION))
+    
+    # Pull from intervention selector
+    selected.int = get.intervention.selection(input, suffix)
+    if (!is.null(selected.int))
+      intervention.codes = c(
+          intervention.codes,
+          'Intervention' = selected.int
         )
-    
-    if (input$use_intervention_2)
-        intervention.codes = c(
-            intervention.codes,
-            'Intervention 2' = get.intervention.selection(2, input)
-        )
-    
-    intervention.codes = intervention.codes[intervention.codes != 'none']
-    
+        
     #-- Get the filenames to pre-cache --#
     filenames = get.sim.filenames.to.load(
         version,
-        location=input$geographic_location,
+        location=location,
         intervention.codes=intervention.codes)
-    filenames = filenames[!is.sim.cached(filenames, cache=cache)]
+   # filenames = filenames[!is.sim.cached(filenames, cache=cache)]
+    filenames = filenames[!are.simsets.in.disk.cache(filenames, cache)]
     
     #-- Pre-fetch the simsets --#
     if (length(filenames)>0)
     {
+#      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
       if (length(filenames)==1)
         msg = "Fetching 1 Simulation File from Remote Server:"
       else
@@ -63,9 +60,7 @@ generate.plot.and.table <- function(input, cache)
                             detail=paste("Fetching file ", i, " of ", 
                                          length(filenames)))
                     filename = filenames[i]
-                    cache = update.sims.cache(
-                      filenames=filename,
-                      cache=cache)
+                    pull.simsets.to.cache(filename, cache)
                     
                     setProgress(1, detail='Done')
                 }
@@ -76,24 +71,17 @@ generate.plot.and.table <- function(input, cache)
     plot.results = make.simulations.plot.and.table(
         cache=cache,
         version=version,
-        location=input$geographic_location,
+        location=location,
         intervention.codes=intervention.codes,
-        # years=input[['years']][1]:input[['years']][2],
-        years=get.year.options(
-            version,
-            get.location.options(version)[1]),
-        data.types=input[['epidemiological-indicators']],
-        facet.by=input[['facet']],
-        split.by=input[['split']],
-        dimension.subsets=list(  # TODO
-            'age'=input[['age-groups']],
-            'race'=input[['racial-groups']],
-            'sex'=input[['sex']],  # aka gender
-            'risk'=input[['risk-groups']]),
-        plot.format=input[['plot_format']],
-        plot.interval.coverage = input[['interval_coverage']]/100,
-        label.change = input[['label_change']],
-        change.years = input[['change_years']],
+        years=get.selected.years(input, suffix),
+        data.types=get.selected.outcomes(input, suffix),
+        facet.by=get.selected.facet.by(input, suffix),
+        split.by=get.selected.split.by(input, suffix),
+        dimension.subsets=get.selected.dimension.subsets(input, suffix),
+        plot.format=get.selected.plot.format(input, suffix),
+        plot.interval.coverage = get.selected.interval.coverage(input, suffix),
+        label.change = get.selected.show.change(input, suffix),
+        change.years = get.selected.change.years(input, suffix),
         change.decrease.is.positive = F)
     
     #-- Make the mode bar always visible --#

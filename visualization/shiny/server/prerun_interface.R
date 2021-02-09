@@ -34,12 +34,28 @@ get.prerun.intervention.codes <- function()
          location=locations)
 }
 
-
-extract.unique.interventions.from.list <- function(interventions)
+get.sim.filenames.to.load <- function(version,
+                                      location,
+                                      intervention.codes)
 {
+    baseline.filename = get.simset.filename(version=version,
+                                            location=location,
+                                            intervention=NULL)
+    
+    other.filenames = sapply(intervention.codes, function(code){
+        #code = intervention.short.name.to.code(int.name)
+        get.simset.filename(location = location,
+                            intervention.code = code)
+    })
+    
+    c(baseline.filename, other.filenames)
 }
+
+
 
 ##-------------##
 ##-- HELPERS --##
 ##-------------##
 
+#get.sim.filenames.to.load
+#is.sim.cached

@@ -6,11 +6,12 @@ VERSION = '1.0'
 'EndingHIV RShiny web front-end process: UI spec'
 
 
-library('shinydashboard')
-library('shinyjs')
+library(shinydashboard)
+library(shinyjs)
 library(shinyWidgets)
 
 source('load_resources.R')
+source('plot_interface/options.R')
 source('server/server_utils.R')
 source('server/prerun_interface.R')
 
@@ -18,8 +19,9 @@ source('server/prerun_interface.R')
 source('ui/intervention_selector.R')
 source('ui/display_helpers.R')
 source('ui/styling_helpers.R')
+source('server/control_helpers.R')
 
-#-- MAIN CONTACT FILES --#
+#-- MAIN TAB CONTENT FILES --#
 source('ui/contact.R', local=T)
 source('ui/prerun_interventions.R', local=T)
 source('ui/custom_interventions.R', local=T)
@@ -34,11 +36,17 @@ app.title = "JHEEM: Ending HIV in the US"
 # UI
 ui = tagList(
   useShinydashboard(), #this call let's us use dashboard elements (eg box) even though this is not a dashboard
+  
+  # Add js scripts to shinyjs
+  shinyjs::useShinyjs(),
+#  extendShinyjs('www/menu_helpers.js', functions=c('testAlert')),
+  
+  # Add CSS Files
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "display_controls.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "joe.css")),
-    
+    tags$link(rel = "stylesheet", type = "text/css", href = "joe.css")
+  ),
   
   navbarPage(
     id='main_nav',
@@ -49,12 +57,12 @@ ui = tagList(
     tabPanel(
       style='height:100%',
       "Pre-Run Interventions",
-      PRERUN.CONTENT
-      ),
+       PRERUN.CONTENT
+    ),
     tabPanel(
       "Custom Interventions",
       CUSTOM.CONTENT
-      ),
+    ),
     tabPanel(
       "About the Model",
       uiOutput("about")),
@@ -64,6 +72,6 @@ ui = tagList(
     tabPanel(
       "Contact Us",
       CONTACT.CONTENT
-      )
+    )
   )  # </navbarPage>
 )
