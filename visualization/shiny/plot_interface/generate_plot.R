@@ -42,7 +42,7 @@ generate.plot.and.table <- function(input, cache, suffix)
     #-- Pre-fetch the simsets --#
     if (length(filenames)>0)
     {
-      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
+#      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
       if (length(filenames)==1)
         msg = "Fetching 1 Simulation File from Remote Server:"
       else
@@ -73,7 +73,6 @@ generate.plot.and.table <- function(input, cache, suffix)
         version=version,
         location=location,
         intervention.codes=intervention.codes,
-        # years=input[['years']][1]:input[['years']][2],
         years=get.selected.years(input, suffix),
         data.types=get.selected.outcomes(input, suffix),
         facet.by=get.selected.facet.by(input, suffix),
