@@ -1821,9 +1821,12 @@ is.pct.data.type <- function(data.type, data.type.names=NULL)
          data.type == 'diagnosed'
     
     if (!is.null(data.type.names))
-        rv = rv | 
-            data.type == data.type.names['suppression'] | 
-            data.type == data.type.names['diagnosed'] 
+    {
+        if (any(names(data.type.names)=='suppression'))
+            rv = rv | data.type == data.type.names['suppression']
+        if (any(names(data.type.names)=='diagnosed'))
+            rv = rv | data.type == data.type.names['diagnosed']
+    }
     
     rv
 }

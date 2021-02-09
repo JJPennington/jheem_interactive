@@ -1,4 +1,8 @@
 
+##----------------------##
+##-- CREATE THE PANEL --##
+##----------------------##
+
 create.intervention.selector.panel <- function(suffix,
                                                lump.idu=T)
 {
@@ -30,6 +34,27 @@ create.intervention.selector.panel <- function(suffix,
         fluidRow(final.selector)
     )
 }
+
+##----------------------------------##
+##-- GETTING INPUT FROM THE PANEL --##
+##----------------------------------##
+
+get.intervention.selection <- function(input, suffix)
+{
+    aspect.selection = input[[paste0("int_aspect_", suffix)]]
+    if (is.null(aspect.selection) || aspect.selection=='none')
+        NULL
+    else
+    {
+        tpop.selection = input[[paste0("int_tpop_", suffix)]]
+        final.selector.id = paste0('int_', tpop.selection, "_", aspect.selection, "_", suffix)
+        input[[final.selector.id]]
+    }
+}
+
+##----------------------------------##
+##-- HELPERS FOR MAKING THE PANEL --##
+##----------------------------------##
 
 make.intervention.aspect.selector <- function(int.list,
                                               suffix,
@@ -91,7 +116,7 @@ make.intervention.final.selector <- function(int.list,
             choice.names = lapply(choice.names, function(name){tags$div(lump.idu.in.name(name))})
             names(choice.names) = names(choice.values) = NULL
             
-            radios = radioButtons(inputId=paste0('int_', tpop.index, "_", unit.type.code),
+            radios = radioButtons(inputId=paste0('int_', tpop.index, "_", unit.type.code, "_", suffix),
                          label='Specific Interventions:',
                          choiceNames=choice.names,
                          choiceValues=choice.values,

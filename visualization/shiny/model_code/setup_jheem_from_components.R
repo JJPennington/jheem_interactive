@@ -994,7 +994,7 @@ do.setup.continuum.transitions <- function(components)
         components$continuum.transition.years = testing.rates$times
         
         
-        if (!components$settings$IS_CONTINUUM_COLLAPSED)
+        if (!is.null(components$settings$IS_CONTINUUM_COLLAPSED) && !components$settings$IS_CONTINUUM_COLLAPSED)
         {
             # unengaged -> engaged/unsuppressed
             # unengaged -> disengaged
@@ -1027,7 +1027,7 @@ calculate.suppression <- function(components)
 
 do.calculate.suppression <- function(components)
 {
-    if (components$settings$IS_CONTINUUM_COLLAPSED)
+    if (is.null(components$settings$IS_CONTINUUM_COLLAPSED) || components$settings$IS_CONTINUUM_COLLAPSED)
     {
         #Pull background suppression proportions from logistic model
         background.suppression = get.background.proportions(base.model = components$background.suppression$model,

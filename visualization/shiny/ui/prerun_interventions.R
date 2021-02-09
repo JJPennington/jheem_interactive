@@ -33,8 +33,8 @@ tags$td(class='display_td',
 
 #-- The Right Panel --#
 tags$td(class='controls_td',
-        tags$div(class='controls',
-        "controls"))
+        create.plot.control.panel('prerun')
+        )
 
 ),
 

@@ -1,3 +1,4 @@
+
 ##-------------------##
 ##-- LIBRARY CALLS --##
 ##-------------------##
@@ -12,14 +13,14 @@ library(mailR)
 ##------------------##
 
 source('env.R')
-#source("R/plot_resources.R")
-#source("R/plot_shiny_interface.R")
-#source('R/server_helpers.R')
-#source('R/styling_helpers.R')
-#source('R/server_utils.R')
-#source("R/server.routes.docs.R")
-#source("R/server.routes.runModel.R")
-#source("R/model_code/plot_simulations.R")
+source('plot_interface/generate_plot.R')
+source('server/display_event_handlers.R')
+source('server/control_helpers.R')
+source('plot_interface/generate_plot.R')
+source('plot_interface/plot_interface.R')
+source('server/multi_cache.R')
+#source('load_resources.R')
+#source('ui/display_helpers.R', local=T)
 
 
 ##----------------------##
@@ -31,14 +32,47 @@ shinyOptions(cache=diskCache(file.path(dirname(tempdir()), "myapp-cache")))
 # datasets we want to lazy load on app start for all sessions. For every,
 # city, pulls those 2 files from the diskCache.
 # CACHE = memoryCache(size = 20e6)
-CACHE = diskCache(max_size = 20e6)
+CACHE = diskCache(max_size = 1e6)
 
-##------------------------------##
-##-- THE MAIN SERVER FUNCTION --##
-##------------------------------##
-server <- function(input, output, session) 
+DISK.CACHE.1 = diskCache(max_size = 1e9, evict='lru')
+DISK.CACHE.2 = diskCache(max_size = 1e9, evict='lru')
+
+##---------------------------##
+##-- THE server() FUNCTION --##
+##---------------------------##
+
+server <- function(input, output, session, cache) 
 {
-    observeEvent(input$location_preset, {
-        print(input$location_preset)
-    })
+    ##--------------------##    
+    ##-- INITIAL SET-UP --##
+    ##--------------------##
+    
+    # Print an initial message - useful for debugging on shinyapps.io servers
+    print(paste0("Launching server() function - ", Sys.time()))
+    
+    # Make our session cache
+    mem.cache = memoryCache(max_size = 60e6, evict='lru')
+    cache = create.multi.cache(mem.cache=mem.cache, disk.caches=list(DISK.CACHE.1, DISK.CACHE.2))
+    
+    # Variables for storing plot/table
+    plot.and.table.prerun = NULL
+    plot.and.table.custom = NULL
+    
+    
+    ##-----------------------------------------##
+    ##-- EVENT HANDLERS FOR UPDATING DISPLAY --##
+    ##-----------------------------------------##
+
+    # in server/display_event_handlers.R
+    add.display.event.handlers(session, input, output, cache)
+    
+    ##-----------------------------------------------##
+    ##-- EVENT HANDLERS FOR UPDATING PLOT CONTROLS --##
+    ##-----------------------------------------------##
+    
+    # in server/control_helpers.R
+    add.control.event.handlers(session, input, output, cache, suffix='prerun')
 }
+
+
+
