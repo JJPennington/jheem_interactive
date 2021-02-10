@@ -21,6 +21,7 @@ source('plot_interface/plot_interface.R')
 source('server/multi_cache.R')
 #source('load_resources.R')
 #source('ui/display_helpers.R', local=T)
+source('ui/custom_interventions.R', local=T)
 
 
 ##----------------------##
@@ -58,6 +59,8 @@ server <- function(input, output, session, cache)
     plot.and.table.prerun = NULL
     plot.and.table.custom = NULL
     
+    # Pages
+    # output$custom_content = get.custom_content(input)
     
     ##-----------------------------------------##
     ##-- EVENT HANDLERS FOR UPDATING DISPLAY --##

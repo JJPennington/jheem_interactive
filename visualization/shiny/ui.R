@@ -62,6 +62,7 @@ ui = tagList(
     tabPanel(
       "Custom Interventions",
       CUSTOM.CONTENT
+      # uiOutput('custom_content')
     ),
     tabPanel(
       "About the Model",

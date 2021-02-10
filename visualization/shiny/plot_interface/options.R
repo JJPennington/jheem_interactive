@@ -132,4 +132,40 @@ RISKS2 = list(
         msm_iduPrior="MSM + prior IDU",
         heterosexual="Heterosexual") )
 
+DIMENSION.VALUES = list(
+    age=AGES,
+    race=RACES,
+    sex=SEXES,
+    risk=RISKS)
 
+DIMENSION.VALUES2 = list(
+    age=AGES,
+    race=RACES,
+    sex=SEXES,
+    risk=RISKS2)
+
+#'@description Get the potential values (which can be subsetted) for each
+#' dimension
+#'@param version The indicator for the version of the model. Corresponds
+#' to one of the values of names(get.version.options)
+#'@param location A location code. Corresponds to one of the values of
+#' names(get.location.options(version))
+#'@return A named list of character vectors. 
+#' The names of the list correspond to names(get.facet.by.options()) or
+#'  names(get.split.by.options())
+#' Each element in the list is a named character vector of 
+#' possible values. 
+#'  names(get.dimension.value.options()[[d]]) correspond to the values of
+#'   get.facet.by.options() or get.split.by.options(), and should be
+#'    passed to plot.simulations() function via the dimension.subsets
+#'     argument
+#'  the values of get.dimension.value.options()[[d]] are 'displayable'
+#'   value names
+get.dimension.value.options <- function(
+    version, location, msm_idu_mode=FALSE)
+{
+    if (msm_idu_mode == FALSE)
+        DIMENSION.VALUES
+    else
+        DIMENSION.VALUES2
+}
