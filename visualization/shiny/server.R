@@ -2,10 +2,11 @@
 ##-------------------##
 ##-- LIBRARY CALLS --##
 ##-------------------##
-library(processx)
+#library(processx)
 #library(orca)
 library(shiny)
 library(mailR)
+library(cachem)
 
 
 ##------------------##
@@ -26,16 +27,9 @@ source('server/multi_cache.R')
 ##----------------------##
 ##-- SET UP THE CACHE --##
 ##----------------------##
-shinyOptions(cache=diskCache(file.path(dirname(tempdir()), "myapp-cache")))
-# Constants / initiliazers
-# TODO: @jef/@tf: Add a 2nd diskCache that is dedicated to the necessary
-# datasets we want to lazy load on app start for all sessions. For every,
-# city, pulls those 2 files from the diskCache.
-# CACHE = memoryCache(size = 20e6)
-CACHE = diskCache(max_size = 1e6)
-
-DISK.CACHE.1 = diskCache(max_size = 1e9, evict='lru')
-DISK.CACHE.2 = diskCache(max_size = 1e9, evict='lru')
+#shinyOptions(cache=diskCache(file.path(dirname(tempdir()), "myapp-cache")))
+DISK.CACHE.1 = cachem::cache_disk(max_size = 1e9, evict='lru')
+DISK.CACHE.2 = cachem::cache_disk(max_size = 1e9, evict='lru')
 
 ##---------------------------##
 ##-- THE server() FUNCTION --##
@@ -47,16 +41,15 @@ server <- function(input, output, session, cache)
     ##-- INITIAL SET-UP --##
     ##--------------------##
     
+    query.string = 'hi' 
+    #@joe fill in here
+    
     # Print an initial message - useful for debugging on shinyapps.io servers
     print(paste0("Launching server() function - ", Sys.time()))
     
     # Make our session cache
-    mem.cache = memoryCache(max_size = 60e6, evict='lru')
+    mem.cache = cachem::cache_mem(max_size = 60e6, evict='lru')
     cache = create.multi.cache(mem.cache=mem.cache, disk.caches=list(DISK.CACHE.1, DISK.CACHE.2))
-    
-    # Variables for storing plot/table
-    plot.and.table.prerun = NULL
-    plot.and.table.custom = NULL
     
     
     ##-----------------------------------------##
@@ -65,6 +58,10 @@ server <- function(input, output, session, cache)
 
     # in server/display_event_handlers.R
     add.display.event.handlers(session, input, output, cache)
+    
+    observeEvent(input$testlink, {
+        print('test link')
+    })
     
     ##-----------------------------------------------##
     ##-- EVENT HANDLERS FOR UPDATING PLOT CONTROLS --##

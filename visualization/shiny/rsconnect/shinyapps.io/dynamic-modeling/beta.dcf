@@ -1,0 +1,12 @@
+name: beta
+title: beta
+username:
+account: dynamic-modeling
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3384439
+bundleId: 4202588
+url: https://jheem.shinyapps.io/beta/
+when: 1612903503.91432
+asMultiple: FALSE
+asStatic: FALSE

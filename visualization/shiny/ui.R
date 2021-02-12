@@ -10,16 +10,20 @@ library(shinydashboard)
 library(shinyjs)
 library(shinyWidgets)
 
+library(shinyBS)
+
 source('load_resources.R')
 source('plot_interface/options.R')
 source('server/server_utils.R')
 source('server/prerun_interface.R')
 
 #-- HELPERS --#
+source('server/general_helpers.R')
 source('ui/intervention_selector.R')
 source('ui/display_helpers.R')
 source('ui/styling_helpers.R')
 source('server/control_helpers.R')
+source('ui/popovers.R', local=T)
 
 #-- MAIN TAB CONTENT FILES --#
 source('ui/contact.R', local=T)
@@ -33,6 +37,9 @@ source('ui/custom_interventions.R', local=T)
 # Variables
 app.title = "JHEEM: Ending HIV in the US"
 
+
+
+
 # UI
 ui = tagList(
   useShinydashboard(), #this call let's us use dashboard elements (eg box) even though this is not a dashboard
@@ -43,9 +50,14 @@ ui = tagList(
   
   # Add CSS Files
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "display_controls.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "display_layout.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "display_panel.css"),
+#    BOX.TAGS,
+    tags$link(rel = "stylesheet", type = "text/css", href = "box_colors.css"),
+    
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "joe.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "joe.css"),
+    tags$script(src = 'setup_tooltips.js')
   ),
   
   navbarPage(
@@ -55,12 +67,13 @@ ui = tagList(
     # footer=tags$div(),
     collapsible=F,
     tabPanel(
-      style='height:100%',
-      "Pre-Run Interventions",
-       PRERUN.CONTENT
+      title = 'Pre-Run Interventions',
+      make.tab.popover("prerun_interventions", title=PRERUN.POPOVER.TITLE, content=PRERUN.POPOVER),
+      PRERUN.CONTENT
     ),
     tabPanel(
-      "Custom Interventions",
+      title = "Custom Interventions",
+      make.tab.popover("custom_interventions", title=CUSTOM.POPOVER.TITLE, content=CUSTOM.POPOVER),
       CUSTOM.CONTENT
     ),
     tabPanel(
@@ -75,3 +88,4 @@ ui = tagList(
     )
   )  # </navbarPage>
 )
+

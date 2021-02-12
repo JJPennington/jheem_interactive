@@ -11,8 +11,12 @@
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
 ##---------------------------------------------##
 
-generate.plot.and.table <- function(input, cache, suffix) 
+generate.plot.and.table <- function(input, cache, suffix,
+                                    plot.and.table.list) 
 {
+    lock.cta.buttons(input, called.from.suffix = suffix,
+                     plot.and.table.list=plot.and.table.list)
+  
     # Pre-processing, data fetching & caching ####
     # For now there is only one version
     version = get.version()
@@ -82,17 +86,28 @@ generate.plot.and.table <- function(input, cache, suffix)
         plot.interval.coverage = get.selected.interval.coverage(input, suffix),
         label.change = get.selected.show.change(input, suffix),
         change.years = get.selected.change.years(input, suffix),
+        data.type.names = WEB.DATA.TYPE.NAMES,
         change.decrease.is.positive = F)
+    
     
     #-- Make the mode bar always visible --#
     
     plot.results$plot = format.plotly.toolbar(plot.results$plot,
                                               input)
     
+    plot.results$intervention = intervention.from.code(selected.int)
+    
     
     #-- Return --#
+    unlock.cta.buttons(input, called.from.suffix = suffix,
+                       plot.and.table.list=plot.and.table.list)
     plot.results
 }
+
+
+##----------------##
+##-- FORMATTING --##
+##----------------##
 
 format.plotly.toolbar <- function(plot,
                                   input)
@@ -268,7 +283,7 @@ get.default.download.filename <- function(input,
                            )
     
     paste0(get.location.short.name(location), " - ",
-           paste0(DATA.TYPE.NAMES[data.types], collapse=", "),
+           paste0(WEB.DATA.TYPE.NAMES[data.types], collapse=", "),
            by.suffix,
            ext)
 }

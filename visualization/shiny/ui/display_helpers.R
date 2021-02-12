@@ -1,74 +1,54 @@
 
+##------------------------------##
 ##-- CREATE THE DISPLAY PANEL --##
 ##------------------------------##
 
 create.display.panel <- function(suffix)
 {
-    # Output ####
-    fluidRow(
-        # column(
-        #   width=page.width,
-        
-        # div(
-        #   class="sticky_footer", 
-        #   p("test footer")),
-        
-        navbarPage(
-            id=paste0('nav_', suffix),
-            title=NULL,
-            # collapsible=TRUE,
-            
-            # header=tags$div(
-            #   'header'
-            # ),
-            
-            # footer=tags$div(
-            #   'footer'
-            # ),
-            
-            # Menu
-            tabPanel(
-                title="Figure",
-                uiOutput(outputId = paste0('figure_', suffix))
-#                tags$div(id=paste0('plot_holder_', suffix), 'temp text')
-#                HTML('This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.<br/>This is a figure.')
-            ),
-            tabPanel(
-                title="Table",
-                uiOutput(outputId = paste0('table_', suffix))
-                #tags$div(id=paste0('table_holder_', suffix), 'table placeholder')
-#                HTML('This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.<br/>This is a table.')
-            ),
-#            tabPanel(
-#                title="(Hide)",
-#                ''
-#            ),
-#            tabPanel(
-#                title="Run",
-#                ''
-#            ),
-            navbarMenu(
-                title="Share",
-                menuName = paste0("share_", suffix),
-                # Error when using icon:
-                # Warning: Error in : $ operator is invalid for atomic vectors
-                # icon='share-alt',
+    tags$table(class='display_panel_table',
+        tags$tr(class='display_panel_main_tr', tags$td(
+            tabsetPanel(
+                id=paste0('nav_', suffix),
                 tabPanel(
-                    title=tags$a("Download figure", href='test'),
-                    id='test1'
-                    # 'hello figure'
+                    title="Figure",
+                    uiOutput(outputId = paste0('figure_', suffix))
                 ),
                 tabPanel(
-                    title="Download table",
-                    # 'hello table'
+                    title="Table",
+                    uiOutput(outputId = paste0('table_', suffix))
                 ),
-                tabPanel(
-                    title="Share link",
-                    # 'hello share link'
-                )
-            )  # </navbarMenu>
-        )  # </navbarPage>    
-    ) #</fluidRow>
+                navbarMenu(
+                    title="Share",
+                    menuName = paste0("share_", suffix),
+                    icon = icon('arrow-up-square',lib='glyphicon'),
+                    tabPanel(
+                        title=actionLink(paste0('download_figure_', suffix), 'Download Figure'),
+                    ),
+                    tabPanel(
+                        title=actionLink(paste0('download_table_', suffix), 'Download Table'),
+                    ),
+                    tabPanel(
+                        title=actionLink(paste0('share_link_', suffix), 'Share Link'),
+                    )
+                )  # </navbarMenu>
+            ),  # </tabsetPanel>
+        )), #</td></tr>
+        
+        tags$tr(class='display_panel_intervention_tr', tags$td(
+            create.projected.intervention.panel(suffix)
+        )), #</td></tr>
+    ) #</table>
+}
+
+create.projected.intervention.panel <- function(suffix)
+{
+    #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
+    box(title='Details of Projected Intervention',
+        width=12,
+        collapsible = T,
+        status='info',
+        solidHeader = T,
+        uiOutput(outputId = paste0('selected_intervention_', suffix)))    
 }
 
 ##-----------------------------##
@@ -78,15 +58,15 @@ create.display.panel <- function(suffix)
 set.display <- function(input, output, suffix, plot.and.table)
 {
     set.plot(output, suffix, plot.and.table$plot)
-    set.table(output, suffix, plot.and.table$table)
-    set.share.enabled(input, suffix, T)
+    set.table(output, suffix, plot.and.table$change.df)
+    set.intervention.panel(output, suffix, plot.and.table$intervention)
 }
 
 clear.display <- function(input, output, suffix)
 {
     clear.plot(output, input, suffix)
     clear.table(output, input, suffix)
-    set.share.enabled(input, suffix, F)
+    clear.intervention.panel(output, input, suffix)
 }
 
 
@@ -102,10 +82,35 @@ set.plot <- function(output,
 
 set.table <- function(output,
                       suffix,
-                      plot)
+                      tab)
 {
     table.id = paste0('table_', suffix)
- #   output[[holder.id]] = renderText(paste0("New One: ", Sys.time()))
+    dt.id = paste0('dt_', suffix)
+    output[[table.id]] = renderUI(tags$div(class='table_holder',
+        dataTableOutput(outputId = dt.id)
+    ))
+    
+    pretty.table = make.pretty.change.data.frame(tab,
+                                                 data.type.names=WEB.DATA.TYPE.NAMES)
+    #data.table(pretty.table)
+    output[[dt.id]] = renderDataTable(pretty.table)
+}
+
+set.intervention.panel <- function(output,
+                                   suffix,
+                                   intervention)
+{
+    panel.id = paste0('selected_intervention_', suffix)
+    if (is.null(intervention))
+        output[[panel.id]] = renderUI(
+            tags$div("No intervention has been set")
+            )
+    else
+        output[[panel.id]] = renderUI(
+            tags$div(make.intervention.pretty.table(intervention))
+         #   tags$div(HTML(get.intervention.html.description(intervention)))
+        )
+        
 }
 
 clear.plot <- function(output,
@@ -134,9 +139,42 @@ clear.table <- function(output,
     )
 }
 
-set.share.enabled <- function(input,
-                               suffix,
-                               enabled)
+clear.intervention.panel <- function(output,
+                                      input,
+                                      suffix)
+{
+    panel.id = paste0('selected_intervention_', suffix)
+    output[[panel.id]] = renderUI(
+        tags$div("No intervention has been set")
+    )
+    
+    if (1==2) #testing
+    {
+        intervention = INTERVENTION.MANAGER.1.0$intervention[[48]]
+        
+        output[[panel.id]] = renderUI(
+            tags$div(make.intervention.pretty.table(intervention)))
+    }
+}
+
+set.run.button.enabled <- function(input,
+                                       suffix,
+                                       enabled)
+{
+    if (enabled)
+    {
+        shinyjs::enable(paste0('run_', suffix))
+    }
+    else
+    {
+        shinyjs::disable(paste0('run_', suffix))
+    }
+}
+
+
+set.redraw.button.enabled <- function(input,
+                                    suffix,
+                                    enabled)
 {
     if (enabled)
     {
@@ -148,3 +186,58 @@ set.share.enabled <- function(input,
     }
 }
 
+set.share.enabled <- function(input,
+                               suffix,
+                               enabled)
+{
+    nav.id = paste0('nav_', suffix)
+    target.value = paste0("share_", suffix)
+    if (enabled)
+        showTab(nav.id, target.value, select=F)
+    else
+        hideTab(nav.id, target.value)
+       
+    #OLD
+#    ids = paste0(c('download_figure_', 'download_table_', 'share_link_'),
+#                 suffix)
+    
+#    for (id in ids)
+#    {
+#        if (enabled)
+#        {
+#            shinyjs::enable(id)
+#        }
+#        else
+#        {
+#            shinyjs::disable(id)
+#        }
+#    }
+}
+
+##-- LOWER LEVEL HELPERS --##
+
+make.intervention.pretty.table <- function(int)
+{
+    int = lump.idu.for.intervention(int)
+    raw = get.intervention.description.table(int, include.start.text = NULL,
+                                             testing.descriptor='',
+                                             prep.descriptor='uptake',
+                                             suppression.descriptor='')
+    target.population.names = attr(raw, 'target.population.names')
+    target.population.names = lump.idu.in.name(target.population.names)
+    
+    header.tds = c(list(tags$th()),
+                   lapply(attr(raw, 'unit.types'), tags$th))
+    names(header.tds) = NULL
+    header.tr = do.call(tags$tr, header.tds)
+    
+    other.trs = lapply(1:length(target.population.names), function(i){
+        tds = c(list(tags$td(target.population.names[i])),
+                lapply(raw[i,], tags$td))
+        names(tds) = NULL
+        do.call(tags$tr, tds)
+    })
+    
+    all.trs = c(list(header.tr), other.trs)
+    do.call(tags$table, list(all.trs, class='intervention_summary'))
+}

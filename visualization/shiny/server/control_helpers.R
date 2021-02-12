@@ -26,7 +26,7 @@ create.plot.control.panel <- function(suffix)
         
         conditionalPanel(
             condition = paste0("input.show_change_", suffix),
-            fluidRow(
+            fluidRow(class='from_to_holder',
                 column(width=6, 
                        'from',
                        selectInput(inputId = paste0('change_from_', suffix),
@@ -130,6 +130,6 @@ get.selected.show.change <- function(input, suffix)
 
 get.selected.change.years <- function(input, suffix)
 {
-    c(input[[paste0('change_from_', suffix)]],
-      input[[paste0('change_to_', suffix)]])
+    as.numeric(c(input[[paste0('change_from_', suffix)]],
+                 input[[paste0('change_to_', suffix)]]))
 }

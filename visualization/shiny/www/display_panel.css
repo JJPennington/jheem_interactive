@@ -1,0 +1,44 @@
+
+.display_panel_table {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.display_panel_main_tr {
+    vertical-align: top;
+    height: 100%;
+}
+
+.display_panel_intervention_tr {
+    vertical-align: bottom;
+    border: 1px solid black;
+}
+
+table.intervention_summary {
+    text-align: center;
+    
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.intervention_summary tr {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.intervention_summary th {
+    text-align: center;
+    font-weight: bold;
+}
+
+.intervention_summary td {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.intervention_summary td:first-child {
+    font-weight: bold;
+    text-align: right;
+}

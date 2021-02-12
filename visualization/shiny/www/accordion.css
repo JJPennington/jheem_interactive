@@ -1,0 +1,19 @@
+.accordion_vertical {
+    padding: 0 18px;
+    background-color: white;
+    /*  max-height: 0; */
+    height: 0;
+    overflow: hidden;
+/*    transition: max-height 0.2s ease-out;*/
+    transition: height 0.2s ease-out;
+}
+
+.accordion_horizontal {
+    padding: 0 18px;
+    background-color: white;
+    /*  max-width: 0; */
+    width: 0;
+    overflow: hidden;
+/*    transition: max-width 0.2s ease-out;*/
+    transition: width 0.2s ease-out;
+}
