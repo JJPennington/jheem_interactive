@@ -75,6 +75,7 @@ ui = tagList(
       title = "Custom Interventions",
       make.tab.popover("custom_interventions", title=CUSTOM.POPOVER.TITLE, content=CUSTOM.POPOVER),
       CUSTOM.CONTENT
+      # uiOutput('custom_content')
     ),
     tabPanel(
       "About the Model",

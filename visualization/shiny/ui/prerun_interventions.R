@@ -1,5 +1,3 @@
-
-
 PRERUN.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbody',
     
 ##-- HEADERS AND DISPLAY --##  

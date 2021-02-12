@@ -22,6 +22,7 @@ source('plot_interface/plot_interface.R')
 source('server/multi_cache.R')
 #source('load_resources.R')
 #source('ui/display_helpers.R', local=T)
+source('ui/custom_interventions.R', local=T)
 
 
 ##----------------------##
@@ -69,7 +70,35 @@ server <- function(input, output, session, cache)
     
     # in server/control_helpers.R
     add.control.event.handlers(session, input, output, cache, suffix='prerun')
+    
+    ##-----------------------------------------------##
+    ##-- EVENT HANDLERS: CUSTOM INTERVENTIONS      --##
+    ##-----------------------------------------------##
+    max_subpops = 5
+    # Custom interventions: Left panel tabPanel
+    observeEvent(input$n_subpops, {
+        for (i in 1:max_subpops)
+          if (i <= as.integer(input$n_subpops))
+            showTab(inputId="subpop_tabset_panel", target=as.character(i))
+          else
+            hideTab(inputId="subpop_tabset_panel", target=as.character(i))
+    })
+    
+    # Custom interventions: Left panel demographic checkbox groups
+    dimension.value.options = get.dimension.value.options(
+        version=version,
+        location=input$geographic_location,
+        msm_idu_mode=TRUE)
+    for (i in 1:max_subpops)
+        lapply(dimension.value.options, function(dim) {
+            group.switchId = paste0(dim[['name']], '_switch', i)
+            group.contentId = paste0(dim[['name']], i)
+            observeEvent(input[[group.switchId]], {
+                if (input[[group.switchId]] == TRUE)
+                    shinyjs::hide(id=group.contentId)
+                else
+                    shinyjs::show(id=group.contentId)
+            })
+        })
+    
 }
-
-
-
