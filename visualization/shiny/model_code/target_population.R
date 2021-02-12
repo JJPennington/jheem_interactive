@@ -10,6 +10,11 @@ target.population.hash <- function(tpop)
     logical.to.6.bit(tpop)
 }
 
+target.population.from.hash <- function(hash, manager=TARGET.POPULATION.MANAGER.1.0)
+{
+    manager$population[hash]
+}
+
 target.population.to.code <- function(tpop, manager=TARGET.POPULATION.MANAGER.1.0)
 {
     hash = logical.to.6.bit(tpop)

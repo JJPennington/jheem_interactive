@@ -1,48 +1,61 @@
-# Table ####
-PRERUN.CONTENT = tags$table(
-    class='display_table',
-    tags$tr(
-                   
-#-- The Left Panel --####
-tags$td(class='controls_td',
-    tags$div(class='controls',
-        selectInput(
-            inputId="location_prerun", 
-            # label=NULL,
-            label="Location",
-            choices=invert.keyVals(get.prerun.locations(version=VERSION)),
-            # selected=location.choice,
-            selected=NULL,
-            multiple=FALSE,
-            selectize=TRUE, 
-            width=NULL, 
-            size=NULL),
-        create.intervention.selector.panel('prerun')
-        )),
-        
-#-- The Main Panel --####
-tags$td(class='display_td',
-        rowspan=2,
-        tags$div(class='display',
-            create.display.panel('prerun')        
-        )),
-
-
-#-- The Right Panel --####
-tags$td(class='controls_td',
-        create.plot.control.panel('prerun')
-        )
-
-),
-
-#-- The Action Buttons --####
+PRERUN.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbody',
+    
+##-- HEADERS AND DISPLAY --##  
 tags$tr(
-    # Left panel button
+    #-- Left Header --#
+    tags$td(class='controls_header_td',
+            "Select Intervention"),
+    
+    #-- The Main Panel --#
+    tags$td(class='display_td',
+            rowspan=3,
+            tags$div(class='display',
+                     create.display.panel('prerun')        
+            )),
+    
+    #-- Right Header --#
+    tags$td(class='controls_header_td',
+            "Figure Configuration")
+), #</tr>
+
+##-- CONTROL PANELS --##
+tags$tr(
+    
+    #-- The Left Panel --#
+    tags$td(class='controls_td',
+            tags$div(class='controls',
+                     selectInput(
+                         inputId="location_prerun", 
+                         # label=NULL,
+                         label="Location",
+                         choices=invert.keyVals(get.prerun.locations(version=VERSION)),
+                         # selected=location.choice,
+                         selected=NULL,
+                         multiple=FALSE,
+                         selectize=TRUE, 
+                         width=NULL, 
+                         size=NULL),
+                     create.intervention.selector.panel('prerun')
+            )),
+    
+    #-- The Right Panel --#
+    tags$td(class='controls_td',
+            create.plot.control.panel('prerun')
+    )
+    
+), #</tr>
+
+##-- CTA BUTTONS --##
+tags$tr(
+    
+    #-- Left panel button --#
     tags$td(class='cta_td',
             actionButton(class='cta', inputId='run_prerun', label='Generate Projections')),
     
-    # Right panel button
+    #-- Right panel button --#
     tags$td(class='cta_td',
-            actionButton(class='cta', inputId='redraw_prerun', label='Adjust Projections')),
-)
-)
+            actionButton(class='cta', inputId='redraw_prerun', label='Adjust Projections'))
+    
+) #</tr>
+
+)) #</tbody></table>

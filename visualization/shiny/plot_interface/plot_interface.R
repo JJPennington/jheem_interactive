@@ -1,6 +1,6 @@
 
-DATA.TYPE.NAMES = OUTCOME.OPTIONS$names
-names(DATA.TYPE.NAMES) = OUTCOME.OPTIONS$values
+WEB.DATA.TYPE.NAMES = OUTCOME.OPTIONS$names
+names(WEB.DATA.TYPE.NAMES) = OUTCOME.OPTIONS$values
 
 # Main Function: THE PLOT FUNCTION ####
 #'@param description The function that actually generates plots
@@ -83,23 +83,21 @@ make.simulations.plot.and.table <- function(
     simulation.line.size=if (plot.format=='individual.simulations') 2 else 5,
     truth.point.size=10
 ) {
-    #Hard Overrides for now
-    #plot.format = 'individual.simulations'
-    filenames = get.sim.filenames.to.load(
-        version=version,
-        location=location,
-        intervention.codes=intervention.codes)
-    simsets = get.simsets.from.cache(filenames, cache)
+    withProgress(min=0, max=1, value = 0, 
+                 message="Building Figure and Table...", {
+        filenames = get.sim.filenames.to.load(
+            version=version,
+            location=location,
+            intervention.codes=intervention.codes)
+        simsets = get.simsets.from.cache(filenames, cache)
+        
+        #Figure out coloring
+        if (length(simsets)<=2 && length(split.by)>0)
+            color.by = 'split'
+        else
+            color.by = 'intervention'
     
-    #Figure out coloring
-    if (length(simsets)<=2 && length(split.by)>0)
-        color.by = 'split'
-    else
-        color.by = 'intervention'
-    
-    withProgress(
-        min=0, max=1, value = 0, 
-        message="Building Figure and Table...", {
+        
             rv = do.plot.simulations(
                 simsets,
                 years=years,
