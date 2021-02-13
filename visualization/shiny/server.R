@@ -89,16 +89,49 @@ server <- function(input, output, session, cache)
         version=version,
         location=input$geographic_location,
         msm_idu_mode=TRUE)
+    # state = reactiveVal(list())  # Will probably move this up.
+    state = list()
     for (i in 1:max_subpops)
         lapply(dimension.value.options, function(dim) {
-            group.switchId = paste0(dim[['name']], '_switch', i)
-            group.contentId = paste0(dim[['name']], i)
-            observeEvent(input[[group.switchId]], {
-                if (input[[group.switchId]] == TRUE)
-                    shinyjs::hide(id=group.contentId)
-                else
-                    shinyjs::show(id=group.contentId)
+            # Increment toggle count
+            # - prevents auto-check-all on app load, while presevering check-all
+            #   on toggle off functionality
+            checkboxGroup.switchId = paste0(dim[['name']], '_switch', i)
+            checkboxGroup.boxesId = paste0(dim[['name']], i)
+            key = paste0(checkboxGroup.boxesId, '.toggleCount')
+            # state2 = state()
+            state2 = state
+            
+            # if (key %in% names(state2))
+            #     state2[[key]] = state2[[key]] + 1
+            # else
+            #     state2[[key]] = 0
+            state2[[key]] = -1
+            
+            # state(state2)
+            state <<- state2
+            observeEvent(input[[checkboxGroup.switchId]], {
+                # state2 = state()
+                state2 = state
+                
+                # if (key %in% names(state2))
+                #     state2[[key]] = state2[[key]] + 1
+                # else
+                #     state2[[key]] = 0
+                state2[[key]] = state2[[key]] + 1
+                
+                # state(state2)
+                state <<- state2
+                if (input[[checkboxGroup.switchId]] == TRUE)
+                    shinyjs::hide(id=checkboxGroup.boxesId)
+                else {
+                    shinyjs::show(id=checkboxGroup.boxesId)
+                    # browser()
+                    if (state2[[key]] > 0)
+                        updateCheckboxGroupInput(
+                            inputId=checkboxGroup.boxesId,
+                            selected=names(dim[['choices']]))
+                }
             })
-        })
-    
+        })  # </lapply/"/for">
 }
