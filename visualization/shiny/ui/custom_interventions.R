@@ -77,6 +77,9 @@ subpopBox <- function(i) {
              label.plural = paste0(tolower(dim[['label']]), 's')
              if (dim[['name']] == 'sex')
                label.plural = 'sexes'
+             materialSwitch.value = FALSE
+             if (dim[['name']] == 'age-groups')
+               materialSwitch.value = TRUE
              
              fluidRow(
                fluidRow(
@@ -87,7 +90,7 @@ subpopBox <- function(i) {
                  inputId=switchId,
                  # label='Select all',
                  label=paste0('Include all ', label.plural),
-                 value=FALSE,
+                 value=materialSwitch.value,
                  right=TRUE,
                  status='primary'),
                 # Got 'undefined' error for input val, prolly cuz hadnt loaded
