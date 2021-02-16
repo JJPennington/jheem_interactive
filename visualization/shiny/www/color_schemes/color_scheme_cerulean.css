@@ -1,0 +1,53 @@
+
+.cta_color {
+    background: #03427c;
+    color: white;
+}
+
+.cta_background_color {
+    background-color: #f8f8f8;
+}
+
+.header_color {
+    background-color: #37a8e8;
+}
+
+.controls_color {
+    background-color: #b2ddf6;
+}
+
+.content_color {
+    background-color: #ffffff;
+}
+
+
+/* To Override the Boostrap Info Box */
+
+.box.box-solid.box-info>.box-header {
+  color:#000000;
+  background:#f8f8f8
+                    }
+
+.box.box-solid.box-info{
+border-bottom-color:#f8f8f8;
+border-left-color:#f8f8f8;
+border-right-color:#f8f8f8;
+border-top-color:#f8f8f8;
+}
+
+.box.box-info>.box-header {
+  color:#000000;
+  background:#ffffff
+                    }
+
+.box.box-info{
+border-bottom-color:#f8f8f8;
+border-left-color:#f8f8f8;
+border-right-color:#f8f8f8;
+border-top-color:#f8f8f8;
+}
+
+.box-info .fa{
+      font-weight: 900;
+      color: #000000;
+    }

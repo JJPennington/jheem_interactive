@@ -22,3 +22,16 @@ make.tab.popover <- function(id,
               trigger = "hover", placement='bottom',
               options=list(container="body", html=T))
 }
+
+make.popover <- function(id,
+                         title,
+                         content,
+                         placement)
+{
+    bsPopover(id, 
+              title=paste0("<b>", title, "</b>"),
+              #title,#HTML(paste0("<a class='tab_popover_title'>", title, "</a>")),
+              content=content,#HTML(paste0("<a class='tab_popover_content'>", content, "</a>")),
+              trigger = "hover", placement=placement,
+              options=list(container="body", html=T))
+}

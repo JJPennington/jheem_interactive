@@ -6,8 +6,7 @@ lump.idu.for.intervention <- function(int)
 {
     tpops = get.target.populations.for.intervention(int)
     mapped = lapply(tpops, function(tpop){
-        lumped = tpop
-        lumped[,,,'IDU_in_remission'] = lumped[,,,'active_IDU']
+        lumped = lump.idu.in.target.population(tpop)
         if (target.populations.equal(tpop, lumped))
             tpop
         else
@@ -40,3 +39,9 @@ lump.idu.in.name <- function(name)
 }
 
 
+lump.idu.in.target.population <- function(tpop)
+{
+    lumped = tpop
+    lumped[,,,'IDU_in_remission'] = lumped[,,,'active_IDU']
+    lumped
+}

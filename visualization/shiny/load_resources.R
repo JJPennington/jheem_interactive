@@ -48,3 +48,16 @@ source('model_code/target_population.R')
 source('model_code/interventions.R')
 source('model_code/create_standard_intervention_presets.R')
 source('model_code/intervention_presets.R')
+
+source('model_code/interventions_for_simset.R')
+source('model_code/interpolating.R')
+source('model_code/setup_helpers.R')
+source('model_code/logit_transformations.R')
+source('model_code/setup_jheem_from_components.R')
+source('model_code/setup_jheem_components.R')
+source('model_code/compression.R')
+
+source('model_code/calibrated_parameters_113_helpers.R')
+source('model_code/prep_manager_2.R')
+source('model_code/pairing_manager.R')
+

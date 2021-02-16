@@ -62,7 +62,7 @@ make.simulations.plot.and.table <- function(
     version,
     # Public params; Selectable in UI
     location,
-    intervention.codes,
+    filenames,
     years,
     data.types,
     data.type.names,
@@ -85,11 +85,11 @@ make.simulations.plot.and.table <- function(
 ) {
     withProgress(min=0, max=1, value = 0, 
                  message="Building Figure and Table...", {
-        filenames = get.sim.filenames.to.load(
-            version=version,
-            location=location,
-            intervention.codes=intervention.codes)
+        
+        print(paste0("In mem cache: ", 
+                     paste0(cache$mem.cache$keys(), collapse=', ')))
         simsets = get.simsets.from.cache(filenames, cache)
+        names(simsets) = names(filenames)
         
         #Figure out coloring
         if (length(simsets)<=2 && length(split.by)>0)
@@ -97,41 +97,41 @@ make.simulations.plot.and.table <- function(
         else
             color.by = 'intervention'
     
-        
-            rv = do.plot.simulations(
-                simsets,
-                years=years,
-                data.types=data.types,
-                facet.by,
-                split.by,
-                dimension.subsets,
-                #for now, going to override the plot formats
-                plot.format=plot.format, 
-                
-                show.truth=T,
-                
-                plot.interval.coverage=plot.interval.coverage,
-                #summary.statistic=summary.statistic,
-                #summary.statistic.interval.coverage=summary.statistic.interval.coverage,
-                
-                colors=pal_jama(),
-                
-                plot.interval.alpha=plot.interval.alpha,
-                simulation.alpha=simulation.alpha,
-                simulation.line.size=simulation.line.size,
-                truth.point.size=truth.point.size,
-                
-                color.by = color.by,
-                
-                label.change = label.change,
-                change.years = change.years,
-                change.decrease.is.positive = change.decrease.is.positive,
-                
-                progress.update = setProgress,
-                
-                data.type.names = DATA.TYPE.NAMES,
-                return.change.data.frame = T)
+        rv = do.plot.simulations(
+            simsets,
+            years=years,
+            data.types=data.types,
+            facet.by,
+            split.by,
+            dimension.subsets,
+            #for now, going to override the plot formats
+            plot.format=plot.format, 
             
+            show.truth=T,
+            
+            plot.interval.coverage=plot.interval.coverage,
+            #summary.statistic=summary.statistic,
+            #summary.statistic.interval.coverage=summary.statistic.interval.coverage,
+            
+            colors=pal_jama(),
+            
+            plot.interval.alpha=plot.interval.alpha,
+            simulation.alpha=simulation.alpha,
+            simulation.line.size=simulation.line.size,
+            truth.point.size=truth.point.size,
+            
+            color.by = color.by,
+            
+            label.change = label.change,
+            change.years = change.years,
+            change.decrease.is.positive = change.decrease.is.positive,
+            
+            progress.update = setProgress,
+            
+            data.type.names = DATA.TYPE.NAMES,
+            return.change.data.frame = T)
+        
+        
             setProgress(value=1)
         })
     

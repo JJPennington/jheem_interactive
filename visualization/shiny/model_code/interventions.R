@@ -231,6 +231,7 @@ get.intervention.description.table <- function(int,
     })
     
     dim(rv) = c(target.population = length(target.populations), intervention.type=length(types))
+    
     dimnames(rv) = list(NULL, intervention.type=types)
     attr(rv, 'unit.types') = INTERVENTION.UNIT.TYPE.PRETTY.NAMES[types]
     attr(rv, 'target.populations') = target.populations

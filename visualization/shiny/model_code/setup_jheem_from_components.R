@@ -34,6 +34,14 @@ unfix.jheem.components <- function(components)
     components
 }
 
+unfix.simset.components <- function(simset)
+{
+    extend.simulations(simset, function(sim, parameters){
+        attr(sim, 'components') = unfix.jheem.components(attr(sim, 'components'))
+        sim
+    })
+}
+
 setup.jheem.from.components <- function(components, verbose=F)
 {
     do.setup.crunch.or.fix(components,
@@ -977,7 +985,7 @@ do.setup.continuum.transitions <- function(components)
         
         if (components$model.prep)
         {
-            base.transitions[,,,,,'undiagnosed_from_prep',,,'diagnosed'] = 1 / components$prep.screening.frequency
+            base.transitions[,,,,,'undiagnosed_from_prep',,,components$settings$FIRST_DIAGNOSED_STATE] = 1 / components$prep.screening.frequency
             base.transitions[,,,,,'undiagnosed_from_prep',,,'undiagnosed'] = -log(1-components$prep.persistence)
         }
         
@@ -986,23 +994,135 @@ do.setup.continuum.transitions <- function(components)
         components = do.calculate.testing.rates(components) #this caches them
         testing.rates = calculate.testing.rates(components)
         
-        components$continuum.transitions = lapply(1:length(testing.rates$rates), function(i){
-            continuum.transitions.for.year = base.transitions
-            continuum.transitions.for.year[,,,,,'undiagnosed',,,'diagnosed'] = testing.rates$rates[[i]][,,,,,'undiagnosed',,]
-            continuum.transitions.for.year
-        })
-        components$continuum.transition.years = testing.rates$times
         
-        
-        if (!is.null(components$settings$IS_CONTINUUM_COLLAPSED) && !components$settings$IS_CONTINUUM_COLLAPSED)
+        if (is.null(components$settings$IS_CONTINUUM_COLLAPSED) || components$settings$IS_CONTINUUM_COLLAPSED)
         {
+            components$continuum.transitions = lapply(1:length(testing.rates$rates), function(i){
+                continuum.transitions.for.year = base.transitions
+                continuum.transitions.for.year[,,,,,'undiagnosed',,,components$settings$FIRST_DIAGNOSED_STATE] = testing.rates$rates[[i]][,,,,,'undiagnosed',,]
+                continuum.transitions.for.year
+            })
+            components$continuum.transition.years = testing.rates$times
+        }
+        else
+        {
+            #-- CALCULATE THE RATES --#
+            
             # unengaged -> engaged/unsuppressed
             # unengaged -> disengaged
+            components = do.calculate.linkage(components)
+            linkage.proportions = calculate.linkage(components)
+            
+            linkage.rates = list(rates=lapply(linkage.proportions$rates, function(p){
+                p / components$linkage.time
+            }),
+                                 times=linkage.proportions$times)
+            
+            non.linkage.rates = list(rates=lapply(linkage.proportions$rates, function(p){
+                (1-p) / components$linkage.time
+            }),
+            times=linkage.proportions$times)
+            
             # engaged/unsuppressed -> engaged/suppressed
+            components = do.calculate.newly.suppressed.rates(components)
+            newly.suppressed.rates = calculate.newly.suppressed.rates(components)
+            
             # engaged/suppressed -> engaged/unsuppressed
+            components = do.calculate.unsuppression.rates(components)
+            unsuppression.rates = calculate.unsuppression.rates(components)
+            
             # engaged/unsuppressed -> disengaged
+            components = do.calculate.unsuppressed.to.disengaged.rates(components)
+            unsuppressed.to.disengaged.rates = calculate.unsuppressed.to.disengaged.rates(components)
+            
             # engaged/suppressed -> disengaged
+            components = do.calculate.suppressed.to.disengaged.rates(components)
+            suppressed.to.disengaged.rates = calculate.suppressed.to.disengaged.rates(components)
+            
             # disengaged -> engaged/unsuppressed
+            components = do.calculate.reengagement.rates(components)
+            reengagement.rates = calculate.reengagement.rates(components)
+            
+            #-- INTERPOLATE THE RATES --#
+            
+            all.times = sort(unique(c(testing.rates$times,
+                                      linkage.rates$times,
+                                      non.linkage.rates$times,
+                                      newly.suppressed.rates$times,
+                                      unsuppression.rates$times,
+                                      unsuppressed.to.disengaged.rates$times,
+                                      suppressed.to.disengaged.rates$times,
+                                      reengagement.rates$times)))
+            
+            linkage.rates$rates = interpolate.parameters(values = linkage.rates$rates,
+                                                         value.times = linkage.rates$times,
+                                                         desired.times = all.times)
+            
+            non.linkage.rates$rates = interpolate.parameters(values = non.linkage.rates$rates,
+                                                             value.times = non.linkage.rates$times,
+                                                             desired.times = all.times)
+            
+            newly.suppressed.rates$rates = interpolate.parameters(values = newly.suppressed.rates$rates,
+                                                                  value.times = newly.suppressed.rates$times,
+                                                                  desired.times = all.times)
+            
+            unsuppression.rates$rates = interpolate.parameters(values = unsuppression.rates$rates,
+                                                               value.times = unsuppression.rates$times,
+                                                               desired.times = all.times)
+            
+            unsuppressed.to.disengaged.rates$rates = interpolate.parameters(values = unsuppressed.to.disengaged.rates$rates,
+                                                                            value.times = unsuppressed.to.disengaged.rates$times,
+                                                                            desired.times = all.times)
+            
+            suppressed.to.disengaged.rates$rates = interpolate.parameters(values = suppressed.to.disengaged.rates$rates,
+                                                                          value.times = suppressed.to.disengaged.rates$times,
+                                                                          desired.times = all.times)
+            
+            reengagement.rates$rates = interpolate.parameters(values = reengagement.rates$rates,
+                                                              value.times = reengagement.rates$times,
+                                                              desired.times = all.times)
+            
+            #-- PLUG IT INTO TRANSITIONS --#
+            
+            components$continuum.transitions = lapply(1:length(all.times), function(i){
+                continuum.transitions.for.year = base.transitions
+                
+                # undiagnosed --> unengagedd
+                continuum.transitions.for.year[,,,,,'undiagnosed',,,components$settings$FIRST_DIAGNOSED_STATE] =
+                    testing.rates$rates[[i]][,,,,,'undiagnosed',,]
+                
+                # unengaged -> engaged/unsuppressed
+                continuum.transitions.for.year[,,,,,components$settings$FIRST_DIAGNOSED_STATE,,,'engaged_unsuppressed'] =
+                    linkage.rates$rates[[i]][,,,,,components$settings$FIRST_DIAGNOSED_STATE,,]
+                
+                # unengaged -> disengaged
+                continuum.transitions.for.year[,,,,,components$settings$FIRST_DIAGNOSED_STATE,,,'disengaged'] =
+                    non.linkage.rates$rates[[i]][,,,,,components$settings$FIRST_DIAGNOSED_STATE,,]
+                
+                # engaged/unsuppressed -> engaged/suppressed
+                continuum.transitions.for.year[,,,,,'engaged_unsuppressed',,,'engaged_suppressed'] =
+                    newly.suppressed.rates$rates[[i]][,,,,,'engaged_unsuppressed',,]
+                
+                # engaged/suppressed -> engaged/unsuppressed
+                continuum.transitions.for.year[,,,,,'engaged_suppressed',,,'engaged_unsuppressed'] =
+                    unsuppression.rates$rates[[i]][,,,,,'engaged_suppressed',,]
+                
+                # engaged/unsuppressed -> disengaged
+                continuum.transitions.for.year[,,,,,'engaged_unsuppressed',,,'disengaged'] =
+                    unsuppressed.to.disengaged.rates$rates[[i]][,,,,,'engaged_unsuppressed',,]
+                
+                # engaged/suppressed -> disengaged
+                continuum.transitions.for.year[,,,,,'engaged_suppressed',,,'disengaged'] =
+                    suppressed.to.disengaged.rates$rates[[i]][,,,,,'engaged_suppressed',,]
+                
+                # disengaged -> engaged/unsuppressed
+                continuum.transitions.for.year[,,,,,'disengaged',,,'engaged_unsuppressed'] =
+                    reengagement.rates$rates[[i]][,,,,,'disengaged',,]
+                
+                
+                continuum.transitions.for.year
+            })
+            components$continuum.transition.years = all.times
         }
     }
     else

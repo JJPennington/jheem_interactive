@@ -32,7 +32,7 @@ create.display.panel <- function(suffix)
                     )
                 )  # </navbarMenu>
             ),  # </tabsetPanel>
-        )), #</td></tr>
+        )), # </td></tr>
         
         tags$tr(class='display_panel_intervention_tr', tags$td(
             create.projected.intervention.panel(suffix)
@@ -74,10 +74,18 @@ set.plot <- function(output,
                      suffix,
                      plot)
 {
-    figure.id = paste0('figure_', suffix)
-    output[[figure.id]] = renderUI(tags$div(
-        plot
+    holder.id = paste0('figure_', suffix)
+    plot.id = paste0('plot_', suffix)
+    if (suffix=='custom')
+        css.class = 'plot_holder display_narrow'
+    else
+        css.class = 'plot_holder display_wide'
+    
+    output[[holder.id]] = renderUI(tags$div(class=css.class,
+                                           withSpinner(plotlyOutput(outputId = plot.id))
     ))
+    
+    output[[plot.id]] = renderPlotly(plot)
 }
 
 set.table <- function(output,
@@ -86,14 +94,19 @@ set.table <- function(output,
 {
     table.id = paste0('table_', suffix)
     dt.id = paste0('dt_', suffix)
-    output[[table.id]] = renderUI(tags$div(class='table_holder',
-        dataTableOutput(outputId = dt.id)
+    if (suffix=='custom')
+        css.class = 'table_holder display_narrow'
+    else
+        css.class = 'table_holder display_wide'
+    
+    output[[table.id]] = renderUI(tags$div(class=css.class,
+        withSpinner(DT::DTOutput(outputId = dt.id))
     ))
     
     pretty.table = make.pretty.change.data.frame(tab,
                                                  data.type.names=WEB.DATA.TYPE.NAMES)
     #data.table(pretty.table)
-    output[[dt.id]] = renderDataTable(pretty.table)
+    output[[dt.id]] = DT::renderDT(pretty.table)
 }
 
 set.intervention.panel <- function(output,
@@ -148,7 +161,7 @@ clear.intervention.panel <- function(output,
         tags$div("No intervention has been set")
     )
     
-    if (1==2) #testing
+    if (1==2) #for testing - so we don't have to make the projections before seeing what the table looks like
     {
         intervention = INTERVENTION.MANAGER.1.0$intervention[[48]]
         
@@ -218,14 +231,28 @@ set.share.enabled <- function(input,
 
 make.intervention.pretty.table <- function(int)
 {
-    int = lump.idu.for.intervention(int)
+#    int = lump.idu.for.intervention(int)
     raw = get.intervention.description.table(int, include.start.text = NULL,
                                              testing.descriptor='',
                                              prep.descriptor='uptake',
-                                             suppression.descriptor='')
+                                             suppression.descriptor='',
+                                             empty.value = '-')
     target.population.names = attr(raw, 'target.population.names')
-    target.population.names = lump.idu.in.name(target.population.names)
+#    target.population.names = lump.idu.in.name(target.population.names)
+
+    # Rorder to group by lumped idu
+    lumped.tpop.names = sapply(lapply(attr(raw, 'target.populations'), lump.idu.in.target.population), target.population.name)
+    lumped.tpop.first.index = sapply(lumped.tpop.names, function(name){
+        (1:length(lumped.tpop.names))[lumped.tpop.names==name][1]
+    })
+    o = order(lumped.tpop.first.index)
     
+    target.population.names = target.population.names[o]
+    raw.dim = dim(raw)
+    raw = raw[o,]
+    dim(raw) = raw.dim
+    
+    # Make the table
     header.tds = c(list(tags$th()),
                    lapply(attr(raw, 'unit.types'), tags$th))
     names(header.tds) = NULL

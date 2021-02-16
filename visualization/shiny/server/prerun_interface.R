@@ -34,24 +34,32 @@ get.prerun.intervention.codes <- function()
          location=locations)
 }
 
-get.sim.filenames.to.load <- function(version,
-                                      location,
-                                      intervention.codes)
+get.baseline.filename <- function(version,
+                                  location)
 {
-    baseline.filename = get.simset.filename(version=version,
-                                            location=location,
-                                            intervention=NULL)
-    
-    other.filenames = sapply(intervention.codes, function(code){
-        #code = intervention.short.name.to.code(int.name)
+    get.simset.filename(version=version,
+                        location=location,
+                        intervention=NULL)
+}
+
+NO.INTERVENTION.CODE = get.intervention.code(NO.INTERVENTION)
+get.no.intervention.filename <- function(version,
+                                         location)
+{
+    get.intervention.filenames(NO.INTERVENTION.CODE,
+                               version,
+                               location)
+}
+
+get.intervention.filenames <- function(codes,
+                                       version,
+                                       location)
+{ 
+    sapply(codes, function(code){
         get.simset.filename(location = location,
                             intervention.code = code)
     })
-    
-    c(baseline.filename, other.filenames)
 }
-
-
 
 ##-------------##
 ##-- HELPERS --##

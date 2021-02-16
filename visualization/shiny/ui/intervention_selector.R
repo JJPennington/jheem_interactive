@@ -72,11 +72,18 @@ make.intervention.aspect.selector <- function(int.list,
     names(unit.choice.values) = names(unit.choice.names) = NULL
     
     
-    radioButtons(inputId = paste0('int_aspect_', suffix),
-                 label='Which Aspects to Intervene On:',
-                 choiceNames=unit.choice.names,
-                 choiceValues=unit.choice.values,
-                 selected='none'
+    tags$div(
+        radioButtons(inputId = paste0('int_aspect_', suffix),
+                     label='Which Aspects to Intervene On:',
+                     choiceNames=unit.choice.names,
+                     choiceValues=unit.choice.values,
+                     selected='none'
+        ),
+        
+        make.popover(paste0('int_aspect_', suffix),
+                     title='What Should the Intervention Affect?',
+                     content="You can choose interventions that affect HIV testing, PrEP uptake among those at risk for HIV acquisition, viral suppression among PWH, or a combination of all three.",
+                     placement='right')
     )
 }
 
@@ -92,11 +99,18 @@ make.intervention.tpop.selector <- function(int.list,
     names(tpop.choice.names) = names(tpop.choice.values) = NULL
     
     
-    radioButtons(inputId = paste0('int_tpop_', suffix),
-                 label='Target Population(s):',
-                 choiceNames=tpop.choice.names,
-                 choiceValues=tpop.choice.values,
-                 selected=tpop.choice.values[1]
+    tags$div(
+        radioButtons(inputId = paste0('int_tpop_', suffix),
+                     label='Target Population(s):',
+                     choiceNames=tpop.choice.names,
+                     choiceValues=tpop.choice.values,
+                     selected=tpop.choice.values[1]
+                     ),
+        
+        make.popover(paste0('int_tpop_', suffix),
+                     title='What Subgroups Should the Intervention Target?',
+                     content="Choose which population subgroups the intervention should be deployed in.",
+                     placement='right')
     )
 }
 
@@ -116,15 +130,21 @@ make.intervention.final.selector <- function(int.list,
             choice.names = lapply(choice.names, function(name){tags$div(lump.idu.in.name(name))})
             names(choice.names) = names(choice.values) = NULL
             
-            radios = radioButtons(inputId=paste0('int_', tpop.index, "_", unit.type.code, "_", suffix),
-                         label='Specific Interventions:',
+            id = paste0('int_', tpop.index, "_", unit.type.code, "_", suffix)
+            radios = radioButtons(inputId=id,
+                         label='Intensity of Interventions:',
                          choiceNames=choice.names,
                          choiceValues=choice.values,
                          selected=choice.values[1])
             
             conditionalPanel(
                 condition = paste0("input.int_aspect_", suffix," == '", unit.type.code, "' && input.int_tpop_", suffix, " == ", tpop.index),
-                radios 
+                radios,
+                
+                make.popover(id,
+                             title='What Intensity of Interventions Should be Applied?',
+                             content="Choose the specific levels of HIV testing, PrEP uptake among those at risk for HIV acquisition, and/or viral suppression among PWH to apply to the targeted subgroups.",
+                             placement='right')
             )
             
         })

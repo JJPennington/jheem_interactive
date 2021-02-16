@@ -50,25 +50,56 @@ invert.keyVals <- function(x) {
 }
 
 # Utils: AWS S3 Storage ####
-s3.list <- function(
-  bucket.name
-) {
-    items.list = get_bucket(bucket=bucket.name, max=Inf)
+s3.list <- function(dir,
+                    full.path,
+                    bucket.name) 
+{
+    if (is.null(dir) || is.na(dir))
+        dir = ''
+    if (dir != '' && substr(dir, nchar(dir)-1, nchar(dir))!='/')
+        dir = paste0(dir, '/')
+        
+    items.list = get_bucket(bucket=bucket.name, max=Inf, prefix = dir)
     items.names = sapply(items.list, function(x) x$Key )
+    if (!full.path)
+    {
+        items.names = sapply(items.names, function(item.name){
+            substr(item.name, 1 + nchar(dir), nchar(item.name))
+        })
+    }
+    
+    names(items.names) = NULL
+    items.names = items.names[items.names != '']
     return(items.names)
 }
 
-sims.list <- function(
-  bucket.name=BUCKET.NAME.SIMS
-) {
-  s3.list(bucket.name)
+sims.list <- function(version='1.0',
+                      include.location=F,
+                      include.version=F,
+                      bucket.name=BUCKET.NAME.SIMS)
+{
+    rv = s3.list(bucket.name,
+                 dir=version,
+                 full.path=include.version)
+    
+    if (!include.version && !include.location)
+    {
+        split = strsplit(rv, '/')
+        rv = sapply(split, function(one.split){
+            paste0(one.split[-1], collapse='/')
+        })
+    }
+    
+    rv
 }
 
-static.list <- function(
-  bucket.name=BUCKET.NAME.STATIC
-) {
-  s3.list(bucket.name)
-}
+
+
+
+
+
+
+##-- NOT USING AT THIS TIME --#
 
 s3.save <- function(
   objOrFilepath,

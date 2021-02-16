@@ -11,72 +11,32 @@
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
 ##---------------------------------------------##
 
-generate.plot.and.table <- function(input, cache, suffix,
-                                    plot.and.table.list) 
+generate.plot.and.table <- function(input, 
+                                    cache, 
+                                    intervention.codes, 
+                                    suffix,
+                                    intervention.map=NULL) 
 {
-    lock.cta.buttons(input, called.from.suffix = suffix,
-                     plot.and.table.list=plot.and.table.list)
-  
-    # Pre-processing, data fetching & caching ####
-    # For now there is only one version
+    #-- Set up intervention filenames and pull to cache --#
+    
     version = get.version()
     location = get.selected.location(input, suffix)
     
-    #-- Pull Intervention Names from Input --#
-    
-    # Always include no intervention
-    intervention.codes = c('No Intervention' = get.intervention.code(NO.INTERVENTION))
-    
-    # Pull from intervention selector
-    selected.int = get.intervention.selection(input, suffix)
-    if (!is.null(selected.int))
-      intervention.codes = c(
-          intervention.codes,
-          'Intervention' = selected.int
-        )
-        
-    #-- Get the filenames to pre-cache --#
-    filenames = get.sim.filenames.to.load(
-        version,
-        location=location,
-        intervention.codes=intervention.codes)
-   # filenames = filenames[!is.sim.cached(filenames, cache=cache)]
-    filenames = filenames[!are.simsets.in.disk.cache(filenames, cache)]
-    
-    #-- Pre-fetch the simsets --#
-    if (length(filenames)>0)
-    {
-#      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
-      if (length(filenames)==1)
-        msg = "Fetching 1 Simulation File from Remote Server:"
-      else
-        msg = paste0("Fetching ", length(filenames), 
-                     " Simulation Files from Remote Server:")
-        withProgress(
-          message=msg, min=0, max=1, value=0.2/length(filenames),
-          detail=paste("Fetching file 1 of ", length(filenames)),
-            {
-                for (i in 1:length(filenames))
-                {
-                    if (i>1)
-                        setProgress(
-                            (i-1)/length(filenames),
-                            detail=paste("Fetching file ", i, " of ", 
-                                         length(filenames)))
-                    filename = filenames[i]
-                    pull.simsets.to.cache(filename, cache)
-                    
-                    setProgress(1, detail='Done')
-                }
-            })
-    }
-    
+    filenames = c(
+        'Baseline' = get.baseline.filename(version=version, location=location),
+        'No Intervention' = get.no.intervention.filename(version=version, location=location),
+        'Intervention' = get.intervention.filenames(intervention.codes,
+                                                    version=version, location=location)
+    )
+
+    pull.files.to.cache(filenames, cache)
+
     #-- Make the plot --# ####
     plot.results = make.simulations.plot.and.table(
         cache=cache,
         version=version,
         location=location,
-        intervention.codes=intervention.codes,
+        filenames = filenames,
         years=get.selected.years(input, suffix),
         data.types=get.selected.outcomes(input, suffix),
         facet.by=get.selected.facet.by(input, suffix),
@@ -95,15 +55,54 @@ generate.plot.and.table <- function(input, cache, suffix,
     plot.results$plot = format.plotly.toolbar(plot.results$plot,
                                               input)
     
-    plot.results$intervention = intervention.from.code(selected.int)
+    #-- Add the intervention --#
+    # This is assuming just ONE intervention code for now
+    selected.int = NULL
+    if (!is.null(intervention.map))
+        selected.int = map.codes.to.interventions(intervention.codes[1], intervention.map)[[1]]
+    if (is.null(selected.int))
+        selected.int = intervention.from.code(intervention.codes[1])
+    plot.results$intervention = selected.int
     
     
     #-- Return --#
-    unlock.cta.buttons(input, called.from.suffix = suffix,
-                       plot.and.table.list=plot.and.table.list)
     plot.results
 }
 
+
+pull.files.to.cache <- function(filenames, cache)
+{
+    filenames = filenames[!are.simsets.in.disk.cache(filenames, cache) &
+                              !are.simsets.in.explicit.cache(filenames, cache)]
+    
+    #-- Pre-fetch the simsets --#
+    if (length(filenames)>0)
+    {
+        #      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
+        if (length(filenames)==1)
+            msg = "Fetching 1 Simulation File from Remote Server:"
+        else
+            msg = paste0("Fetching ", length(filenames), 
+                         " Simulation Files from Remote Server:")
+        withProgress(
+            message=msg, min=0, max=1, value=0.2/length(filenames),
+            detail=paste("Fetching file 1 of ", length(filenames)),
+            {
+                for (i in 1:length(filenames))
+                {
+                    if (i>1)
+                        setProgress(
+                            (i-1)/length(filenames),
+                            detail=paste("Fetching file ", i, " of ", 
+                                         length(filenames)))
+                    filename = filenames[i]
+                    pull.simsets.to.cache(filename, cache)
+                    
+                    setProgress(1, detail='Done')
+                }
+            })
+    }
+}
 
 ##----------------##
 ##-- FORMATTING --##

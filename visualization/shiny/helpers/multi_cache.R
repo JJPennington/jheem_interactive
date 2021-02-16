@@ -2,6 +2,7 @@
 library(aws.iam)
 library(aws.s3)
 
+##-- CONSTRUCTOR --##
 
 # A multi-cache is a list with elements
 # $disk.caches - a list
@@ -11,10 +12,13 @@ create.multi.cache <- function(mem.cache,
                                disk.caches)
 {
     list(mem.cache = mem.cache,
-         disk.caches = disk.caches
+         disk.caches = disk.caches,
+         explicit.caches = list()
     )
 }
 
+
+##-- GETTERS AND SETTERS --##
 
 get.simsets.from.cache <- function(codes,
                                    cache)
@@ -23,8 +27,13 @@ get.simsets.from.cache <- function(codes,
     
     lapply(codes, function(code){
         key = codes.to.keys.for.cache(code)
-        #if in the mem cache, return it
-        if (cache$mem.cache$exists(key))
+        
+        #see if it's in an explicit cache
+        from.explicit = get.simset.from.explicit.cache(code, cache)
+        if (!is.null(from.explicit))
+            from.explicit
+        #else if in the mem cache, return it
+        else if (cache$mem.cache$exists(key))
             cache$mem.cache$get(key, missing=NULL)
         else
         {
@@ -101,9 +110,12 @@ pull.simsets.to.cache <- function(codes,
         {
             filename = paste0(code, '.Rdata')
             
+            parsed.filename = parse.simset.filenames(filename)
             print(paste0("pulling from s3: ", filename))
             
-            s3load(filename,
+            s3load(file.path(parsed.filename['version'],
+                             parsed.filename['location'],
+                             filename),
                    bucket=bucket.name,
                    envir=environment())
             
@@ -111,6 +123,68 @@ pull.simsets.to.cache <- function(codes,
             cache$mem.cache$set(key, simset)
         }
     }
+}
+
+##---------------------##
+##-- EXPLICIT CACHES --##
+##---------------------##
+
+#returns the cache
+put.simset.to.explicit.cache <- function(codes,
+                                         simsets,
+                                         cache,
+                                         explicit.name)
+{
+    if (!is(simsets, 'list'))
+        simsets = list(simsets)
+    
+    if (!any(names(cache$explicit.caches)==explicit.name))
+        cache$explicit.caches[[explicit.name]] = list()
+    
+    keys = codes.to.keys.for.cache(codes)
+    names(simsets) = keys
+    cache$explicit.caches[[explicit.name]][keys] = simsets
+    
+    cache
+}
+
+#returns the cache
+remove.simsets.from.explicit.cache <- function(codes,
+                                               cache,
+                                               explicit.name)
+{
+    keys = codes.to.keys.for.cache(codes)
+    if (!is.null(cache$explicit.caches[[explicit.name]]))
+        cache$explicit.caches[keys] = NULL
+    cache
+}
+
+are.simsets.in.explicit.cache <- function(codes,
+                                          cache,
+                                          explicit.names=names(cache$explicit.caches))
+{
+    explicit.names = intersect(explicit.names, names(cache$explicit.caches))
+    keys = codes.to.keys.for.cache(codes)
+    sapply(keys, function(key){
+        any(sapply(cache$explicit.caches[explicit.names], function(ex){
+            any(names(ex)==key)
+        }))
+    })
+}
+
+get.simset.from.explicit.cache <- function(code,
+                                           cache,
+                                           explicit.names=names(cache$explicit.caches))
+{
+    explicit.names = intersect(explicit.names, names(cache$explicit.caches))
+    key = codes.to.keys.for.cache(code)
+    for (ex in cache$explicit.caches[explicit.names])
+    {
+        if (any(names(ex)==key))
+            return (ex[[key]])
+    }
+    
+    NULL
 }
 
 

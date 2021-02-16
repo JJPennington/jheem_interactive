@@ -133,12 +133,16 @@ save.seed.simset <- function(simset,
                              max.seed.keep.from.year=2018, #for census totals
                              version=VERSION)
 {
+    if (is.null(attr(simset, 'run.from.year')))
+        simset = prepare.simset.for.interventions(simset)
+    
     run.from.year = attr(simset, 'run.from.year')
     
     seed.keep.from.year = min(run.from.year-1, max.seed.keep.from.year-1)
     seed.keep.to.year = max(run.from.year, min.seed.keep.to.year)
     
     simset = subset.simset.by.year(simset, seed.keep.from.year:seed.keep.to.year)
+#    attr(simset, 'components') = unfix.jheem.components(attr(simset, 'components'))
     
     filename = get.seed.filename(location=attr(simset@simulations[[1]], 'location'),
                                  version=version)
@@ -168,4 +172,18 @@ get.baseline.filename <- function(location,
                         location=location,
                         intervention.code=NULL,
                         version=version)
+}
+
+parse.simset.filenames <- function(filenames)
+{
+    splits = strsplit(filenames, "_")
+    rv = sapply(splits, function(one.split){
+        c(version=one.split[1],
+          location=one.split[2],
+          code=paste0(one.split[-(1:2)], collapse='_'))
+    })
+    if (length(filenames)==1)
+        rv[,1]
+    else
+        t(rv)
 }

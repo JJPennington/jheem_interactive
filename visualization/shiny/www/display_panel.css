@@ -1,4 +1,20 @@
 
+
+.table_holder {
+    height: 100%;
+    
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+.plot_holder {
+    height: 100%;
+    
+    overflow-x: scroll;
+    overflow-y: scroll;
+}
+
+
 .display_panel_table {
     width: 100%;
     height: 100%;
@@ -13,7 +29,7 @@
 
 .display_panel_intervention_tr {
     vertical-align: bottom;
-    border: 1px solid black;
+/*    border: 1px solid black;*/
 }
 
 table.intervention_summary {
@@ -24,8 +40,8 @@ table.intervention_summary {
 }
 
 .intervention_summary tr {
-    border-top: 1px solid black;
-    border-bottom: 1px solid black;
+/*    border-top: 1px solid black;
+    border-bottom: 1px solid black; */
 }
 
 .intervention_summary th {

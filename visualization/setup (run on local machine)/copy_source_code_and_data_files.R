@@ -27,3 +27,17 @@ file.copy(file.path(SRC.DIR, 'code/interventions/target_population.R'), file.pat
 file.copy(file.path(SRC.DIR, 'code/interventions/interventions.R'), file.path(CODE.DIR, 'interventions.R'), overwrite=T)
 file.copy(file.path(SRC.DIR, 'code/interventions/intervention_presets.R'), file.path(CODE.DIR, 'intervention_presets.R'), overwrite=T)
 file.copy(file.path(SRC.DIR, 'code/interventions/create_standard_intervention_presets.R'), file.path(CODE.DIR, 'create_standard_intervention_presets.R'), overwrite=T)
+
+# For running interventions
+file.copy(file.path(SRC.DIR, 'code/interventions/interventions_for_simset.R'), file.path(CODE.DIR, 'interventions_for_simset.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/setup/interpolating.R'), file.path(CODE.DIR, 'interpolating.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/setup/setup_helpers.R'), file.path(CODE.DIR, 'setup_helpers.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/setup/logit_transformations.R'), file.path(CODE.DIR, 'logit_transformations.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/setup/setup_jheem_from_components.R'), file.path(CODE.DIR, 'setup_jheem_from_components.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/setup/setup_jheem_components.R'), file.path(CODE.DIR, 'setup_jheem_components.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/visualization/compression.R'), file.path(CODE.DIR, 'compression.R'), overwrite=T)
+
+file.copy(file.path(SRC.DIR, 'code/calibration/calibrated_parameters_113_helpers.R'), file.path(CODE.DIR, 'calibrated_parameters_113_helpers.R'), overwrite=T)
+
+file.copy(file.path(SRC.DIR, 'code/data_managers/prep_manager_2.R'), file.path(CODE.DIR, 'prep_manager_2.R'), overwrite=T)
+file.copy(file.path(SRC.DIR, 'code/data_managers/pairing_manager.R'), file.path(CODE.DIR, 'pairing_manager.R'), overwrite=T)

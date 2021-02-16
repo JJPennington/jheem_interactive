@@ -4,7 +4,8 @@ AGE.OPTIONS <- list(
     values = c("13-24 years", "25-34 years", "35-44 years", "45-54 years", "55+ years"),
     names = c("13-24 years", "25-34 years", "35-44 years", "45-54 years", "55+ years"),
     code = 'age',
-    label = "Age Group"
+    label = "Age Group",
+    label.plural = 'Age Groups'
 )
 
 
@@ -23,21 +24,32 @@ RACE.OPTIONS <- list(
     values = c("black", "hispanic","other"),
     names = c("Black", "Hispanic", "Other"),
     code = 'race',
-    label = "Race/Ethnicity"    
+    label = "Race/Ethnicity",
+    label.plural = 'Races'
 )
 
 SEX.OPTIONS <- list(
     values = c("male","female"),
     names = c("Male", "Female"),
     code = 'sex',
-    label = "Biological Sex"    
+    label = "Biological Sex",
+    label.plural = 'Sexes'
 )
 
 RISK.OPTIONS.1 <- list(
     values = c("msm", "idu", "msm_idu", "heterosexual"),
     names = c("MSM", "IDU", "MSM+IDU", "Heterosexual"),
     code = 'risk',
-    label = "Risk Factor"    
+    label = "Risk Factor",
+    label.plural = 'Risk Factors'
+)
+
+RISK.OPTIONS.2 <- list(
+    values = c("msm", "active_idu", "prior_idu", "msm_active_idu", "msm_prior_idu", "heterosexual"),
+    names = c("MSM", "Active IDU", "Prior IDU", "MSM + Active IDU", "MSM + Prior IDU", "Heterosexual"),
+    code = 'risk',
+    label = "Risk Factor",
+    label.plural = 'Risk Factors'
 )
 
 
@@ -78,71 +90,49 @@ PLOT.FORMAT.OPTIONS <- list(
 )
 
 
-##-----------------------------------------##
-##-- OLDER - for backwards compatibility --##
-##-----------------------------------------##
+TESTING.OPTIONS <- list(
+    values = c(3,6,12,24),
+    code = 'testing',
+    label = "Testing"
+)
+TESTING.OPTIONS$names = paste0(TESTING.OPTIONS$values, " months")
 
-AGES = list(
-    name='age-groups',
-    shortName='age',
-    label='Age',
-    choices=c(
-        age1='13-24 years',
-        age2='25-34 years',
-        age3='35-44 years',
-        age4='45-54 years',
-        age5='55+ years') )
 
-RACES = list(
-    name='racial-groups',
-    shortName='race',
-    label='Race',
-    choices=c(
-        black="Black",
-        hispanic="Hispanic",
-        other="Other") )
+PREP.OPTIONS <- list(
+    values = c(0.10, 0.25, 0.5, 0.75),
+    code = 'prep',
+    label = "PrEP"
+)
+PREP.OPTIONS$names = paste0(100*PREP.OPTIONS$values, "%")
 
-SEXES = list(
-    name='sex',
-    shortName='sex',
-    label='Sex',
-    choices=c(
-        male='Male',
-        female='Female') )
 
-RISKS = list(
-    name='risk-groups',
-    shortName='risk',
-    label='Risk Factor',
-    choices=c(
-        msm="MSM",
-        idu="IDU",
-        msm_idu="MSM+IDU",
-        heterosexual="Heterosexual") )
+SUPPRESSION.OPTIONS <- list(
+    values = c(0.80, 0.85, 0.90, 0.95),
+    code = 'suppression',
+    label = "Suppression"
+)
+SUPPRESSION.OPTIONS$names = paste0(100*SUPPRESSION.OPTIONS$values, "%")
 
-RISKS2 = list(
-    name='risk-groups',
-    shortName='risk',
-    label='Risk Factor',
-    choices=c(
-        msm="MSM",
-        iduActive="Active IDU",
-        iduPrior="Prior IDU",
-        msm_iduActive="MSM + active IDU",
-        msm_iduPrior="MSM + prior IDU",
-        heterosexual="Heterosexual") )
 
-DIMENSION.VALUES = list(
-    age=AGES,
-    race=RACES,
-    sex=SEXES,
-    risk=RISKS)
+make.named.choices <- function(choiceValues, choiceNames)
+{
+    names(choiceValues) = choiceNames
+    choiceValues
+}
 
-DIMENSION.VALUES2 = list(
-    age=AGES,
-    race=RACES,
-    sex=SEXES,
-    risk=RISKS2)
+##-- AGGREGATE AGE/SEX/RACE/RISK --##
+
+DIMENSION.VALUES.1 = list(
+    age=AGE.OPTIONS,
+    race=RACE.OPTIONS,
+    sex=SEX.OPTIONS,
+    risk=RISK.OPTIONS.1)
+
+DIMENSION.VALUES.2 = list(
+    age=AGE.OPTIONS,
+    race=RACE.OPTIONS,
+    sex=SEX.OPTIONS,
+    risk=RISK.OPTIONS.2)
 
 #'@description Get the potential values (which can be subsetted) for each
 #' dimension
@@ -165,7 +155,7 @@ get.dimension.value.options <- function(
     version, location, msm_idu_mode=FALSE)
 {
     if (msm_idu_mode == FALSE)
-        DIMENSION.VALUES
+        DIMENSION.VALUES.1
     else
-        DIMENSION.VALUES2
+        DIMENSION.VALUES.2
 }
