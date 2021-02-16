@@ -10,7 +10,14 @@
 #  else pop up a dialog and return false
 check.custom.inputs <- function(session, input)
 {
-    
+    for (i in 1:get.custom.n.subpopulations(input))
+    {
+        get.custom.ages(input, i)
+        
+        if (!get.custom.use.testing(input, i) && !get.custom.use.prep(input, i) && !get.custom.use.suppression(input, i))
+            print('not allowed')
+            
+    }
 }
 
 
@@ -24,5 +31,14 @@ check.custom.inputs <- function(session, input)
 # 
 check.plot.controls <- function(session, input, suffix)
 {
+    selected.outcomes = get.selected.outcomes(input, suffix)
+    n.selected.outcomes = length(selected.outcomes)
     
+    facet.by = get.selected.facet.by(input, suffix)
+    n.facet = prod(sapply(facet.by, function(ff){
+        length(DIMENSION.VALUES.2[[ff]]$values)
+    }))
+    
+    if (n.selected.outcomes * n.facet > 8)
+        print("modal dialog")
 }
