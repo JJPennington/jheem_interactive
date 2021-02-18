@@ -6,6 +6,7 @@ VERSION = '1.0'
 'EndingHIV RShiny web front-end process: UI spec'
 
 
+library('shinyalert')
 library(shinydashboard)
 library(shinyjs)
 library(shinyWidgets)
@@ -65,6 +66,9 @@ ui = tags$html(style='height:100%',
     tags$script(src = 'window_sizes.js'),
     tags$script(src = 'setup_tooltips.js'),
   ),
+
+  # Other R dependencies
+  useShinyalert(),
   
   tags$body(style='height:100%;',
     navbarPage(

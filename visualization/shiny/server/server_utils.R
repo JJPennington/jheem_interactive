@@ -214,7 +214,8 @@ db.connect <- function() {
     host=Sys.getenv("DB_host"), 
     port=Sys.getenv("DB_port"), 
     user=Sys.getenv("DB_user"), 
-    password=Sys.getenv("DB_password"))
+    password=Sys.getenv("DB_password")
+  )
 }
 
 db.presets.read.all <- function (
@@ -264,6 +265,7 @@ db.write.contactForm <- function(
 }
 
 db.write.queryString <- function(
+  id,
   queryString,
   version=as.character(get.version.options()[1]),
   date=Sys.Date()) {
@@ -274,8 +276,10 @@ db.write.queryString <- function(
   # I did this lazily for now because I didn't want to handle edge
   # cases where the record exists; didn't want to risk the session
   # crashing.
+  
   # Write
   data.df = data.frame(
+    'id'=id,
     'urlQueryParamString'=queryString,
     'version'=version,
     'date'=date)
@@ -292,11 +296,11 @@ db.write.queryString <- function(
 }
 
 presets.urlQueryParamString.create <- function(
-  shiny.input,
+  namedVec,  # Shiny's 'input' obj works as well.
   ignoreList=PRESET_IGNORE_LIST) {
   
-  queryVec = sapply(names(shiny.input), function(key) {
-    val = shiny.input[[key]]
+  queryVec = sapply(names(namedVec), function(key) {
+    val = namedVec[[key]]
     if (key %in% ignoreList) {
     } else if (length(val) > 1) {
       prefix = paste0('&', key, '=')
@@ -304,7 +308,7 @@ presets.urlQueryParamString.create <- function(
       csv = str_sub(csv, end=-1)
       paramStr = paste0(prefix, csv)
     } else
-      paramStr = paste0('&', key, '=', shiny.input[[key]])
+      paramStr = paste0('&', key, '=', namedVec[[key]])
   })
   
   for (ele in ignoreList)
@@ -338,12 +342,15 @@ presets.urlQueryParamString.parse <- function(
   presets
 }
 
-handleCreatePreset <- function(input) {
-  queryStr = presets.urlQueryParamString.create(input)
-  presetId = db.write.queryString(queryStr)
+# namedVec could be shiny 'input' obj
+handleCreatePreset <- function(id, namedVec) {
+  queryStr = presets.urlQueryParamString.create(namedVec)
+  presetId = db.write.queryString(id, queryStr)
   url = paste0('https://jheem.shinyapps.io/EndingHIV?preset=', 
                as.character(presetId))
-  msg = paste0('<p>Preset created! You can instantly reload the state of this app in the future via the url:</p><p><a href="', url, '">', url, '</a></p>')
+  msg = paste0('<p>Preset created! You can instantly reload the state of this 
+               app in the future via the url:</p><p><a href="', url, '">', url, 
+               '</a></p>')
   showMessageModal(message=msg)    
 }
 

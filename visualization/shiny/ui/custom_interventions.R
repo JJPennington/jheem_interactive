@@ -1,13 +1,13 @@
-
-CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbody',
+CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(
+    class='display_tbody',
     
-##-- HEADERS AND DISPLAY --##  
+##-- HEADERS AND DISPLAY --####
 tags$tr(
     #-- Left Header --#
     tags$td(class='controls_header_td controls_wide header_color',
             "Specify Intervention"),
     
-    #-- The Main Panel --#
+    #-- The Main Panel --####
     tags$td(class='display_td display_narrow content_color', id='display_custom_td',
             rowspan=4,
             tags$div(class='display',
@@ -19,7 +19,7 @@ tags$tr(
             "Figure Configuration")
 ), #</tr>
 
-##-- CONTROL PANELS --##
+##-- CONTROL PANELS --####
 tags$tr(
     
     #-- The Left Panel --#
@@ -77,7 +77,7 @@ tags$tr(
             ) #</div class=controls>
     ),  # </td>
     
-    #-- The Right Panel --#
+    #-- The Right Panel --####
     tags$td(class='controls_td controls_narrow controls_color',
             rowspan=2,
             create.plot.control.panel('custom')
@@ -85,7 +85,7 @@ tags$tr(
     
 ), #</tr>
 
-##-- CTA TEXT --##
+##-- CTA TEXT --####
 tags$tr(
     
     #-- Left panel text --#

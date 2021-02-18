@@ -25,26 +25,38 @@ add.display.event.handlers <- function(session, input, output, cache)
     })
     
     #-- General Handler for Running/Redrawing --#
+    do.run.inner <- function(valid) {
+      # TODO: need input, suffix, cache, intervention.codes, plot.and.table.list
+      # get from state()? how access state here?
+      browser()
+      
+      if (valid) {
+          plot.and.table.list[[suffix]] <<- generate.plot.and.table(
+            input=input, 
+            cache=cache, 
+            intervention.codes=intervention.codes,
+            suffix=suffix)
+          
+          #-- Update the UI --#
+          set.display(input, output, suffix, plot.and.table.list[[suffix]])
+          sync.buttons.to.plot(input, plot.and.table.list)
+      } else {
+          # @Todd: I put error messages inside `error_checking.R`
+      }
+    }
+    
     do.run = function(intervention.codes, suffix)
     {   
-        #-- Lock the appropriate buttons --#
-        lock.cta.buttons(input, called.from.suffix = suffix,
+      #-- Lock the appropriate buttons --#
+      lock.cta.buttons(input, called.from.suffix = suffix,
+                       plot.and.table.list=plot.and.table.list)
+      # TODO: store state for callback
+      valid = check.plot.controls(
+          session, input, suffix, callback=do.run.inner)
+      do.run.inner(valid)
+      
+      unlock.cta.buttons(input, called.from.suffix = suffix,
                          plot.and.table.list=plot.and.table.list)
-        
-        if (check.plot.controls(session, input, suffix))
-        {
-            plot.and.table.list[[suffix]] <<- generate.plot.and.table(input=input, 
-                                                                   cache=cache,
-                                                                   intervention.codes=intervention.codes,
-                                                                   suffix=suffix)
-            
-            #-- Update the UI --#
-            set.display(input, output, suffix, plot.and.table.list[[suffix]])
-            sync.buttons.to.plot(input, plot.and.table.list)
-        }
-        
-        unlock.cta.buttons(input, called.from.suffix = suffix,
-                           plot.and.table.list=plot.and.table.list)
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
@@ -96,6 +108,8 @@ add.display.event.handlers <- function(session, input, output, cache)
             do.run(intervention.codes = selected.int.code,
                    suffix='custom')
             js$chime_if_checked('chime_run_custom')
+        } else {
+            # @Todd: I put error messages inside `error_checking.R`
         }
     })
     
