@@ -1,3 +1,4 @@
+library(DT)
 
 ##------------------------------##
 ##-- CREATE THE DISPLAY PANEL --##
@@ -5,17 +6,23 @@
 
 create.display.panel <- function(suffix)
 {
-    tags$table(class='display_panel_table',
-        tags$tr(class='display_panel_main_tr', tags$td(
+    
+    if (suffix=='custom')
+        css.class = 'display_panel_table display_narrow_smaller'
+    else
+        css.class = 'display_panel_table display_wide_smaller'
+    
+    tags$table(class=css.class,
+        tags$tr(class='display_panel_main_tr', tags$td(class='display_panel_main_td',
             tabsetPanel(
                 id=paste0('nav_', suffix),
                 tabPanel(
                     title="Figure",
-                    uiOutput(outputId = paste0('figure_', suffix))
+                    uiOutput(outputId = paste0('figure_', suffix), class='fill_div')
                 ),
                 tabPanel(
                     title="Table",
-                    uiOutput(outputId = paste0('table_', suffix))
+                    uiOutput(outputId = paste0('table_', suffix), class='fill_div')
                 ),
                 navbarMenu(
                     title="Share",
@@ -34,21 +41,31 @@ create.display.panel <- function(suffix)
             ),  # </tabsetPanel>
         )), # </td></tr>
         
-        tags$tr(class='display_panel_intervention_tr', tags$td(
-            create.projected.intervention.panel(suffix)
+        tags$tr(class='display_panel_intervention_tr', tags$td(class='intervention_panel_buffer',
+            ' '
         )), #</td></tr>
+        create.projected.intervention.panel(suffix)
     ) #</table>
 }
 
 create.projected.intervention.panel <- function(suffix)
 {
+    if (suffix=='custom')
+        css.class = 'intervention_panel_holder display_narrow'
+    else
+        css.class = 'intervention_panel_holder display_wide'
+    
     #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
-    box(title='Details of Projected Intervention',
-        width=12,
-        collapsible = T,
-        status='info',
-        solidHeader = T,
-        uiOutput(outputId = paste0('selected_intervention_', suffix)))    
+    tags$div(class=css.class,
+                      box(title='Details of Projected Intervention',
+                          width=12,
+                          collapsible = T,
+                          collapsed = T,
+                          status='info',
+                          solidHeader = T,
+                          uiOutput(outputId = paste0('selected_intervention_', suffix)))
+             
+    )
 }
 
 ##-----------------------------##
@@ -57,8 +74,8 @@ create.projected.intervention.panel <- function(suffix)
 
 set.display <- function(input, output, suffix, plot.and.table)
 {
-    set.plot(output, suffix, plot.and.table$plot)
-    set.table(output, suffix, plot.and.table$change.df)
+    set.plot(input, output, suffix, plot.and.table$plot)
+    set.table(input, output, suffix, plot.and.table$change.df)
     set.intervention.panel(output, suffix, plot.and.table$intervention)
 }
 
@@ -70,43 +87,63 @@ clear.display <- function(input, output, suffix)
 }
 
 
-set.plot <- function(output,
+set.plot <- function(input,
+                     output,
                      suffix,
                      plot)
 {
     holder.id = paste0('figure_', suffix)
     plot.id = paste0('plot_', suffix)
-    if (suffix=='custom')
-        css.class = 'plot_holder display_narrow'
-    else
-        css.class = 'plot_holder display_wide'
     
-    output[[holder.id]] = renderUI(tags$div(class=css.class,
-                                           withSpinner(plotlyOutput(outputId = plot.id))
+    display.size = get.display.size(input, suffix)
+    height = display.size$height
+    output[[holder.id]] = renderUI(tags$div(class='plot_holder',
+                                           withSpinner(plotlyOutput(outputId = plot.id,
+                                                                    height=paste0(height, 'px')))
     ))
     
-    output[[plot.id]] = renderPlotly(plot)
+    do.render.plot(input=input,
+                   output=output,
+                   suffix=suffix,
+                   plot=plot)
 }
 
-set.table <- function(output,
+do.render.plot = function(input,
+                          output,
+                          suffix,
+                          plot)
+{
+    nrows = calculate.optimal.nrows(input, suffix)
+    
+    the.plot = format.plotly.toolbar(plot(nrows), input)
+    
+    plot.id = paste0('plot_', suffix)
+    output[[plot.id]] = renderPlotly(the.plot)
+}
+
+set.table <- function(input,
+                      output,
                       suffix,
                       tab)
 {
     table.id = paste0('table_', suffix)
     dt.id = paste0('dt_', suffix)
-    if (suffix=='custom')
-        css.class = 'table_holder display_narrow'
-    else
-        css.class = 'table_holder display_wide'
     
-    output[[table.id]] = renderUI(tags$div(class=css.class,
-        withSpinner(DT::DTOutput(outputId = dt.id))
+    display.size = get.display.size(input, suffix)
+    width = display.size$width - 45
+    height = display.size$height
+    
+    output[[table.id]] = renderUI(tags$div(class='table_holder',
+                                          style=paste0('max-height: ', height, 'px'),
+        DT::dataTableOutput(outputId = dt.id,
+                            width=paste0(width, 'px'))
     ))
     
-    pretty.table = make.pretty.change.data.frame(tab,
-                                                 data.type.names=WEB.DATA.TYPE.NAMES)
-    #data.table(pretty.table)
-    output[[dt.id]] = DT::renderDT(pretty.table)
+    pretty.table = make.pretty.change.data.frame(tab, data.type.names=WEB.DATA.TYPE.NAMES)
+    pretty.table = DT::datatable(pretty.table)#,
+#                                 options=list(scrollX=T, scrollY=T))
+   
+    output[[dt.id]] = DT::renderDataTable(pretty.table)
 }
 
 set.intervention.panel <- function(output,
@@ -121,7 +158,6 @@ set.intervention.panel <- function(output,
     else
         output[[panel.id]] = renderUI(
             tags$div(make.intervention.pretty.table(intervention))
-         #   tags$div(HTML(get.intervention.html.description(intervention)))
         )
         
 }
@@ -133,7 +169,6 @@ clear.plot <- function(output,
     figure.id = paste0('figure_', suffix)
     output[[figure.id]] = renderUI(
         tags$div(class='empty_message',
-                 tags$div(style='height:10vh'),
                  "Use the controls to the left to generate a figure for ",
                  msa.names(get.selected.location(input, suffix)))
     )
@@ -146,7 +181,6 @@ clear.table <- function(output,
     table.id = paste0('table_', suffix)
     output[[table.id]] = renderUI(
         tags$div(class='empty_message',
-                 tags$div(style='height:10vh'),
                  "Use the controls to the left to generate a table for ",
                  msa.names(get.selected.location(input, suffix)))
     )
@@ -227,7 +261,59 @@ set.share.enabled <- function(input,
 #    }
 }
 
+##----------##
+##-- NCOL --##
+##----------##
+
+calculate.optimal.nrows <- function(input, suffix,
+                                    ideal.w.h.ratio=1.5)
+{
+    display.size = get.display.size(input, suffix)
+    
+    do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(input, suffix),
+                               display.width = display.size$width,
+                               display.height = display.size$height,
+                               ideal.w.h.ratio = ideal.w.h.ratio)
+}
+
+do.calculate.optimal.nrows <- function(n.panels,
+                                       display.width,
+                                       display.height,
+                                       ideal.w.h.ratio=1.5)
+{
+    possible.n.col = 1:n.panels
+    possible.n.row = ceiling(n.panels / possible.n.col)
+    
+    possible.widths = display.width / possible.n.col
+    possible.heights = display.height / possible.n.row
+    
+    possible.ratios = possible.widths/possible.heights
+    
+    ratio.diff = abs(possible.ratios - ideal.w.h.ratio)
+    best.mask = ratio.diff == min(ratio.diff)
+    
+    possible.n.row[best.mask][1]
+}
+
+get.num.panels.to.plot <- function(input, suffix)
+{
+    selected.outcomes = get.selected.outcomes(input, suffix)
+    n.selected.outcomes = length(selected.outcomes)
+    
+    facet.by = get.selected.facet.by(input, suffix)
+    if (is.null(facet.by))
+        n.facet = 1
+    else
+        n.facet = sapply(facet.by, function(ff){
+            length(DIMENSION.VALUES.2[[ff]]$values)
+        })
+    
+    n.selected.outcomes * prod(n.facet)
+}
+
+##-------------------------##
 ##-- LOWER LEVEL HELPERS --##
+##-------------------------##
 
 make.intervention.pretty.table <- function(int)
 {
@@ -238,9 +324,10 @@ make.intervention.pretty.table <- function(int)
                                              suppression.descriptor='',
                                              empty.value = '-')
     target.population.names = attr(raw, 'target.population.names')
+    unit.types = attr(raw, 'unit.types')
 #    target.population.names = lump.idu.in.name(target.population.names)
 
-    # Rorder to group by lumped idu
+    # Reorder to group by lumped idu
     lumped.tpop.names = sapply(lapply(attr(raw, 'target.populations'), lump.idu.in.target.population), target.population.name)
     lumped.tpop.first.index = sapply(lumped.tpop.names, function(name){
         (1:length(lumped.tpop.names))[lumped.tpop.names==name][1]
@@ -254,7 +341,7 @@ make.intervention.pretty.table <- function(int)
     
     # Make the table
     header.tds = c(list(tags$th()),
-                   lapply(attr(raw, 'unit.types'), tags$th))
+                   lapply(unit.types, tags$th))
     names(header.tds) = NULL
     header.tr = do.call(tags$tr, header.tds)
     

@@ -64,6 +64,7 @@ FRACTION.PROGRESS.SETUP.DF = 0.5
 #'@param color.by How to set colors. If color.by=='intervention', each intervention (and the baseline) gets a different color. If color.by=='split' each line denoted by split.by gets a different color
 #'@param colors Information on what colors to use. Can be either a vector of colors or a function that takes an argument (n) and generates n colors. 
 #'
+#'@param return.plot.function If true, returns a function that takes one argument (nrows) and generates a plotly object
 do.plot.simulations <- function(
     simsets,
     years,
@@ -120,7 +121,9 @@ do.plot.simulations <- function(
     tick.size = text.size*.8,
   
     y.axis.title.function = NULL,
-    y.title.standoff=10
+    y.title.standoff=10,
+  
+    return.plot.function=F
   )
 {
     keep.dimensions = unique(c('year', facet.by, split.by))
@@ -869,22 +872,30 @@ do.plot.simulations <- function(
         })
 
         
-        if (length(facet.categories)==1)
-            plot = subplots[[1]]
+        plot.fn = function(nrows)
+        {
+            if (length(facet.categories)==1)
+                plot = subplots[[1]]
+            else
+                plot = subplot(subplots, shareY = fixed.y, titleY=T, nrows=nrows, 
+                               margin=c(0.05,0.05,0.06,0.06)) #L,R,T,B
+            
+            legend.list = list(orientation = 'h', 
+                               xanchor = "center",
+                               x = 0.5,
+                               font = list(size=legend.text.size))
+            if (!condense.legend)
+                legend.list$traceorder = 'grouped'
+            plot = layout(plot, 
+                          legend = legend.list)
+            
+            plot
+        }
+        
+        if (return.plot.function)
+            plot = plot.fn
         else
-            plot = subplot(subplots, shareY = fixed.y, titleY=T, nrows=nrow, 
-                           margin=c(0.05,0.05,0.06,0.06)) #L,R,T,B
-        
-        legend.list = list(orientation = 'h', 
-                           xanchor = "center",
-                           x = 0.5,
-                           font = list(size=legend.text.size))
-        if (!condense.legend)
-            legend.list$traceorder = 'grouped'
-        plot = layout(plot, 
-                      legend = legend.list)
-        
-   
+            plot = plot.fn(nrows=nrow)
     }
     
     

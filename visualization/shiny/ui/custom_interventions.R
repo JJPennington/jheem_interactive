@@ -8,7 +8,7 @@ tags$tr(
             "Specify Intervention"),
     
     #-- The Main Panel --#
-    tags$td(class='display_td display_narrow content_color',
+    tags$td(class='display_td display_narrow content_color', id='display_custom_td',
             rowspan=4,
             tags$div(class='display',
                      create.display.panel('custom')        
@@ -69,8 +69,11 @@ tags$tr(
                                             ) #</wellPanel>
                                    ) #</tabPanel>
                                }))
-                             ) #</tabsetPanel>
+                             ), #</tabsetPanel>
 
+                    # A spacer so drop-down from suppression does not extend below end of element
+                    HTML(paste0(rep("<BR>", length(SUPPRESSION.OPTIONS)-1), collapse=''))
+                    
             ) #</div class=controls>
     ),  # </td>
     

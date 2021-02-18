@@ -10,6 +10,7 @@
 #  else pop up a dialog and return false
 check.custom.inputs <- function(session, input)
 {
+    return (TRUE) #for now
     for (i in 1:get.custom.n.subpopulations(input))
     {
         get.custom.ages(input, i)
@@ -20,25 +21,25 @@ check.custom.inputs <- function(session, input)
     }
 }
 
+MAX.ADVISED.N.PANELS = 8
 
 # Check that at least one outcome is checked
 # If not, pop up dialog and return false
 # 
 # Multiply the number of selected outcomes by the number of options in each of the selected facet by dimensions
-# If greater than 8, pop up a dialog that says "This is going to generate X panels" are you sure you want to do this
+# If greater than MAX.ADVISED.N.PANELS, pop up a dialog that says "This is going to generate X panels" are you sure you want to do this
 # -return true if 'yes'
 # -return false if 'no'
 # 
 check.plot.controls <- function(session, input, suffix)
 {
+    return (TRUE) # For now
+    
     selected.outcomes = get.selected.outcomes(input, suffix)
-    n.selected.outcomes = length(selected.outcomes)
+    #make sure there's at least one
     
-    facet.by = get.selected.facet.by(input, suffix)
-    n.facet = prod(sapply(facet.by, function(ff){
-        length(DIMENSION.VALUES.2[[ff]]$values)
-    }))
-    
-    if (n.selected.outcomes * n.facet > 8)
-        print("modal dialog")
+    get.num.panels.to.plot(input, suffix)
+    #if more than MAX.ADVISED.N.PANELS, alert
 }
+
+

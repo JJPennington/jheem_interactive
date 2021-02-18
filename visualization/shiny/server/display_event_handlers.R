@@ -13,89 +13,96 @@ add.display.event.handlers <- function(session, input, output, cache)
     custom.int.map = create.intervention.map()
 
     
-    #-- The Handler for Generating/Redrawing Pre-Run --#
-    do.prerun = function()
+    #-- Resize Listener --#
+    observeEvent(input$display_size, {
+        lapply(names(plot.and.table.list), function(suffix){
+            if (!is.null(plot.and.table.list[[suffix]]))
+                set.display(input=input,
+                            output=output,
+                            suffix=suffix,
+                            plot.and.table = plot.and.table.list[[suffix]])
+        })
+    })
+    
+    #-- General Handler for Running/Redrawing --#
+    do.run = function(intervention.codes, suffix)
     {   
         #-- Lock the appropriate buttons --#
         lock.cta.buttons(input, called.from.suffix = suffix,
                          plot.and.table.list=plot.and.table.list)
         
+        if (check.plot.controls(session, input, suffix))
+        {
+            plot.and.table.list[[suffix]] <<- generate.plot.and.table(input=input, 
+                                                                   cache=cache,
+                                                                   intervention.codes=intervention.codes,
+                                                                   suffix=suffix)
+            
+            #-- Update the UI --#
+            set.display(input, output, suffix, plot.and.table.list[[suffix]])
+            sync.buttons.to.plot(input, plot.and.table.list)
+        }
         
-        plot.and.table.list$prerun <<- generate.plot.and.table(input=input, 
-                                                               cache=cache,
-                                                               intervention.codes=get.intervention.selection(input, 'prerun'),
-                                                               suffix='prerun')
-        
-        #-- Update the UI --#
-        set.display(input, output, 'prerun', plot.and.table.list$prerun)
-        sync.buttons.to.plot(input, plot.and.table.list)
         unlock.cta.buttons(input, called.from.suffix = suffix,
                            plot.and.table.list=plot.and.table.list)
     }
     
+    #-- The Handlers for Generating/Redrawing Pre-Run --#
     observeEvent(input$run_prerun, {
-        do.prerun()
+        do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
+               suffix='prerun')
         js$chime_if_checked('chime_run_prerun')
     })
 
     observeEvent(input$redraw_prerun, {
-        do.prerun()
+        do.run(intervention.codes=plot.and.table.list$prerun$intervention.codes,
+               suffix='prerun')
     })
     
     
     #-- The Handlers for Generating/Redrawing Custom --#
     
-    do.custom = function()
-    {
-        # Lock the appropriate buttons
-        lock.cta.buttons(input, called.from.suffix = suffix,
-                         plot.and.table.list=plot.and.table.list)
-        
-        # Get the selected intervention
-        selected.int = get.selected.custom.intervention(input)
-        selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
-        
-        # Run simulation if needed and store
-        if (is.na(selected.int.code))
-        {
-            version = get.version()
-            location = get.selected.location(input, 'custom')
-            
-            simset = simulate.intervention(version = version,
-                                           location = location,
-                                           intervention = selected.int,
-                                           cache = cache)
-            
-            selected.int.code = get.new.custom.intervention.code()
-            custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
-            cache <<- put.simset.to.explicit.cache(get.intervention.filenames(selected.int.code, 
-                                                                              version=version, location=location), 
-                                                   simset,
-                                                   cache=cache, explicit.name = 'custom')
-        }
-        
-        # Make the plot
-        plot.and.table.list$custom <<- generate.plot.and.table(input=input, 
-                                                               cache=cache,
-                                                               intervention.codes=selected.int.code,
-                                                               suffix='custom',
-                                                               intervention.map = custom.int.map)
-        
-        # Update the UI
-        set.display(input, output, 'custom', plot.and.table.list$custom)
-        sync.buttons.to.plot(input, plot.and.table.list)
-        unlock.cta.buttons(input, called.from.suffix = suffix,
-                           plot.and.table.list=plot.and.table.list)
-    }
-    
     observeEvent(input$run_custom, {
-        do.custom()
-        js$chime_if_checked('chime_run_custom')
+        
+        if (check.custom.inputs(session, input))
+        {
+            # Lock the appropriate buttons
+            lock.cta.buttons(input, called.from.suffix = suffix,
+                             plot.and.table.list=plot.and.table.list)
+            
+            # Get the selected intervention
+            selected.int = get.selected.custom.intervention(input)
+            selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
+            
+            # Run simulation if needed and store
+            if (is.na(selected.int.code))
+            {
+                version = get.version()
+                location = get.selected.location(input, 'custom')
+                
+                simset = simulate.intervention(version = version,
+                                               location = location,
+                                               intervention = selected.int,
+                                               cache = cache)
+                
+                selected.int.code = get.new.custom.intervention.code()
+                custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
+                cache <<- put.simset.to.explicit.cache(get.intervention.filenames(selected.int.code, 
+                                                                                  version=version, location=location), 
+                                                       simset,
+                                                       cache=cache, explicit.name = 'custom')
+            }
+            
+            do.run(intervention.codes = selected.int.code,
+                   suffix='custom')
+            js$chime_if_checked('chime_run_custom')
+        }
     })
     
     
     observeEvent(input$redraw_custom, {
-        do.custom()
+        do.run(intervention.codes = plot.and.table.list$custom$intervention.codes,
+               suffix='custom')
     })
     
     #-- The Handler for Locations --#
@@ -105,11 +112,23 @@ add.display.event.handlers <- function(session, input, output, cache)
         sync.buttons.to.plot(input, plot.and.table.list)
     })
     
-    observeEvent(input$location_prerun, {
+    observeEvent(input$location_custom, {
+        print("Location custom")
         #I'm not sure we want to do the same thing as before
     })
     
     #-- Share Handlers --#
+ 
+    
+    # Get the size on load
+    session$onFlushed(function(){
+        js$ping_display_size()
+        
+        lapply(names(plot.and.table.list), 
+               clear.display,
+               input=input,
+               output=output)
+    }, once=T)
 }
 
 

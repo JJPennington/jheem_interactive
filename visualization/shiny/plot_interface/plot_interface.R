@@ -52,6 +52,7 @@ names(WEB.DATA.TYPE.NAMES) = OUTCOME.OPTIONS$values
 #'@param truth.point.size The point size for plotted 'truth' (epi
 #' surveillance) values#'
 #'
+#'
 #'@return A list with three values:
 #' $plot - a plotly object
 #' $change.df - a data frame
@@ -81,7 +82,9 @@ make.simulations.plot.and.table <- function(
     plot.interval.alpha=0.25,
     simulation.alpha=0.125,
     simulation.line.size=if (plot.format=='individual.simulations') 2 else 5,
-    truth.point.size=10
+    truth.point.size=10,
+    
+    ncol=NULL
 ) {
     withProgress(min=0, max=1, value = 0, 
                  message="Building Figure and Table...", {
@@ -98,6 +101,8 @@ make.simulations.plot.and.table <- function(
             color.by = 'intervention'
     
         rv = do.plot.simulations(
+            return.plot.function = T,
+            
             simsets,
             years=years,
             data.types=data.types,
@@ -129,7 +134,8 @@ make.simulations.plot.and.table <- function(
             progress.update = setProgress,
             
             data.type.names = DATA.TYPE.NAMES,
-            return.change.data.frame = T)
+            return.change.data.frame = T,
+            ncol = ncol)
         
         
             setProgress(value=1)

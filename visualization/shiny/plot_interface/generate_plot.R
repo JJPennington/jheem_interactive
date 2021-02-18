@@ -50,10 +50,6 @@ generate.plot.and.table <- function(input,
         change.decrease.is.positive = F)
     
     
-    #-- Make the mode bar always visible --#
-    
-    plot.results$plot = format.plotly.toolbar(plot.results$plot,
-                                              input)
     
     #-- Add the intervention --#
     # This is assuming just ONE intervention code for now
@@ -63,7 +59,7 @@ generate.plot.and.table <- function(input,
     if (is.null(selected.int))
         selected.int = intervention.from.code(intervention.codes[1])
     plot.results$intervention = selected.int
-    
+    plot.results$intervention.codes = intervention.codes
     
     #-- Return --#
     plot.results
@@ -109,7 +105,8 @@ pull.files.to.cache <- function(filenames, cache)
 ##----------------##
 
 format.plotly.toolbar <- function(plot,
-                                  input)
+                                  input,
+                                  always.visible=F)
 {
   # https://plotly.com/r/reference/#layout-updatemenus
   plot = layout(plot,
@@ -130,7 +127,7 @@ format.plotly.toolbar <- function(plot,
                 ))
   
   plot = config(plot,
-                displayModeBar=T,
+       #         displayModeBar=T,
                 displaylogo=F,
                 scrollZoom=F,
                 
@@ -143,7 +140,8 @@ format.plotly.toolbar <- function(plot,
                   list('zoomIn2d'),
                   list('zoomOut2d'),
                   list('autoScale2d')
-                )
+                ),
+       responsive=T
   )
    #modebar button options at 
   # https://github.com/plotly/plotly.js/blob/master/src/components/modebar/buttons.js
@@ -152,22 +150,7 @@ format.plotly.toolbar <- function(plot,
   plot
 }
 
-##----------------------------------------------##
-##-- GENERATE MESSAGE for PLOT PANEL if EMPTY --##
-##----------------------------------------------##
 
-BLANK.MESSAGE = "Select intervention(s) and click 'Generate Projections'"
-make.plotly.message <- function(message=BLANK.MESSAGE)
-{
-    plot = plotly_empty()
-    plot = add_text(plot, text=message, x=0, y=0)
-    #plot = layout(plot, xaxis=list(range = c(-0.5,0.5)))
-    #plot = layout(plot, uniformtext=list(minsize=8, mode='hide'))
-    
-    plot = plot = config(plot, displayModeBar=F)
-    
-    plot
-}
 
 # Location names ####
 ##--------------------##

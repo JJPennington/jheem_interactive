@@ -40,20 +40,14 @@ source('ui/custom_interventions.R', local=T)
 # Variables
 app.title = "JHEEM: Ending HIV in the US"
 
-
-testcode = 'shinyjs.chime = function(params)
-{
-    var snd = new Audio("Ripples.mp3");
-    snd.play();
-}'
-
 # UI
-ui = tags$html(
+ui = tags$html(style='height:100%',
   useShinydashboard(), #this call let's us use dashboard elements (eg box) even though this is not a dashboard
   
   # Add js scripts to shinyjs
   shinyjs::useShinyjs(),
-  extendShinyjs(script = 'sounds.js', functions = c('chime', 'chime_if_checked')),
+  extendShinyjs(script = 'sounds.js', functions = c('chime', 'chime_if_checked', 'chime_alert')),
+  extendShinyjs(script = 'onload.js', functions = c('ping_display_size')),
   
   # Add CSS Files
   tags$head(
@@ -68,10 +62,11 @@ ui = tags$html(
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
     
  #   tags$script(src = 'window_height.js'),
-    tags$script(src = 'setup_tooltips.js')
+    tags$script(src = 'window_sizes.js'),
+    tags$script(src = 'setup_tooltips.js'),
   ),
   
-  tags$body(
+  tags$body(style='height:100%;',
     navbarPage(
       id='main_nav',
    #   theme='color_scheme/bootstrap.css',

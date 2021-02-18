@@ -39,7 +39,7 @@ simulate.intervention <- function(version,
             setProgress(seed.simset@n.sim, detail='Done')
         })
     
-#save(simset, file='saved.simset.Rdata')
+save(simset, file='saved.simset.Rdata')
     
     compress.simset(simset)
 }
@@ -82,7 +82,7 @@ get.custom.subpopulation <- function(input, num)
     {
         if (iterated.sexes[i]=='female')
             new.sex = 'female'
-        else if (grepl('msm', iterated.sexes[i]))
+        else if (grepl('msm', iterated.risks[i]))
             new.sex = 'msm'
         else
             new.sex = 'heterosexual_male'

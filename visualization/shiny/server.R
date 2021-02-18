@@ -17,6 +17,8 @@ library(shinycssloaders)
 source('env.R')
 source('plot_interface/generate_plot.R')
 source('server/display_event_handlers.R')
+source('helpers/display_size.R')
+source('helpers/error_checking.R')
 source('server/control_helpers.R')
 source('plot_interface/generate_plot.R')
 source('plot_interface/plot_interface.R')
@@ -65,9 +67,7 @@ server <- function(input, output, session, cache)
     # in server/display_event_handlers.R
     add.display.event.handlers(session, input, output, cache)
     
-    observeEvent(input$testlink, {
-        print('test link')
-    })
+    add.display.size.observers(session, input)
     
     ##-----------------------------------------------##
     ##-- EVENT HANDLERS FOR UPDATING PLOT CONTROLS --##

@@ -7,7 +7,7 @@ tags$tr(
             "Select Intervention"),
     
     #-- The Main Panel --#
-    tags$td(class='display_td display_wide content_color',
+    tags$td(class='display_td display_wide content_color', id='display_prerun_td',
             rowspan=4,
             tags$div(class='display',
                      create.display.panel('prerun')        

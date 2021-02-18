@@ -39,7 +39,8 @@ conditionalDropdown <- function(
              selectInput(
                  inputId=paste0(inputId.prefix, '_value', i),
                  label=NULL,
-                 choices=choices
+                 choices=choices,
+                 selectize = F
              )
             
             )),  # </conditionalPanel/fluidRow>
@@ -124,7 +125,7 @@ create.custom.intervention.unit.selector <- function(i)
                 selectInput(inputId = paste0('custom_int_to_', i),
                            label = "... and Is Fully Implemented by:",
                            choices = YEAR.OPTIONS$values,
-                           selected = YEAR.OPTIONS$values[4],
+                           selected = YEAR.OPTIONS$values[5],
                            selectize = F),
             ),
             
