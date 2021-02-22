@@ -97,8 +97,9 @@ do.plot.simulations <- function(
     label.change.size=5,
     label.change.nudge.x=0,
     label.alpha = 0.5,
-    label.digits=0,
-    
+    label.digits=0,    
+    vline.change.years = F,
+
     name.interventions.by.number=T,
     hide.legend=F,
     
@@ -123,8 +124,16 @@ do.plot.simulations <- function(
     y.axis.title.function = NULL,
     y.title.standoff=10,
   
-    return.plot.function=F
-  )
+    return.plot.function=F, #if T, returns a function that takes nrows and returns a plot
+     
+    place.labels.to.side = T,
+    place.labels.at.alpha = 0.025, #if place.labels.to.side==F, then places these at the alpha-th or (1-alpha)th quantile of simulations
+  
+    label.axis.ci = T,
+    wrap.axis.labels = F,
+  
+    margin.top=NULL
+    )
 {
     keep.dimensions = unique(c('year', facet.by, split.by))
     
@@ -240,6 +249,9 @@ do.plot.simulations <- function(
     
     if (any(keep.dimensions=='risk') && any(keep.dimensions=='sex'))
         df.truth = df.truth[df.truth$sex != 'female' | (df.truth$risk != 'msm' & df.truth$risk != 'msm_idu'),]
+    
+    if (dim(df.truth)[1]==0)
+        df.truth = NULL
     
     #-- Get total population --#
     total.population.per.simset = lapply(1:length(simsets), function(i){
@@ -754,6 +766,7 @@ do.plot.simulations <- function(
                                                      data.type=data.type,
                                                      split=split)
                         
+                        
                         plot = add_markers(plot, data=df.truth[mask,],
                                            y=~value, color=color,
                                            name=one.truth.name,
@@ -768,6 +781,7 @@ do.plot.simulations <- function(
                                            hoverinfo='text',
                                            legendgroup=if (condense.legend) NULL else 'Truth',
                                            showlegend = F)
+                        
                     }
                 }
             }
@@ -782,6 +796,7 @@ do.plot.simulations <- function(
                     {
                         mask = change.facet==ff & change.split==split & df.change$intervention==intervention
                         
+                        
                         if (any(mask))
                         {
                             if (color.by == 'split' && length(split.by)>0)
@@ -795,7 +810,8 @@ do.plot.simulations <- function(
                             else
                                 label.text = paste0(round(100*df.change[mask, paste0(change.name, "_mean")], digits=label.digits), '%')
                             if (label.change.ci)
-                                label.text = paste0(label.text, " [",
+                                label.text = paste0(label.text, 
+                                                    " [",
                                                     round(100*df.change[mask, paste0(change.name, "_interval_lower")], label.digits),
                                                     " to ",
                                                     round(100*df.change[mask, paste0(change.name, "_interval_upper")], label.digits),
@@ -806,39 +822,95 @@ do.plot.simulations <- function(
                             else
                                 label.text = paste0(label.text, "")
                             
-                            if (plot.format=='median.and.interval')
+                            if (!place.labels.to.side)
                             {
-                                #   y1.name = paste0(change.years[1], "_median")
-                                y2.name = paste0(change.years[2], "_median")
+                                if (plot.format=='median.and.interval')
+                                {
+                                    #   y1.name = paste0(change.years[1], "_median")
+                                    y2.name = paste0(change.years[2], "_median")
+                                }
+                                else
+                                {
+                                    #   y1.name = paste0(change.years[1], "_mean")
+                                    y2.name = paste0(change.years[2], "_mean")
+                                }
+                            
+                                plot = add.plot.label(plot, 
+                                                      text=label.text,
+                                                      x=change.years[2] + label.change.nudge.x,
+                                                      y=df.change[mask, y2.name],
+                                                      xanchor = 'left',
+                                                      fill=color,
+                                                      alpha=label.alpha)
                             }
                             else
                             {
-                                #   y1.name = paste0(change.years[1], "_mean")
-                                y2.name = paste0(change.years[2], "_mean")
-                            }
+                                mask.for.all.interventions = df.sim$year == change.years[2] & df.sim$facet == ff & df.sim$split==split 
+                                mask.for.this.intervention = mask.for.all.interventions & df.sim$intervention==intervention
+                                
+                                mean.for.all.interventions = mean(df.sim$value[mask.for.all.interventions])
+                                mean.for.this.interventions = mean(df.sim$value[mask.for.this.intervention])
+                                label.on.top = mean.for.this.interventions >= mean.for.all.interventions
+                                
+                                label.y.alpha = (1-plot.interval.coverage)/2
+                                if (label.on.top)
+                                    label.y.alpha = 1-label.y.alpha
+                                
+                                LABEL.YEAR.SPAN = 5
+                                label.y.per.year = sapply(c(change.years[2])-c(0,LABEL.YEAR.SPAN), function(year){
+                                    mask = df.sim$year == year & df.sim$facet == ff & df.sim$split==split  & df.sim$intervention==intervention
+                                    if (plot.format=='individual.simulations')
+                                        quantile(df.sim$value[mask], label.y.alpha)[1]
+                                    else if (label.on.top)
+                                        df.sim$upper[mask][1]
+                                    else
+                                        df.sim$lower[mask][1]
+                                })
+                                
+                                if (label.on.top)
+                                {
+                                    yanchor = 'bottom'
+                                    y.label = max(label.y.per.year)
+                                    
+                                }
+                                else
+                                {
+                                    yanchor = 'top'
+                                    y.label = min(label.y.per.year)
+                                }
                             
-                            plot = add.plot.label(plot, 
-                                                  text=label.text,
-                                                  x=change.years[2] + label.change.nudge.x,
-                                                  y=df.change[mask, y2.name],
-                                                  xanchor = 'left',
-                                                  fill=color,
-                                                  alpha=label.alpha)
+                                plot = add.plot.label(plot, 
+                                                      text=label.text,
+                                                      x=change.years[2],# + label.change.nudge.x,
+                                                      y=y.label,
+                                                      xanchor = 'right', yanchor=yanchor,
+                                                      fill=color,
+                                                      alpha=label.alpha)
+                            }
                         }
                     }
                 }
+                
+                if (vline.change.years)
+                    plot = layout(plot, 
+                                  shapes = list(vline(x=change.years[1], dash='dot'),
+                                                vline(x=change.years[2], dash='dot'))
+                    )
             }
             
             axis.title = DATA.TYPE.AXIS.LABELS[names(data.type.names)[data.types.for.facet.categories[ff]==data.type.names]]
             axis.title = sapply(names(data.type.names)[data.types.for.facet.categories[ff]==data.type.names], function(data.type){
                 y.axis.title.function(data.type)
             })
-            if (plot.format != 'individual.simulations')
-              axis.title = paste0(axis.title, " (",
-                                  round(100*plot.interval.coverage), 
-                                  '% Prediction Interval)')
+            if (plot.format != 'individual.simulations' && label.axis.ci)
+                axis.title = paste0(axis.title, 
+                                    ifelse(wrap.axis.labels, '\n', ' '),
+                                    "(",
+                                    round(100*plot.interval.coverage), 
+                                    '% Prediction Interval)')
               
             yaxis.list = list(rangemode = "tozero",
+                              automargin = T,
                               title = list(text=axis.title,
                                            standoff=y.title.standoff,
                                            font=list(size=y.title.size)),
@@ -852,9 +924,11 @@ do.plot.simulations <- function(
             plot = layout(plot,
                           yaxis = yaxis.list,
                           xaxis=list(title='',
+                                     automargin=T,
                                      tickfont = list(size=tick.size)))
                 
             if (title.subplots)
+            {
                 plot = add_annotations(plot,
                                        text = ff,
                                        x = 0.5,
@@ -865,8 +939,10 @@ do.plot.simulations <- function(
                                        xanchor = "center",
                                        yanchor = "top",
                                        font = list(size = title.size),
-                                       showarrow = FALSE
-            )
+                                       showarrow = FALSE)
+                
+             #   plot = layout(plot, margin = list(t = 100))
+            }
             
             plot
         })
@@ -886,8 +962,14 @@ do.plot.simulations <- function(
                                font = list(size=legend.text.size))
             if (!condense.legend)
                 legend.list$traceorder = 'grouped'
-            plot = layout(plot, 
-                          legend = legend.list)
+            
+            if (!is.null(margin.top))
+                plot = layout(plot, 
+                              legend = legend.list,
+                              margin = list(t=margin.top))
+            else
+                plot = layout(plot, 
+                              legend = legend.list)
             
             plot
         }
@@ -1825,6 +1907,23 @@ extract.simset.knowledge.of.status <- function(simset, years, all.dimensions,
 ##-- MISC HELPERS --##
 ##------------------##
 
+vline <- function(x = 0, 
+                  color = "black",
+                  width = 0.5,
+                  dash=c("dot","dash","dashdot","solid"))
+{
+    list(
+        type = "line", 
+        y0 = 0, 
+        y1 = 1, 
+        yref = "paper",
+        x0 = x, 
+        x1 = x, 
+        line = list(color = color,
+                    width = width,
+                    dash = dash)
+    )
+}
 
 is.pct.data.type <- function(data.type, data.type.names=NULL)
 {

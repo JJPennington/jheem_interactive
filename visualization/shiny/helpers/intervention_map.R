@@ -25,7 +25,9 @@ map.interventions.to.codes <- function(interventions,
 map.codes.to.interventions <- function(codes,
                                        map)
 {
-    map[codes]
+    lapply(codes, function(code){
+        map[[code]]  
+    })
 }
 
 put.intervention.to.map <- function(code,

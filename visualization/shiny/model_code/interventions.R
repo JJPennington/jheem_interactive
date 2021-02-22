@@ -205,11 +205,17 @@ get.intervention.description.table <- function(int,
                                                suppression.descriptor = 'suppressed')
 {
     types = names(int$raw)
-    target.population.hashes = unique(as.character(unlist(sapply(types, function(type){
-        subset = int$raw[[type]]
-        sapply(subset$target.populations, target.population.hash)
-    }))))
-    target.populations = sapply(target.population.hashes, target.population.from.hash)
+    all.target.populations = list()
+    for (subset in int$raw)
+        all.target.populations = c(all.target.populations, subset$target.populations)
+    all.target.population.hashes = sapply(all.target.populations, target.population.hash)
+        
+    #unique
+    target.population.hashes = unique(all.target.population.hashes)
+    target.populations = lapply(target.population.hashes, function(hash){
+        all.target.populations[all.target.population.hashes==hash][[1]]
+    })
+    
     names(target.populations) = NULL
     
     rv = sapply(types, function(type){
@@ -235,7 +241,7 @@ get.intervention.description.table <- function(int,
     dimnames(rv) = list(NULL, intervention.type=types)
     attr(rv, 'unit.types') = INTERVENTION.UNIT.TYPE.PRETTY.NAMES[types]
     attr(rv, 'target.populations') = target.populations
-    attr(rv, 'target.population.names') = sapply(target.populations, target.population.name)
+#    attr(rv, 'target.population.names') = sapply(target.populations, target.population.name)
     
     rv
     

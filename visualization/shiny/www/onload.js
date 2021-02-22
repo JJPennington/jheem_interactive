@@ -7,3 +7,9 @@ shinyjs.ping_display_size = function()
     
     Shiny.setInputValue('display_size', rv);
 }
+
+
+shinyjs.set_input_value = function(params)
+{
+    Shiny.setInputValue(params.name, params.value);
+}

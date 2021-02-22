@@ -4,27 +4,102 @@ CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbo
 ##-- HEADERS AND DISPLAY --##  
 tags$tr(
     #-- Left Header --#
-    tags$td(class='controls_header_td controls_wide header_color',
-            "Specify Intervention"),
+    tags$td(id='left_controls_custom_header',
+            class='controls_header_td controls_wide header_color collapsible',
+            tags$div(class='controls_narrow', "Specify Intervention")),
     
     #-- The Main Panel --#
-    tags$td(class='display_td display_narrow content_color', id='display_custom_td',
+    tags$td(class='display_td content_color', id='display_custom_td',
             rowspan=4,
             tags$div(class='display',
                      create.display.panel('custom')        
-            )),
+            ),
+            
+            #-- ACCORDION BUTTONS --#
+            make.accordion.button('custom_collapse_left', 
+                                  left.offset ='-10px',
+                                  direction='left',
+                                  hide.ids=c('custom_collapse_left'),
+                                  show.ids='custom_expand_left',
+                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  remove.classes='controls_wide',
+                                  add.classes='collapsed',
+                                  shiny.ids='left_width_custom',
+                                  shiny.values=0,
+                                  visible=T
+            ),
+            bsTooltip('custom_collapse_left', 'Hide Intervention Selection', placement='right'),
+            
+            make.accordion.button('custom_expand_left', 
+                                  left.offset='0px',
+                                  direction='right',
+                                  show.ids=c('custom_collapse_left'),
+                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  remove.classes='collapsed',
+                                  add.classes='controls_wide',
+                                  shiny.ids='left_width_custom',
+                                  shiny.values=LEFT.PANEL.SIZE['custom'],
+                                  visible=F
+            ),  
+            make.popover('custom_expand_left', 'Show Intervention Selection',
+                         'Click for controls to select an intervention.',
+                         placement='right'),
+            
+            
+            make.accordion.button('custom_collapse_right', 
+                                  right.offset ='-10px',
+                                  direction='right',
+                                  show.ids=c('prerun_expand_right','custom_expand_right'),
+                                  hide.ids=c('prerun_collapse_right','custom_collapse_right'),
+                                  remove.class.ids=c('right_controls_prerun','right_prerun_cta','right_controls_prerun_header',
+                                                    'right_controls_custom','right_custom_cta','right_controls_custom_header'),
+                                  add.class.ids=c('right_controls_prerun','right_prerun_cta','right_controls_prerun_header',
+                                                  'right_controls_custom','right_custom_cta','right_controls_custom_header'),
+                                  remove.classes='controls_narrow',
+                                  add.classes='collapsed',
+                                  shiny.ids='right_width_custom',
+                                  shiny.values=0,
+                                  visible=F
+            ),
+            bsTooltip('custom_collapse_right', 'Hide Figure Settings', placement='left'),
+            
+            make.accordion.button('custom_expand_right', 
+                                  right.offset='0px',
+                                  direction='left',
+                                  show.ids=c('prerun_collapse_right','custom_collapse_right'),
+                                  hide.ids=c('prerun_expand_right','custom_expand_right'),
+                                  remove.class.ids=c('right_controls_prerun','right_prerun_cta','right_controls_prerun_header',
+                                                     'right_controls_custom','right_custom_cta','right_controls_custom_header'),
+                                  add.class.ids=c('right_controls_prerun','right_prerun_cta','right_controls_prerun_header',
+                                                  'right_controls_custom','right_custom_cta','right_controls_custom_header'),
+                                  remove.classes='collapsed',
+                                  add.classes='controls_narrow',
+                                  shiny.ids='right_width_custom',
+                                  shiny.values=RIGHT.PANEL.SIZE['custom'],
+                                  visible=T
+            ),  
+            make.popover('custom_expand_right', 'Show Figure Settings',
+                         'Click for controls to adjust what is plotted in the figures.',
+                         placement='left')
+            
+            
+            ),
     
     #-- Right Header --#
-    tags$td(class='controls_header_td controls_narrow header_color',
-            "Figure Configuration")
+    tags$td(id='right_controls_custom_header',
+            class='controls_header_td header_color collapsible collapsed',
+            tags$div(class='controls_narrow', "Figure Settings"))
 ), #</tr>
 
 ##-- CONTROL PANELS --##
 tags$tr(
     
     #-- The Left Panel --#
-    tags$td(class='controls_td controls_wide controls_color',
-            tags$div(class='controls',
+    tags$td(id='left_controls_custom',
+            class='controls_td controls_wide controls_color collapsible',
+            tags$div(class='controls controls_wide',
                      tags$div(id='location_custom_holder',
                               inline.select.input(inputId='location_custom',
                                                   label='Location: ',
@@ -78,7 +153,8 @@ tags$tr(
     ),  # </td>
     
     #-- The Right Panel --#
-    tags$td(class='controls_td controls_narrow controls_color',
+    tags$td(id='right_controls_custom',
+            class='controls_td controls_color collapsible collapsed',
             rowspan=2,
             create.plot.control.panel('custom')
     )
@@ -89,10 +165,13 @@ tags$tr(
 tags$tr(
     
     #-- Left panel text --#
-    tags$td(class='cta_text_td controls_wide cta_background_color',
-            HTML("This will take 2-5 minutes<BR>
-                  <input type='checkbox' id='chime_run_custom' name='chime_run_custom' style='float: left'>
-                  <label for='chime_run_custom'>&nbsp;Play a chime when done</label>")
+    tags$td(id='left_custom_cta_text',
+            class='cta_text_td controls_wide cta_background_color collapsible',
+            tags$div(class='cta_text',
+                HTML("This will take 2-5 minutes<BR>
+                      <input type='checkbox' id='chime_run_custom' name='chime_run_custom' style='float: left'>
+                      <label for='chime_run_custom'>&nbsp;Play a chime when done</label>")
+            )
     ),
     
 ), #</tr>
@@ -101,13 +180,17 @@ tags$tr(
 tags$tr(
     
     #-- Left panel button --#
-    tags$td(class='cta_td controls_wide cta_color',
-            actionButton(class='cta cta_color', inputId='run_custom', label='Simulate Intervention')
+    tags$td(id='left_custom_cta',
+            class='cta_td controls_wide cta_color collapsible',
+            tags$div(class='controls_wide', 
+                actionButton(class='cta cta_color', inputId='run_custom', label='Simulate Intervention'))
             ),
     
     #-- Right panel button --#
-    tags$td(class='cta_td controls_narrow cta_color',
-            actionButton(class='cta cta_color', inputId='redraw_custom', label='Adjust Projections')
+    tags$td(id='right_custom_cta',
+            class='cta_td cta_color collapsible collapsed',
+            tags$div(class='controls_narrow', 
+                actionButton(class='cta cta_color', inputId='redraw_custom', label='Adjust Projections'))
             )
     
 ) #</tr>

@@ -2,22 +2,27 @@
 .cta_color {
     background: #03427c;
     color: white;
+    border-color: black;
 }
 
 .cta_background_color {
     background-color: #f8f8f8;
+    border-color: black;
 }
 
 .header_color {
     background-color: #e2e2e2;
+    border-color: black;
 }
 
 .controls_color {
     background-color: #f8f8f8;
+    border-color: black;
 }
 
 .content_color {
     background-color: #ffffff;
+    border-color: black;
 }
 
 

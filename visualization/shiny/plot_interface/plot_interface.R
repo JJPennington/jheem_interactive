@@ -135,7 +135,14 @@ make.simulations.plot.and.table <- function(
             
             data.type.names = DATA.TYPE.NAMES,
             return.change.data.frame = T,
-            ncol = ncol)
+            ncol = ncol,
+            
+            place.labels.to.side = T,
+            wrap.axis.labels = T,
+            vline.change.years = T,
+            
+            margin.top=30
+            )
         
         
             setProgress(value=1)

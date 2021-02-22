@@ -54,12 +54,16 @@ generate.plot.and.table <- function(input,
     #-- Add the intervention --#
     # This is assuming just ONE intervention code for now
     selected.int = NULL
-    if (!is.null(intervention.map))
-        selected.int = map.codes.to.interventions(intervention.codes[1], intervention.map)[[1]]
-    if (is.null(selected.int))
-        selected.int = intervention.from.code(intervention.codes[1])
-    plot.results$intervention = selected.int
+    if (!is.null(intervention.codes))
+    {
+      if (!is.null(intervention.map))
+          selected.int = map.codes.to.interventions(intervention.codes[1], intervention.map)[[1]]
+      if (is.null(selected.int))
+          selected.int = intervention.from.code(intervention.codes[1])
+      plot.results$intervention = selected.int
+    }
     plot.results$intervention.codes = intervention.codes
+    
     
     #-- Return --#
     plot.results

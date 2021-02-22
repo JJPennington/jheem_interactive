@@ -11,7 +11,13 @@ HEIGHT.OFFSET = c(prerun=180,
 get.display.size <- function(input, suffix)
 {
     size = input$display_size
-    size$width = size$width - LEFT.PANEL.SIZE[suffix] - RIGHT.PANEL.SIZE[suffix]
+    
+    print(paste0("input$left_width_prerun = ", input$left_width_prerun))
+    print(paste0("input$right_width_prerun = ", input$right_width_prerun))
+    
+    size$width = size$width -
+        as.numeric(input[[paste0('left_width_', suffix)]]) -
+        as.numeric(input[[paste0('right_width_', suffix)]])
     size$height = size$height - HEIGHT.OFFSET[suffix]
     
     size
