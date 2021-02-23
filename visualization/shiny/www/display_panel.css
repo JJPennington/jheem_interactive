@@ -27,12 +27,17 @@
 }
 
 .intervention_panel_holder {
-    position: fixed;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
     z-index: 99999;
     bottom: 5px;
     
     padding-left: 5px;
     padding-right: 5px;
+    padding-bottom: 0px;
 }
 
 .intervention_panel_buffer {
@@ -101,4 +106,9 @@ table.intervention_summary {
     font-size: 150%;
     padding: 30px;
     padding-top:12vh;
+}
+
+.error_message {
+    font-style: italic;
+    color: red;
 }

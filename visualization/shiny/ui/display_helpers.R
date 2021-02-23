@@ -29,13 +29,13 @@ create.display.panel <- function(suffix)
                     menuName = paste0("share_", suffix),
                     icon = icon('arrow-up-square',lib='glyphicon'),
                     tabPanel(
-                        title=actionLink(paste0('download_figure_', suffix), 'Download Figure'),
+                        title=actionLink(paste0('download_figure_', suffix), 'Download Figure', style='height:100%;'),
                     ),
                     tabPanel(
-                        title=actionLink(paste0('download_table_', suffix), 'Download Table'),
+                        title=actionLink(paste0('download_table_', suffix), 'Download Table', style='height:100%;'),
                     ),
                     tabPanel(
-                        title=actionLink(paste0('share_link_', suffix), 'Share Link'),
+                        title=actionLink(paste0('share_link_', suffix), 'Share Link', style='height:100%;'),
                     )
                 )  # </navbarMenu>
             ),  # </tabsetPanel>
@@ -51,9 +51,9 @@ create.display.panel <- function(suffix)
 create.projected.intervention.panel <- function(suffix)
 {
     if (suffix=='custom')
-        css.class = 'intervention_panel_holder display_narrow'
+        css.class = 'intervention_panel_holder'# display_narrow'
     else
-        css.class = 'intervention_panel_holder display_wide'
+        css.class = 'intervention_panel_holder'# display_wide'
     
     #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
     tags$div(class=css.class,
@@ -96,9 +96,10 @@ set.plot <- function(input,
     plot.id = paste0('plot_', suffix)
     
     display.size = get.display.size(input, suffix)
-    height = display.size$height
+    height = display.size$height - 20
     output[[holder.id]] = renderUI(tags$div(class='plot_holder',
-                                           withSpinner(plotlyOutput(outputId = plot.id,
+                                           withSpinner(type=1,
+                                               plotlyOutput(outputId = plot.id,
                                                                     height=paste0(height, 'px')))
     ))
     
@@ -135,8 +136,10 @@ set.table <- function(input,
     
     output[[table.id]] = renderUI(tags$div(class='table_holder',
                                           style=paste0('max-height: ', height, 'px'),
+        withSpinner(type=7,
         DT::dataTableOutput(outputId = dt.id,
                             width=paste0(width, 'px'))
+        )
     ))
     
     pretty.table = make.pretty.change.data.frame(tab, data.type.names=WEB.DATA.TYPE.NAMES)
@@ -157,7 +160,8 @@ set.intervention.panel <- function(output,
             )
     else
         output[[panel.id]] = renderUI(
-            tags$div(make.intervention.pretty.table(intervention))
+            tags$div(make.intervention.pretty.table(intervention,
+                                                    use.default.tpop.names = suffix=='custom'))
         )
         
 }
@@ -200,7 +204,7 @@ clear.intervention.panel <- function(output,
         intervention = INTERVENTION.MANAGER.1.0$intervention[[48]]
         
         output[[panel.id]] = renderUI(
-            tags$div(make.intervention.pretty.table(intervention)))
+            tags$div(make.intervention.pretty.table(intervention, T)))
     }
 }
 
@@ -315,43 +319,66 @@ get.num.panels.to.plot <- function(input, suffix)
 ##-- LOWER LEVEL HELPERS --##
 ##-------------------------##
 
-make.intervention.pretty.table <- function(int)
+make.intervention.pretty.table <- function(int, use.default.tpop.names)
 {
-#    int = lump.idu.for.intervention(int)
-    raw = get.intervention.description.table(int, include.start.text = NULL,
-                                             testing.descriptor='',
-                                             prep.descriptor='uptake',
-                                             suppression.descriptor='',
-                                             empty.value = '-')
-    target.population.names = attr(raw, 'target.population.names')
-    unit.types = attr(raw, 'unit.types')
-#    target.population.names = lump.idu.in.name(target.population.names)
+    tryCatch({
+        raw = get.intervention.description.table(int, include.start.text = NULL,
+                                                 testing.descriptor='',
+                                                 prep.descriptor='uptake',
+                                                 suppression.descriptor='',
+                                                 empty.value = '-')
+        target.populations = attr(raw, 'target.populations')
+        unit.types = attr(raw, 'unit.types')
+    #    target.population.names = lump.idu.in.name(target.population.names)
+    
+        if (use.default.tpop.names)
+        {
+            target.population.names = sapply(target.populations, default.target.population.name)
+        }
+        else
+        {
+            target.population.names = sapply(target.populations, target.population.name)
+            
+            # Reorder to group by lumped idu
+            lumped.tpop.names = sapply(lapply(target.populations, lump.idu.in.target.population), target.population.name)
+            lumped.tpop.first.index = sapply(lumped.tpop.names, function(name){
+                (1:length(lumped.tpop.names))[lumped.tpop.names==name][1]
+            })
+            o = order(lumped.tpop.first.index)
+            
+            target.population.names = target.population.names[o]
+            raw.dim = dim(raw)
+            raw = raw[o,]
+            dim(raw) = raw.dim
+        }
+        
+        # Make the table
+        header.tds = c(list(tags$th()),
+                       lapply(unit.types, tags$th))
+        names(header.tds) = NULL
+        header.tr = do.call(tags$tr, header.tds)
+        
+        other.trs = lapply(1:length(target.population.names), function(i){
+            tds = c(list(tags$td(target.population.names[i])),
+                    lapply(raw[i,], tags$td))
+            names(tds) = NULL
+            do.call(tags$tr, tds)
+        })
+        
+        all.trs = c(list(header.tr), other.trs)
+        do.call(tags$table, list(all.trs, class='intervention_summary'))
+    },
+    error = function(e){
+        log.error(e$message)
+        tags$div(class='error_message', 
+                      "There was an error generating a summary of the selected intervention. We apologize - the rest of the app will continue to function")
+    })
+}
 
-    # Reorder to group by lumped idu
-    lumped.tpop.names = sapply(lapply(attr(raw, 'target.populations'), lump.idu.in.target.population), target.population.name)
-    lumped.tpop.first.index = sapply(lumped.tpop.names, function(name){
-        (1:length(lumped.tpop.names))[lumped.tpop.names==name][1]
-    })
-    o = order(lumped.tpop.first.index)
-    
-    target.population.names = target.population.names[o]
-    raw.dim = dim(raw)
-    raw = raw[o,]
-    dim(raw) = raw.dim
-    
-    # Make the table
-    header.tds = c(list(tags$th()),
-                   lapply(unit.types, tags$th))
-    names(header.tds) = NULL
-    header.tr = do.call(tags$tr, header.tds)
-    
-    other.trs = lapply(1:length(target.population.names), function(i){
-        tds = c(list(tags$td(target.population.names[i])),
-                lapply(raw[i,], tags$td))
-        names(tds) = NULL
-        do.call(tags$tr, tds)
-    })
-    
-    all.trs = c(list(header.tr), other.trs)
-    do.call(tags$table, list(all.trs, class='intervention_summary'))
+log.error <- function(msg)
+{
+    print("-------ERROR-------")
+    print(Sys.time())
+    print(msg)
+    print("-----End Error-----")
 }

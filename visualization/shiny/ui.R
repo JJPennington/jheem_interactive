@@ -20,7 +20,9 @@ source('server/server_utils.R')
 source('server/prerun_interface.R')
 
 #-- HELPERS --#
+source('helpers/display_size.R')
 source('helpers/general_helpers.R')
+source('helpers/accordion.R')
 source('ui/ui_helpers.R')
 source('ui/popovers.R')
 source('ui/intervention_selector.R')
@@ -48,22 +50,22 @@ ui = tags$html(style='height:100%',
   # Add js scripts to shinyjs
   shinyjs::useShinyjs(),
   extendShinyjs(script = 'sounds.js', functions = c('chime', 'chime_if_checked', 'chime_alert')),
-  extendShinyjs(script = 'onload.js', functions = c('ping_display_size')),
+  extendShinyjs(script = 'onload.js', functions = c('ping_display_size', 'set_input_value')),
   
   # Add CSS Files
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "display_layout.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "display_panel.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "custom_controls.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "plot_controls.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "box_colors.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "color_schemes/color_scheme_grayscale.css"),
-    
-#    tags$link(rel = "stylesheet", type = "text/css", href = "not using/tmp.css"),
-    
+    tags$link(rel = "stylesheet", type = "text/css", href = "accordion.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
     
  #   tags$script(src = 'window_height.js'),
     tags$script(src = 'window_sizes.js'),
+    tags$script(src = 'accordion.js'),
     tags$script(src = 'setup_tooltips.js'),
   ),
 

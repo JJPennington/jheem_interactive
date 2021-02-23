@@ -6,7 +6,7 @@
 create.plot.control.panel <- function(suffix)
 {
     tags$div(
-        class='controls',
+        class='controls controls_narrow',
         
         
         checkboxGroupInput(inputId = paste0('outcomes_', suffix),
@@ -25,49 +25,83 @@ create.plot.control.panel <- function(suffix)
                            choiceNames = DIMENSION.OPTIONS.1$names,
                            selected = c()),
         make.popover(paste0('facet_by_', suffix),
-                     title='Split Outcomes by Subgroup',
+                     title='Make Separate Panels by Subgroup',
                      content="Make a separate panel for each combination of the selected attributes. (Note: clicking more than two attributes is going to make a LOT of panels)",
                      placement='left'),
         
         
         tags$div(id=paste0('show_change_panel_', suffix),
-            checkboxInput(inputId = paste0('show_change_', suffix),
-                          label = tags$b('Calculate the Change in Outcomes'),
-                          value=T),
-            
-            conditionalPanel(
-                condition = paste0("input.show_change_", suffix),
-                fluidRow(class='from_to_holder',
-                    column(width=6, 
-                           'from',
-                           selectInput(inputId = paste0('change_from_', suffix),
-                                       label = NULL,
-                                       choices = YEAR.OPTIONS$values[YEAR.OPTIONS$values<max(YEAR.OPTIONS$values)],
-                                       selected = min(YEAR.OPTIONS$values[1]))),
-                    column(width=6,
-                           'to',
-                           selectInput(inputId = paste0('change_to_', suffix),
-                                        label = NULL,
-                                        choices = YEAR.OPTIONS$values[-1],
-                                        selected = max(YEAR.OPTIONS$values)))
-                ) #end fluidRow
-            ) #end conditionalPanel
-        ),
+                 tags$b('Calculate the Change in Outcomes'),
+                 
+                 tags$table(class='table_select',
+                     tags$tr(
+                         tags$td("from:"),
+                         tags$td(selectInput(inputId = paste0('change_from_', suffix),
+                                             label = NULL,
+                                             width = '120px',
+                                             choices = YEAR.OPTIONS$values[YEAR.OPTIONS$values<max(YEAR.OPTIONS$values)],
+                                             selected = min(YEAR.OPTIONS$values[1]),
+                                             selectize = F))
+                     ),
+                     tags$tr(
+                         tags$td("to:"),
+                         tags$td(selectInput(inputId = paste0('change_to_', suffix),
+                                             label = NULL,
+                                             width='120px',
+                                             choices = YEAR.OPTIONS$values[-1],
+                                             selected = max(YEAR.OPTIONS$values),
+                                             selectize = F))
+                     )
+                 ), #</table>
+                 
+                 tags$div(class='squish_up',
+                     checkboxInput(
+                         inputId = paste0('show_change_', suffix),
+                         label='Label this change on the figure',
+                         value=T
+                     ) #</div>
+                 )
+             ), #</div>
+         
         make.popover(paste0('show_change_panel_', suffix),
                      title='Calculate a Change In Outcomes',
                      content="The tigure and table will display the change in each outcome over this time period.",
                      placement='left'),
 
+        tags$div(style='height: 20px;'),
         
-        radioButtons(inputId = paste0('plot_format_', suffix),
-                     label='What to Show for Projections:',
-                     choiceNames=PLOT.FORMAT.OPTIONS$names,
-                     choiceValues=PLOT.FORMAT.OPTIONS$values,
-                     selected=PLOT.FORMAT.OPTIONS$values[1]),
-        make.popover(paste0('plot_format_', suffix),
-                     title='What to Show in the Plot',
-                     content="Each figure and table is a synthesis of 80 individual simulations. You can either show the mean and credible interval across these simulations, or you can plot a line for each individual simulation.",
-                     placement='left'),
+        tags$div(style='margin-right:-5px; margin-left:-5px',
+        box(title='Advanced Options',
+            status = 'info',
+            solidHeader = T,
+            width=12,
+            collapsible = T,
+            collapsed=T,
+            
+            #-- Plot Format --#
+            radioButtons(inputId = paste0('plot_format_', suffix),
+                         label='What to Show for Projections:',
+                         choiceNames=PLOT.FORMAT.OPTIONS$names,
+                         choiceValues=PLOT.FORMAT.OPTIONS$values,
+                         selected=PLOT.FORMAT.OPTIONS$values[1]),
+            make.popover(paste0('plot_format_', suffix),
+                         title='What to Show in the Plot',
+                         content="Each figure and table is a synthesis of 80 individual simulations. You can either show the mean and credible interval across these simulations, or you can plot a line for each individual simulation.",
+                         placement='left'),
+            
+            #-- Split By --#
+            checkboxGroupInput(inputId = paste0('split_by_', suffix),
+                               label = "Plot a Separate Line for Each:",
+                               choiceValues = DIMENSION.OPTIONS.1$values,
+                               choiceNames = DIMENSION.OPTIONS.1$names,
+                               selected = c()),
+            make.popover(paste0('split_by_', suffix),
+                         title='Make Separate Lines by Subgroup',
+                         content="Within each panel, plot a separate line for each combination of the selected attributes. (Note: clicking more than one attribute is going to make a LOT of lines)",
+                         placement='left'),
+        
+        ) #</box>
+        ) #</div>
     )
     
     
@@ -136,7 +170,7 @@ get.selected.facet.by <- function(input, suffix)
 
 get.selected.split.by <- function(input, suffix)
 {
-    NULL
+    input[[paste0('split_by_', suffix)]]
 }
 
 get.selected.dimension.subsets <- function(input, suffix)

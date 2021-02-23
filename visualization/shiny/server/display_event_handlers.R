@@ -14,15 +14,23 @@ add.display.event.handlers <- function(session, input, output, cache)
 
     
     #-- Resize Listener --#
-    observeEvent(input$display_size, {
-        lapply(names(plot.and.table.list), function(suffix){
+    
+    handle.resize <- function(suffixes)
+    {
+        lapply(suffixes, function(suffix){
             if (!is.null(plot.and.table.list[[suffix]]))
                 set.display(input=input,
                             output=output,
                             suffix=suffix,
                             plot.and.table = plot.and.table.list[[suffix]])
         })
-    })
+    }
+    
+    observeEvent(input$display_size, handle.resize(names(plot.and.table.list)) )
+    observeEvent(input$left_width_prerun, handle.resize('prerun') )
+    observeEvent(input$right_width_prerun, handle.resize('prerun') )
+    observeEvent(input$left_width_custom, handle.resize('custom') )
+    observeEvent(input$right_width_custom, handle.resize('custom') )
     
     #-- General Handler for Running/Redrawing --#
     do.run.inner <- function(valid) {
@@ -31,15 +39,13 @@ add.display.event.handlers <- function(session, input, output, cache)
       browser()
       
       if (valid) {
-          plot.and.table.list[[suffix]] <<- generate.plot.and.table(
-            input=input, 
-            cache=cache, 
-            intervention.codes=intervention.codes,
-            suffix=suffix)
-          
-          #-- Update the UI --#
-          set.display(input, output, suffix, plot.and.table.list[[suffix]])
-          sync.buttons.to.plot(input, plot.and.table.list)
+        plot.and.table.list[[suffix]] <<- generate.plot.and.table(
+          input=input, cache=cache, intervention.codes=intervention.codes,
+          suffix=suffix,intervention.map = custom.int.map)
+        
+        #-- Update the UI --#
+        set.display(input, output, suffix, plot.and.table.list[[suffix]])
+        sync.buttons.to.plot(input, plot.and.table.list)
       } else {
           # @Todd: I put error messages inside `error_checking.R`
       }
@@ -47,16 +53,19 @@ add.display.event.handlers <- function(session, input, output, cache)
     
     do.run = function(intervention.codes, suffix)
     {   
-      #-- Lock the appropriate buttons --#
-      lock.cta.buttons(input, called.from.suffix = suffix,
-                       plot.and.table.list=plot.and.table.list)
-      # TODO: store state for callback
-      valid = check.plot.controls(
-          session, input, suffix, callback=do.run.inner)
-      do.run.inner(valid)
-      
-      unlock.cta.buttons(input, called.from.suffix = suffix,
+        get.display.size(input, 'prerun')
+        
+        #-- Lock the appropriate buttons --#
+        lock.cta.buttons(input, called.from.suffix = suffix,
                          plot.and.table.list=plot.and.table.list)
+        
+        # TODO: @Todd/Joe: how handle callback? store state?
+        valid = check.plot.controls(
+          session, input, suffix, callback=do.run.inner)
+        do.run.inner(valid)
+        
+        unlock.cta.buttons(input, called.from.suffix = suffix,
+                           plot.and.table.list=plot.and.table.list)
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
@@ -85,6 +94,8 @@ add.display.event.handlers <- function(session, input, output, cache)
             # Get the selected intervention
             selected.int = get.selected.custom.intervention(input)
             selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
+            
+        set.intervention.panel(output, 'custom', selected.int)
             
             # Run simulation if needed and store
             if (is.na(selected.int.code))
@@ -137,6 +148,11 @@ add.display.event.handlers <- function(session, input, output, cache)
     # Get the size on load
     session$onFlushed(function(){
         js$ping_display_size()
+        
+        js$set_input_value(name='left_width_prerun', value=as.numeric(LEFT.PANEL.SIZE['prerun']))
+        js$set_input_value(name='right_width_prerun', value=0)
+        js$set_input_value(name='left_width_custom', value=as.numeric(LEFT.PANEL.SIZE['custom']))
+        js$set_input_value(name='right_width_custom', value=0)
         
         lapply(names(plot.and.table.list), 
                clear.display,
