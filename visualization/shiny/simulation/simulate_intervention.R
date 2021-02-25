@@ -9,39 +9,51 @@ simulate.intervention <- function(version,
 {
     seed.filename = get.seed.filename(location=location,
                                           version=version)
-    pull.files.to.cache(seed.filename, cache)
     
-    seed.simset = get.simsets.from.cache(seed.filename, cache)[[1]]
+    success = pull.files.to.cache(seed.filename, cache)
+    if (!success)
+        return(NULL)
     
-    withProgress(
-        message=paste0("Preparing to run ", seed.simset@n.sim, " simulations"), 
-        min=0, max=seed.simset@n.sim, value=0,
-        detail=NULL,
-        {   
-            run.from.year = attr(seed.simset, 'run.from.year')
-            keep.from.year = min(run.from.year-1, MAX.KEEP.FROM.YEAR-1)
-            
-            start.time = Sys.time()
-            simset = run.simset.intervention(seed.simset, 
-                                             intervention,
-                                             run.from.year = run.from.year,
-                                             run.to.year = RUN.TO.YEAR,
-                                             keep.years = keep.from.year:RUN.TO.YEAR,
-                                             
-                                             update.progress=function(i){
-                                                 time.diff = as.numeric(difftime(Sys.time(), start.time, units='secs'))
-                                                 time.text = get.timespan.text(time.diff,
-                                                                               digits.for.last.span = 0)
-                                                 setProgress(value=i,
-                                                             message=paste0("Running Simulation ", i, " of ", seed.simset@n.sim, ": "),
-                                                             detail=paste0(time.text, " elapsed"))
-                                             })
-            setProgress(seed.simset@n.sim, detail='Done')
-        })
-    
-save(simset, file='saved.simset.Rdata')
-    
-    compress.simset(simset)
+    tryCatch({
+        
+        seed.simset = get.simsets.from.cache(seed.filename, cache)[[1]]
+        
+print("Using limited seed for now")
+seed.simset = subset.simset(seed.simset, 1:5)
+        
+        withProgress(
+            message=paste0("Preparing to run ", seed.simset@n.sim, " simulations"), 
+            min=0, max=seed.simset@n.sim, value=0,
+            detail=NULL,
+            {   
+                run.from.year = attr(seed.simset, 'run.from.year')
+                keep.from.year = min(run.from.year-1, MAX.KEEP.FROM.YEAR-1)
+                
+                start.time = Sys.time()
+                simset = run.simset.intervention(seed.simset, 
+                                                 intervention,
+                                                 run.from.year = run.from.year,
+                                                 run.to.year = RUN.TO.YEAR,
+                                                 keep.years = keep.from.year:RUN.TO.YEAR,
+                                                 
+                                                 update.progress=function(i){
+                                                     time.diff = as.numeric(difftime(Sys.time(), start.time, units='secs'))
+                                                     time.text = get.timespan.text(time.diff,
+                                                                                   digits.for.last.span = 0)
+                                                     setProgress(value=i,
+                                                                 message=paste0("Running Simulation ", i, " of ", seed.simset@n.sim, ": "),
+                                                                 detail=paste0(time.text, " elapsed"))
+                                                 })
+                setProgress(seed.simset@n.sim, detail='Done')
+            })
+
+        compress.simset(simset)
+    },
+    error = function(e){
+        show.error.message("Error Simulating Intervention",
+                           "There was an error running the simulations for the specified intervention. We apologize - please try again later.")
+        NULL
+    })
 }
 
 get.selected.custom.intervention <- function(input, suffix)

@@ -14,11 +14,18 @@ library(shinycssloaders)
 ##-- SOURCE FILES --##
 ##------------------##
 
+#for now
+source('helpers/test.R')
+
 source('env.R')
+source('helpers/location_names.R')
+source('server/share_handlers.R')
+source('helpers/progress_bar.R')
 source('plot_interface/generate_plot.R')
 source('server/display_event_handlers.R')
 source('helpers/display_size.R')
 source('helpers/error_checking.R')
+source('helpers/error_handling.R')
 source('server/control_helpers.R')
 source('plot_interface/generate_plot.R')
 source('plot_interface/plot_interface.R')

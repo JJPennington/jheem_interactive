@@ -9,6 +9,15 @@ PRERUN.POPOVER = "This tab allows you to try out interventions that we have alre
 CUSTOM.POPOVER.TITLE = "Define and Simulate Your Own Interventions"
 CUSTOM.POPOVER = "This tab allows you to define any intervention you want. It will take several minutes to simulate these interventions."
 
+ABOUT.POPOVER.TITLE = "The Model Behind the Projections"
+ABOUT.POPOVER = "A brief overview of the Johns Hopkins Epidemiologic and Economic Model of HIV (JHEEM) and the methods we use to calibrate it."
+
+OUR.TEAM.POPOVER.TITLE = "The Research Team"
+OUR.TEAM.POPOVER = "About the investigators behind the Johns Hopkins Epidemiologic and Economic Model of HIV (JHEEM)."
+
+CONTACT.POPOVER.TITLE = "Contact Us"
+CONTACT.POPOVER = "Send us a message with any questions, feedback, or suggestions."
+
 
 # NB: these popover depends on a javascript hack to set the id of the title text, in setup_tooltips.js
 make.tab.popover <- function(id,

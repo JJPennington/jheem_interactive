@@ -13,6 +13,8 @@ create.display.panel <- function(suffix)
         css.class = 'display_panel_table display_wide_smaller'
     
     tags$table(class=css.class,
+               create.share.menu(suffix),
+               
         tags$tr(class='display_panel_main_tr', tags$td(class='display_panel_main_td',
             tabsetPanel(
                 id=paste0('nav_', suffix),
@@ -23,21 +25,7 @@ create.display.panel <- function(suffix)
                 tabPanel(
                     title="Table",
                     uiOutput(outputId = paste0('table_', suffix), class='fill_div')
-                ),
-                navbarMenu(
-                    title="Share",
-                    menuName = paste0("share_", suffix),
-                    icon = icon('arrow-up-square',lib='glyphicon'),
-                    tabPanel(
-                        title=actionLink(paste0('download_figure_', suffix), 'Download Figure', style='height:100%;'),
-                    ),
-                    tabPanel(
-                        title=actionLink(paste0('download_table_', suffix), 'Download Table', style='height:100%;'),
-                    ),
-                    tabPanel(
-                        title=actionLink(paste0('share_link_', suffix), 'Share Link', style='height:100%;'),
-                    )
-                )  # </navbarMenu>
+                )
             ),  # </tabsetPanel>
         )), # </td></tr>
         
@@ -48,13 +36,38 @@ create.display.panel <- function(suffix)
     ) #</table>
 }
 
+create.share.menu <- function(suffix)
+{
+    share.icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M3.5 6a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 1 0-1h2A1.5 1.5 0 0 1 14 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-8A1.5 1.5 0 0 1 3.5 5h2a.5.5 0 0 1 0 1h-2z"/>
+        <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708l3-3z"/>
+        </svg>'
+    
+    tags$div(class='share_container',
+             dropdownButton(
+                 label=HTML(paste0(share.icon, ' Share')),
+                 circle=F,
+                 icon=icon('box-arrow-up', lib='glyphicon'),
+                 right=T,
+                 inputId = paste0('share_menu_', suffix),
+                 actionLink(inputId = paste0('download_figure_', suffix),
+                            label = HTML("Download&nbsp;Figure")),
+                 downloadLink(outputId = paste0('download_table_', suffix),
+                            label = HTML("Download&nbsp;Table")),
+                 actionLink(inputId = paste0('share_link_', suffix),
+                            label = HTML("Share&nbsp;Link"))
+             ))
+}
+
 create.projected.intervention.panel <- function(suffix)
 {
     if (suffix=='custom')
         css.class = 'intervention_panel_holder'# display_narrow'
     else
         css.class = 'intervention_panel_holder'# display_wide'
-    
+
+    if (1==1)
+    {
     #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
     tags$div(class=css.class,
                       box(title='Details of Projected Intervention',
@@ -66,6 +79,46 @@ create.projected.intervention.panel <- function(suffix)
                           uiOutput(outputId = paste0('selected_intervention_', suffix)))
              
     )
+    }   
+    else
+    {
+    tags$div(class='intervention_panel_holder',
+             make.accordion.div(
+               id='collapse_intervention_panel',
+               class='intervention_panel_header header_color accordion_trigger',
+               style='display: none',
+               "Details of Projected Intervention",
+               tags$div(style='float: right', icon('caret-down')),
+               
+               hide.ids = 'collapse_intervention_panel',
+               show.ids = 'expand_intervention_panel',
+               remove.class.ids = 'intervention_panel_body',
+               remove.classes='expanded_vertical',
+               add.classes='collapsed_vertical'
+               
+             ),
+             make.accordion.div(
+               id='expand_intervention_panel',
+               class='intervention_panel_header header_color accordion_trigger',
+               "Details of Projected Intervention",
+               tags$div(style='float: right', icon('caret-up')),
+               
+               hide.ids = 'expand_intervention_panel',
+               show.ids = 'collapse_intervention_panel',
+               remove.class.ids = 'intervention_panel_body',
+               remove.classes='collapsed_vertical',
+               add.classes='expanded_vertical'
+             ),
+             tags$div(
+               id = 'intervention_panel_body',
+               class = 'collapsible_vertical collapsed_vertical',
+               tags$div(
+                 class='intervention_panel_body controls_color',
+                 uiOutput(outputId = paste0('selected_intervention_', suffix))
+               )
+             )
+    )
+    }
 }
 
 ##-----------------------------##
@@ -116,10 +169,16 @@ do.render.plot = function(input,
 {
     nrows = calculate.optimal.nrows(input, suffix)
     
-    the.plot = format.plotly.toolbar(plot(nrows), input)
+    the.plot = do.plot.from.components(plot, nrows)
+    the.plot = format.plotly.toolbar(the.plot)
     
-    plot.id = paste0('plot_', suffix)
+    plot.id = get.plot.id(suffix)
     output[[plot.id]] = renderPlotly(the.plot)
+}
+
+get.plot.id <- function(suffix)
+{
+    paste0('plot_', suffix)
 }
 
 set.table <- function(input,
@@ -135,10 +194,10 @@ set.table <- function(input,
     height = display.size$height
     
     output[[table.id]] = renderUI(tags$div(class='table_holder',
-                                          style=paste0('max-height: ', height, 'px'),
+                                          style=paste0('max-height: ', height, 'px; max-width: ', width, 'px;'),
         withSpinner(type=7,
-        DT::dataTableOutput(outputId = dt.id,
-                            width=paste0(width, 'px'))
+        DT::dataTableOutput(outputId = dt.id)#,
+#                            width=paste0(width, 'px'))
         )
     ))
     
@@ -241,13 +300,17 @@ set.share.enabled <- function(input,
                                suffix,
                                enabled)
 {
-    nav.id = paste0('nav_', suffix)
-    target.value = paste0("share_", suffix)
+#    nav.id = paste0('nav_', suffix)
+#    target.value = paste0("share_", suffix)
+ #   if (enabled)
+  #      showTab(nav.id, target.value, select=F)
+   # else
+    #    hideTab(nav.id, target.value)
+     
     if (enabled)
-        showTab(nav.id, target.value, select=F)
+        shinyjs::enable(paste0('share_menu_', suffix))
     else
-        hideTab(nav.id, target.value)
-       
+        shinyjs::disable(paste0('share_menu_', suffix))
     #OLD
 #    ids = paste0(c('download_figure_', 'download_table_', 'share_link_'),
 #                 suffix)

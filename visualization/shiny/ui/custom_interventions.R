@@ -10,7 +10,7 @@ tags$tr(
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_custom_td',
-            rowspan=4,
+            rowspan=3,
             tags$div(class='display',
                      create.display.panel('custom')        
             ),
@@ -21,8 +21,8 @@ tags$tr(
                                   direction='left',
                                   hide.ids=c('custom_collapse_left'),
                                   show.ids='custom_expand_left',
-                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
-                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_controls_custom_header'),
+                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_controls_custom_header'),
                                   remove.classes='controls_wide',
                                   add.classes='collapsed',
                                   shiny.ids='left_width_custom',
@@ -155,40 +155,36 @@ tags$tr(
     #-- The Right Panel --#
     tags$td(id='right_controls_custom',
             class='controls_td controls_color collapsible collapsed',
-            rowspan=2,
             create.plot.control.panel('custom')
     )
     
 ), #</tr>
 
-##-- CTA TEXT --##
-tags$tr(
-    
-    #-- Left panel text --#
-    tags$td(id='left_custom_cta_text',
-            class='cta_text_td controls_wide cta_background_color collapsible',
-            tags$div(class='cta_text',
-                HTML("This will take 2-5 minutes<BR>
-                      <input type='checkbox' id='chime_run_custom' name='chime_run_custom' style='float: left'>
-                      <label for='chime_run_custom'>&nbsp;Play a chime when done</label>")
-            )
-    ),
-    
-), #</tr>
 
 ##-- CTA BUTTONS --##
 tags$tr(
     
     #-- Left panel button --#
     tags$td(id='left_custom_cta',
-            class='cta_td controls_wide cta_color collapsible',
+            class='cta_td controls_wide cta_background_color collapsible',
             tags$div(class='controls_wide', 
-                actionButton(class='cta cta_color', inputId='run_custom', label='Simulate Intervention'))
+                     
+                     tags$table(class='cta_text_wrapper', tags$tr(
+                         tags$td(
+                             actionButton(class='cta cta_color', inputId='run_custom', label='Simulate Intervention')
+                         ),
+                         tags$td(class='cta_text',
+                                 HTML("This will take 2-5 minutes<BR>
+                              <input type='checkbox' id='chime_run_custom' name='chime_run_custom' style='float: left'>
+                              <label for='chime_run_custom'>&nbsp;Play a chime when done</label>")
+                         )
+                     ))
             ),
+    ),
     
     #-- Right panel button --#
     tags$td(id='right_custom_cta',
-            class='cta_td cta_color collapsible collapsed',
+            class='cta_td cta_background_color collapsible collapsed',
             tags$div(class='controls_narrow', 
                 actionButton(class='cta cta_color', inputId='redraw_custom', label='Adjust Projections'))
             )

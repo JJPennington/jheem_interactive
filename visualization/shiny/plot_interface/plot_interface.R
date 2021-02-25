@@ -101,7 +101,7 @@ make.simulations.plot.and.table <- function(
             color.by = 'intervention'
     
         rv = do.plot.simulations(
-            return.plot.function = T,
+            return.plot.components = T,
             
             simsets,
             years=years,

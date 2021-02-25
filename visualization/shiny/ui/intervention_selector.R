@@ -101,7 +101,7 @@ make.intervention.tpop.selector <- function(int.list,
     
     tags$div(
         radioButtons(inputId = paste0('int_tpop_', suffix),
-                     label='Target Population(s):',
+                     label='Target Subgroup(s):',
                      choiceNames=tpop.choice.names,
                      choiceValues=tpop.choice.values,
                      selected=tpop.choice.values[1]

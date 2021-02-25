@@ -44,3 +44,10 @@ remove.intervention.from.map <- function(code,
     map[code] = NULL
     map
 }
+
+thin.map <- function(keep.codes, map)
+{
+    keep.codes = intersect(keep.codes, names(map))
+    map = map[keep.codes]
+    map
+}

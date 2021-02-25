@@ -2,12 +2,14 @@
 ##-----------------------------------------##
 ##-- EVENT HANDLERS FOR UPDATING DISPLAY --##
 ##-----------------------------------------##
-add.display.event.handlers <- function(session, input, output, cache)
+add.display.event.handlers <- function(session, input, output, cache,
+                                       suffixes = c('prerun','custom'))
 {
     
     #-- Variables for storing plot/table --#
-    plot.and.table.list = list(prerun=NULL,
-                               custom=NULL)
+    plot.and.table.list = lapply(suffixes, function(s){NULL})
+    names(plot.and.table.list) = suffixes
+    is.first.plot = T
     
     #-- The Intervention Map for Custom Interventions --#
     custom.int.map = create.intervention.map()
@@ -43,23 +45,38 @@ add.display.event.handlers <- function(session, input, output, cache)
         
         if (check.plot.controls(session, input, suffix))
         {
-            plot.and.table.list[[suffix]] <<- generate.plot.and.table(input=input, 
-                                                                   cache=cache,
-                                                                   intervention.codes=intervention.codes,
-                                                                   suffix=suffix,
-                                                                   intervention.map = custom.int.map)
+            new.plot.and.table = generate.plot.and.table(main.settings = get.main.settings(input, suffix),
+                                                         control.settings = get.control.settings(input, suffix),
+                                                         intervention.codes=intervention.codes,
+                                                         cache=cache,
+                                                         intervention.map = custom.int.map)
             
-            #-- Update the UI --#
-            set.display(input, output, suffix, plot.and.table.list[[suffix]])
-            sync.buttons.to.plot(input, plot.and.table.list)
+            if (!is.null(new.plot.and.table))
+            {
+                plot.and.table.list[[suffix]] <<- new.plot.and.table
+                
+                #-- Update the UI --#
+                set.display(input, output, suffix, plot.and.table.list[[suffix]])
+                sync.buttons.to.plot(input, plot.and.table.list)
+            }
         }
         
         unlock.cta.buttons(input, called.from.suffix = suffix,
                            plot.and.table.list=plot.and.table.list)
+        
+        # Expand the control panel if this is the first plot we have generated
+        if (is.first.plot)
+        {
+            is.first.plot <<- F
+            js$trigger_accordion('prerun_expand_right')
+        }
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
     observeEvent(input$run_prerun, {
+  #    progress.test(session)
+  #    return()
+      
         do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
                suffix='prerun')
         js$chime_if_checked('chime_run_prerun')
@@ -85,7 +102,7 @@ add.display.event.handlers <- function(session, input, output, cache)
             selected.int = get.selected.custom.intervention(input)
             selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
             
-        set.intervention.panel(output, 'custom', selected.int)
+            #set.intervention.panel(output, 'custom', selected.int)
             
             # Run simulation if needed and store
             if (is.na(selected.int.code))
@@ -98,16 +115,39 @@ add.display.event.handlers <- function(session, input, output, cache)
                                                intervention = selected.int,
                                                cache = cache)
                 
-                selected.int.code = get.new.custom.intervention.code()
-                custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
-                cache <<- put.simset.to.explicit.cache(get.intervention.filenames(selected.int.code, 
-                                                                                  version=version, location=location), 
-                                                       simset,
-                                                       cache=cache, explicit.name = 'custom')
+                if (is.null(simset))
+                {
+                    unlock.cta.buttons(input, called.from.suffix = suffix,
+                                       plot.and.table.list=plot.and.table.list)   
+                    js$chime_if_checked('chime_run_custom')
+                    return()
+                }
+                else                
+                {
+                      selected.int.code = get.new.custom.intervention.code()
+                      custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
+                      cache <<- put.simset.to.explicit.cache(get.intervention.filenames(selected.int.code, 
+                                                                                        version=version, location=location), 
+                                                             simset,
+                                                             cache=cache, explicit.name = 'custom')
+                }
             }
             
             do.run(intervention.codes = selected.int.code,
                    suffix='custom')
+            
+            # Keep only the simsets we need
+            custom.int.map <<- thin.map(keep.codes = plot.and.table.list$custom$intervention.codes,
+                                        map = custom.int.map)
+            
+            intervention.filenames = get.intervention.filenames(plot.and.table.list$custom$intervention.codes,
+                                                                version=plot.and.table.list$custom$main.settings$version, 
+                                                                location=plot.and.table.list$custom$main.settings$location)
+            cache <<- thin.explicit.cache(keep.codes = intervention.filenames,
+                                          cache = cache,
+                                          explicit.name = 'custom')
+            
+            # Play the chime
             js$chime_if_checked('chime_run_custom')
         }
     })
@@ -126,12 +166,32 @@ add.display.event.handlers <- function(session, input, output, cache)
     })
     
     observeEvent(input$location_custom, {
-        print("Location custom")
-        #I'm not sure we want to do the same thing as before
+        plot.and.table.list['custom'] <<- list(NULL)
+        clear.display(input, output, 'custom')
+        sync.buttons.to.plot(input, plot.and.table.list)
     })
     
     #-- Share Handlers --#
  
+    lapply(names(plot.and.table.list), function(suffix){
+      
+        #-- Figure --#
+        observeEvent(input[[paste0('download_figure_', suffix)]], {
+            download.plot(plot.and.table.list[[suffix]], suffix=suffix)
+        })
+        
+        #-- Table --#
+        output[[paste0('download_table_', suffix)]] = downloadHandler(
+            filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
+            content = function(filepath) {
+                write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
+            }
+        )
+        
+        observeEvent(input[[paste0('share_link_', suffix)]], {
+            print(paste0("Share ", suffix, ' link'))
+        })
+    })
     
     # Get the size on load
     session$onFlushed(function(){
@@ -146,6 +206,8 @@ add.display.event.handlers <- function(session, input, output, cache)
                clear.display,
                input=input,
                output=output)
+        
+        sync.buttons.to.plot(input, plot.and.table.list)
     }, once=T)
 }
 
@@ -170,10 +232,9 @@ lock.cta.buttons <- function(input,
 {   
     for (suffix in names(plot.and.table.list))
     {
-#        if (suffix != called.from.suffix)
-            set.run.button.enabled(input, suffix, F)
-        
+        set.run.button.enabled(input, suffix, F)
         set.redraw.button.enabled(input, suffix, F)
+        set.share.enabled(input, suffix, F)
     }
 }
 

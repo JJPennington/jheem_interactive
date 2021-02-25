@@ -1,15 +1,4 @@
 
-.cta_color {
-    background: #03427c;
-    color: white;
-    border-color: black;
-}
-
-.cta_background_color {
-    background-color: #f8f8f8;
-    border-color: black;
-}
-
 .header_color {
     background-color: #e2e2e2;
     border-color: black;
@@ -24,6 +13,91 @@
     background-color: #ffffff;
     border-color: black;
 }
+
+/** CTAs **/
+.cta_color {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    text-shadow: 1px 1px black;
+    
+    box-shadow: 2px 1px 2px 0px #696969;
+}
+
+.cta_color:hover {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    
+    color: white;
+}
+
+.cta_color:focus {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    
+    box-shadow: 2px 1px 2px 0px #696969;
+}
+
+
+.cta_color:active {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    
+    box-shadow: inset 2px 1px 2px 0px black;
+}
+
+.cta_color:active:hover {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    
+    box-shadow: inset 2px 1px 2px 0px black;
+}
+
+.cta_color:active:focus {
+    background: #6200ee; /*#03427c;*/
+    color: white;
+    border-color: black;
+    border: none;
+    
+    box-shadow: inset 2px 1px 2px 0px black;
+}
+
+
+.cta_color:disabled {
+    background: #C0C0C0; /*#03427c;*/
+    box-shadow: none;
+    border: 1px solid black;
+    color: #505050;
+    text-shadow: none;
+}
+
+
+.cta_color:disabled:hover {
+    background: #C0C0C0; /*#03427c;*/
+    box-shadow: none;
+    border: 1px solid #505050;
+}
+
+.cta_color:disabled:focus {
+    background: #C0C0C0; /*#03427c;*/
+    box-shadow: none;
+    border: 1px solid black;
+}
+
+.cta_background_color {
+    background-color: #f8f8f8;
+    border-color: black;
+}
+
 
 
 /* To Override the Boostrap Info Box */
@@ -60,3 +134,13 @@
       font-weight: 900;
       color: #000000;
     }
+    
+  /* This allows click to expand anywhere in the header */
+.box-header {
+  padding: 0 10px 0 0;
+}
+
+.box-header h3 {
+  width: 100%;
+  padding: 10px;
+}
