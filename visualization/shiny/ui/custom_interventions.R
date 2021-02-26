@@ -1,7 +1,7 @@
-
-CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbody',
+CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(
+    class='display_tbody',
     
-##-- HEADERS AND DISPLAY --##  
+##-- HEADERS AND DISPLAY --####
 tags$tr(
     #-- Left Header --#
     tags$td(id='left_controls_custom_header',
@@ -93,7 +93,7 @@ tags$tr(
             tags$div(class='controls_narrow', "Figure Settings"))
 ), #</tr>
 
-##-- CONTROL PANELS --##
+##-- CONTROL PANELS --####
 tags$tr(
     
     #-- The Left Panel --#

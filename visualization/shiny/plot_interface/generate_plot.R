@@ -180,18 +180,4 @@ format.plotly.toolbar <- function(plot,
 ##--------------------##
 ##-- LOCATION NAMES --##
 ##--------------------##
-
-
-# Modal dialogue boxes ####
-showMessageModal <- function(message) {
-  showModal(
-    modalDialog(
-      title=NULL,
-      footer=modalButton("Dismiss"),
-      size=c("m", "s", "l"),
-      easyClose=FALSE,
-      fade=TRUE,
-      
-      verticalSpacer(40),
-      HTML(paste0('<br/><br/>', message, '<br/><br/>'))))
-}
+# n/a

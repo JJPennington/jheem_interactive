@@ -149,6 +149,8 @@ add.display.event.handlers <- function(session, input, output, cache,
             
             # Play the chime
             js$chime_if_checked('chime_run_custom')
+        } else {
+            # @Todd: I put error messages inside `error_checking.R`
         }
     })
     
