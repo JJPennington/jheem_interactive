@@ -1,7 +1,7 @@
 
 
 # The database needs to track all these, plus the date/time
-track.request <- function(session.id, #non-unique string
+do.track.request <- function(session.id, #non-unique string
                           called.from, #string
                           location, #string
                           intervention.code, #string
