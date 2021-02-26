@@ -33,24 +33,6 @@ add.display.event.handlers <- function(session, input, output, cache)
     observeEvent(input$right_width_custom, handle.resize('custom') )
     
     #-- General Handler for Running/Redrawing --#
-    do.run.inner <- function(valid) {
-      # TODO: need input, suffix, cache, intervention.codes, plot.and.table.list
-      # get from state()? how access state here?
-      browser()
-      
-      if (valid) {
-        plot.and.table.list[[suffix]] <<- generate.plot.and.table(
-          input=input, cache=cache, intervention.codes=intervention.codes,
-          suffix=suffix,intervention.map = custom.int.map)
-        
-        #-- Update the UI --#
-        set.display(input, output, suffix, plot.and.table.list[[suffix]])
-        sync.buttons.to.plot(input, plot.and.table.list)
-      } else {
-          # @Todd: I put error messages inside `error_checking.R`
-      }
-    }
-    
     do.run = function(intervention.codes, suffix)
     {   
         get.display.size(input, 'prerun')
@@ -59,10 +41,15 @@ add.display.event.handlers <- function(session, input, output, cache)
         lock.cta.buttons(input, called.from.suffix = suffix,
                          plot.and.table.list=plot.and.table.list)
         
-        # TODO: @Todd/Joe: how handle callback? store state?
-        valid = check.plot.controls(
-          session, input, suffix, callback=do.run.inner)
-        do.run.inner(valid)
+        valid = check.plot.controls(session, input, suffix)
+        if (valid) {
+          plot.and.table.list[[suffix]] <<- generate.plot.and.table(
+            input=input, cache=cache, intervention.codes=intervention.codes,
+            suffix=suffix,intervention.map = custom.int.map)
+          #-- Update the UI --#
+          set.display(input, output, suffix, plot.and.table.list[[suffix]])
+          sync.buttons.to.plot(input, plot.and.table.list)
+        }
         
         unlock.cta.buttons(input, called.from.suffix = suffix,
                            plot.and.table.list=plot.and.table.list)

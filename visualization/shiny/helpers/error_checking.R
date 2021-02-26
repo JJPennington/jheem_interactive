@@ -1,5 +1,3 @@
-# INVALID_ERR_MSG_HEADER = 'Invalid selection(s)<br/>'
-
 # Checks, for each subgroup
 # 1. That it is not empty
 #   ie, at least one value checked for each age, race, sex, and risk factor
@@ -96,8 +94,6 @@ check.custom.inputs <- function(session, input)
   return(valid)
 }
 
-MAX.ADVISED.N.PANELS = 8
-
 # 1. Check that at least one outcome is checked
 # If not, pop up dialog and return false
 # 
@@ -107,37 +103,15 @@ MAX.ADVISED.N.PANELS = 8
 #  to generate X panels" are you sure you want to do this
 # -return true if 'yes'
 # -return false if 'no'
-# 
-check.plot.controls <- function(session, input, suffix, callback)
+check.plot.controls <- function(session, input, suffix)
 {
     #make sure there's at least one
     selected.outcomes = get.selected.outcomes(input, suffix)
-    nPanels = get.num.panels.to.plot(input, suffix)
-    valid1 = length(selected.outcomes) >= 1
-    valid2 = nPanels <= MAX.ADVISED.N.PANELS
-    if (!valid1)
+    valid = length(selected.outcomes) >= 1
+    
+    if (!valid)
       showMessageModal(paste0(
           INVALID_ERR_MSG_HEADER, 'At least one outcome must be checked.'))
     
-    # TODO: Handle callback. 
-    # TODO But, how pass suffix? Use state? How can func keep state unless
-    # ...it is a closure?
-    # http://www.lemnica.com/esotericR/Introducing-Closures/#:~:text=A%20closure%20in%20R%20is,approach%20to%20objects%20in%20R.
-    # https://www.r-bloggers.com/2012/12/closures-in-r-a-useful-abstraction/
-    # http://adv-r.had.co.nz/Functional-programming.html
-    # If more than MAX.ADVISED.N.PANELS, alert
-    # If invalid right now but user says yes, code will still run at point
-    # ...of callback.
-    if (!valid2) {
-      showYesNoValidationModal(
-          message=paste0(
-          'This is going to generate ', 
-          as.character(nPanels), ' panels, which is more than the 
-          advised maximum of ', as.character(MAX.ADVISED.N.PANELS), '. Are
-          you sure you want to do this?'),
-          callback=callback  
-      )
-    }
-    
-    return(as.logical(valid1 * valid2))
+    return(valid)
  }
