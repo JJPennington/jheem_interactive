@@ -5,18 +5,22 @@ LINK.DELIMITER = '&'
 #returns a named vector
 #if url is www.jheem.org/?preset=123
 # --> id = 123
-get.link.key.values <- function(id) {
+get.link.key.values <- function(id, method=c('s3', 'db')[1]) {
   # @Todd: server_utils.R/getPresetIdFromUrl() also fetches URL from session
   # - Code below taken from server.routes.runModel.old.R:70
+  if (method == 'db') {
+    # 1. get record
+    presetTable.df = db.presets.read.all()
+    presetRecord = presetTable.df[presetTable.df$id==id,]
+    presetStr = presetRecord$urlQueryParamString
+    # 2. parse it
+    presets.list = presets.urlQueryParamString.parse(presetStr)  # list
+    presets = unlist(presets)
+  } else if (method == 's3') {
+    presets = presets.load(id)  
+  }
   
-  # 1. get record
-  presetTable.df = db.presets.read.all()
-  presetRecord = presetTable.df[presetTable.df$id==id,]
-  presetStr = presetRecord$urlQueryParamString
-  # 2. parse it into a list
-  presets = presets.urlQueryParamString.parse(presetStr)  # list
-  
-  return(unlist(presets))
+  return(presets)
 }
 
 #key values is a named list
@@ -47,9 +51,11 @@ randString <- function(
 }
 
 #return a random 5-character alphanumeric key that is not already in the DB
-get.new.link.id <- function() {
-  id_table = db.presets.read.all()
-  ids = id_table$id
+get.new.link.id <- function(method=c('s3', 'db')[1]) {
+  if (method == 'db') 
+    ids = db.presets.read.all()$id
+  else if (method == 's3')
+    ids = presets.list()  %>% str_replace('.Rdata', '')
   while (TRUE) {
     id = randString(characters=3, numbers=2)
     if (!(id %in% ids))

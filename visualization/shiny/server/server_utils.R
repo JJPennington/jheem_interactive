@@ -6,8 +6,8 @@
 library(aws.iam)
 library(aws.s3)
 library(stringr)
-library('RPostgreSQL')
-library('RPostgres')
+# library('RPostgreSQL')
+# library('RPostgres')
 library('remotes')
 library('DBI')
 library('stringr')
@@ -28,6 +28,7 @@ source('env.R')
 CACHE = list()
 BUCKET.NAME.SIMS = 'endinghiv.sims'
 BUCKET.NAME.STATIC = 'endinghiv.static'
+BUCKET.NAME.PRESETS = 'endinghiv.presets'
 DB_TABLENAME_PRESETS = 'option_presets'
 DB_TABLENAME_CONTACT = 'contact_form'
 DB_FIELD_PRESETS = 'urlQueryParamString'
@@ -50,10 +51,11 @@ invert.keyVals <- function(x) {
 }
 
 # Utils: AWS S3 Storage ####
-s3.list <- function(dir,
-                    full.path,
-                    bucket.name) 
-{
+s3.list <- function(
+  dir,
+  full.path,
+  bucket.name
+) {
     if (is.null(dir) || is.na(dir))
         dir = ''
     if (dir != '' && substr(dir, nchar(dir)-1, nchar(dir))!='/')
@@ -73,11 +75,12 @@ s3.list <- function(dir,
     return(items.names)
 }
 
-sims.list <- function(version='1.0',
-                      include.location=F,
-                      include.version=F,
-                      bucket.name=BUCKET.NAME.SIMS)
-{
+sims.list <- function(
+  version='1.0',
+  include.location=F,
+  include.version=F,
+  bucket.name=BUCKET.NAME.SIMS
+) {
     rv = s3.list(bucket.name,
                  dir=version,
                  full.path=include.version)
@@ -98,11 +101,12 @@ sim.exists <- function(filename)
   
 }
 
-
-
-
-
-##-- NOT USING AT THIS TIME --#
+presets.list <- function() {
+  s3.list(
+    BUCKET.NAME.PRESETS,
+    dir=NULL,
+    full.path=FALSE)
+}
 
 s3.save <- function(
   objOrFilepath,
@@ -131,6 +135,37 @@ s3.save <- function(
   }
 }
 
+presets.load <- function(
+  filename,  # char[]
+  bucket.name=BUCKET.NAME.PRESETS
+) {
+  if (!endsWith(filename, '.Rdata'))
+    filename = paste0(filename, '.Rdata')
+  #  per presets.save, obj name will always be 'obj'
+  s3load(
+    filename,
+    bucket=bucket.name,
+    ennvir=environment())
+  return(obj)
+}
+
+presets.save <- function(
+  obj,
+  obj.name,  # char
+  obj.extension='.Rdata',
+  s3Obj.filename=NULL,
+  bucket.name=BUCKET.NAME.PRESETS
+) {
+  # s3.save(objOrFilepath, s3Obj.filename, bucket.name)
+  s3save(
+    obj,
+    object=paste0(obj.name, obj.extension), 
+    bucket=bucket.name
+    # envir=environment()
+    )
+}
+
+##-- NOT USING AT THIS TIME --#
 sims.save <- function(
   objOrFilepath,
   s3Obj.filename=NULL,
@@ -346,9 +381,12 @@ presets.urlQueryParamString.parse <- function(
 }
 
 # namedVec could be shiny 'input' obj
-handleCreatePreset <- function(id, namedVec) {
+handleCreatePreset <- function(id, namedVec, method=c('s3', 'db')[1]) {
   queryStr = presets.urlQueryParamString.create(namedVec)
-  presetId = db.write.queryString(id, queryStr)
+  if (method == 'db')
+    presetId = db.write.queryString(id, queryStr)
+  else if (method == 's3')
+    presets.save(obj=namedVec, obj.name=id)
   url = paste0('https://jheem.shinyapps.io/EndingHIV?preset=', 
                as.character(presetId))
   msg = paste0('<p>Preset created! You can instantly reload the state of this 
@@ -385,36 +423,44 @@ parseQueryTest <- function() {
   presets.urlQueryParamString.parse(myStr)
 }
 
-# db.write.test <- function () {
-#   db.write.queryString('testQueryString')
-# }
+db.write.test <- function () {
+  db.write.queryString('testQueryString')
+}
 
-# cacheTest <- function (
-#   cache=list()
-# ) {
-#   # browser()
-#   t1 <- proc.time()
-#   print('Loading from AWS')
-#   fetched.1 = sims.load(filename='int1.Rdata', cache=cache)
-#   # simset = fetched.1[['simset']]
-#   cache = fetched.1[['cache']]
-#   t2 <- proc.time()
-#   elapsed.1 = (t2 - t1)[['elapsed']]
-#   print('Elapsed: ')
-#   print(elapsed.1)
-#   
-#   # browser()
-#   t1b <- proc.time()
-#   print('Loading from cache')
-#   fetched.2 = sims.load(filename='int1.Rdata', cache=cache)
-#   # simset = fetched.2[['simset']]
-#   cache = fetched.2[['cache']]
-#   t2b <- proc.time()
-#   elapsed.2 = (t2b - t1b)[['elapsed']]
-#   print('Elapsed: ')
-#   print(elapsed.2)
-#   
-#   print('Cache loading took this fraction of time compared to AWS:' )
-#   print(elapsed.2 / elapsed.1)
-# }
+cacheTest <- function (
+  cache=list()
+) {
+  # browser()
+  t1 <- proc.time()
+  print('Loading from AWS')
+  fetched.1 = sims.load(filename='int1.Rdata', cache=cache)
+  # simset = fetched.1[['simset']]
+  cache = fetched.1[['cache']]
+  t2 <- proc.time()
+  elapsed.1 = (t2 - t1)[['elapsed']]
+  print('Elapsed: ')
+  print(elapsed.1)
 
+  # browser()
+  t1b <- proc.time()
+  print('Loading from cache')
+  fetched.2 = sims.load(filename='int1.Rdata', cache=cache)
+  # simset = fetched.2[['simset']]
+  cache = fetched.2[['cache']]
+  t2b <- proc.time()
+  elapsed.2 = (t2b - t1b)[['elapsed']]
+  print('Elapsed: ')
+  print(elapsed.2)
+
+  print('Cache loading took this fraction of time compared to AWS:' )
+  print(elapsed.2 / elapsed.1)
+}
+
+if (1 == 0) {
+  # Test passed: 2021/02/25
+  testObj = data.frame('a'=c(1, 2, 3), 'b'=c(1, 2, 3))
+  presets.save(testObj, 'test_obj')
+  presets.list()
+  xxx = presets.load('test_obj.Rdata')
+  View(xxx)
+}
