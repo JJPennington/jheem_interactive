@@ -17,7 +17,7 @@ get.link.key.values <- function(id, method=c('s3', 'db')[1]) {
     presets.list = presets.urlQueryParamString.parse(presetStr)  # list
     presets = unlist(presets)
   } else if (method == 's3') {
-    presets = presets.load(id)  
+    presets = presets.load(id)
   }
   
   return(presets)
@@ -25,12 +25,12 @@ get.link.key.values <- function(id, method=c('s3', 'db')[1]) {
 
 #key values is a named list
 #each element of this list is a character vector (which may be named or not)
-#also shows modal.
-set.link.key.values <- function(id, key.values) {
+#Side effects: also shows modal.
+set.link.key.values <- function(id, key.values, showModal=T) {
   # This test was ok. Can delete these comments:
   # key.values = c('key1'='lkjslkdfjl', 'key2'='eopwtuq', 'key3'='cxmvnzxvi')
   # queryStr = presets.urlQueryParamString.create(key.values)
-  handleCreatePreset(id, key.values)
+  handleCreatePreset(id, key.values, showModal=showModal)
 }
 
 # Random String

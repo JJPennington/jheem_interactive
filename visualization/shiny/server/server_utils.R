@@ -381,18 +381,25 @@ presets.urlQueryParamString.parse <- function(
 }
 
 # namedVec could be shiny 'input' obj
-handleCreatePreset <- function(id, namedVec, method=c('s3', 'db')[1]) {
+handleCreatePreset <- function(
+  id, namedVec, method=c('s3', 'db')[1], showModal=T) {
   queryStr = presets.urlQueryParamString.create(namedVec)
+  
   if (method == 'db')
     presetId = db.write.queryString(id, queryStr)
-  else if (method == 's3')
+  else if (method == 's3') {
+    presetId = id
     presets.save(obj=namedVec, obj.name=id)
-  url = paste0('https://jheem.shinyapps.io/EndingHIV?preset=', 
-               as.character(presetId))
-  msg = paste0('<p>Preset created! You can instantly reload the state of this 
+  }
+  
+  if (showModal) {
+    url = paste0('https://jheem.shinyapps.io/EndingHIV?preset=', 
+                 as.character(presetId))
+    msg = paste0('<p>Preset created! You can instantly reload the state of this 
                app in the future via the url:</p><p><a href="', url, '">', url, 
-               '</a></p>')
-  showMessageModal(message=msg)    
+                 '</a></p>')
+    showMessageModal(message=msg) 
+  }
 }
 
 getPresetIdFromUrl <- function(session) {
