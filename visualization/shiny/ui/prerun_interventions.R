@@ -114,7 +114,7 @@ tags$tr(
                                   title='What City to Project Interventions For',
                                   content="Choose from among the 32 Metropolitan Statistical Areas encompassing the 48 high-burden counties and Washington DC identified by the Ending the HIV Epidemic Initiative.",
                                   placement='right'),
-                     
+                   
                      create.intervention.selector.panel('prerun')
             )),
     
@@ -133,10 +133,12 @@ tags$tr(
     #-- Left panel text --#
     tags$td(id='left_prerun_cta_text',
             class='cta_text_td controls_narrow cta_background_color collapsible',
-            tags$div(class='cta_text',
-                HTML("This will take 10-30 seconds<BR>
-                      <input type='checkbox' id='chime_run_prerun' name='chime_run_prerun' style='float: left'>
-                      <label for='chime_run_prerun'>&nbsp;Play a chime when done</label>")
+            tags$div(class='controls_narrow',
+                tags$div(class='cta_text',
+                    HTML("This will take 10-30 seconds<BR>
+                          <input type='checkbox' id='chime_run_prerun' name='chime_run_prerun' style='float: left'>
+                          <label for='chime_run_prerun'>&nbsp;Play a chime when done</label>")
+                )
             )
     ),
     
@@ -147,14 +149,14 @@ tags$tr(
     
     #-- Left panel button --#
     tags$td(id='left_prerun_cta',
-            class='cta_td controls_narrow cta_color collapsible',
+            class='cta_td controls_narrow cta_background_color collapsible',
             tags$div(class='controls_narrow', 
                      actionButton(class='cta cta_color', inputId='run_prerun', label='Generate Projections'))
             ),
     
     #-- Right panel button --#
     tags$td(id='right_prerun_cta',
-            class='cta_td cta_color collapsible collapsed',
+            class='cta_td cta_background_color collapsible collapsed',
             tags$div(class='controls_narrow', 
                      actionButton(class='cta cta_color', inputId='redraw_prerun', label='Adjust Projections'))
             )

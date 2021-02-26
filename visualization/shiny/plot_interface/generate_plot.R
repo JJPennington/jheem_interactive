@@ -11,70 +11,87 @@
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
 ##---------------------------------------------##
 
-generate.plot.and.table <- function(input, 
+generate.plot.and.table <- function(main.settings,
+                                    control.settings,
+                                    intervention.codes,
                                     cache, 
-                                    intervention.codes, 
-                                    suffix,
                                     intervention.map=NULL) 
 {
-    #-- Set up intervention filenames and pull to cache --#
+    tryCatch({
+        #-- Set up intervention filenames and pull to cache --#
+        
+        filenames = c(
+            'Baseline' = get.baseline.filename(version=main.settings$version, location=main.settings$location),
+            'No Intervention' = get.no.intervention.filename(version=main.settings$version, location=main.settings$location),
+            'Intervention' = get.intervention.filenames(intervention.codes,
+                                                        version=main.settings$version, location=main.settings$location)
+        )
+        
+        if (!pull.files.to.cache(filenames, cache))
+            return (NULL)
+        
+        #-- Make the plot --# ####
+        plot.results = make.simulations.plot.and.table(
+            cache=cache,
+            version=main.settings$version,
+            location=main.settings$location,
+            filenames = filenames,
+            years=control.settings$years,
+            data.types=control.settings$data.types,
+            facet.by=control.settings$facet.by,
+            split.by=control.settings$split.by,
+            dimension.subsets=control.settings$dimension.subsets,
+            plot.format=control.settings$plot.format,
+            plot.interval.coverage = control.settings$plot.interval.coverage,
+            label.change = control.settings$label.change,
+            change.years = control.settings$change.years,
+            data.type.names = WEB.DATA.TYPE.NAMES,
+            change.decrease.is.positive = F)
+        
+        
+        
+        #-- Add the intervention --#
+        # This is assuming just ONE intervention code for now
+        selected.int = NULL
+        if (!is.null(intervention.codes))
+        {
+            if (!is.null(intervention.map))
+                selected.int = map.codes.to.interventions(intervention.codes[1], intervention.map)[[1]]
+            if (is.null(selected.int))
+                selected.int = intervention.from.code(intervention.codes[1])
+            
+            plot.results$intervention = selected.int
+        }
+        
+        plot.results$intervention.codes = intervention.codes
+        
+        #-- Store Settings --#
+        
+        plot.results$main.settings = main.settings
+        plot.results$control.settings = control.settings
+        
+        
+        #-- Return --#
+        plot.results
+    },
+    error = function(e){
+        
+        show.error.message("Error Generating Figure",
+                           "We could not generate the figure and table due to an unexpected error. We apologize. Please let us know if this continues to happen.")
+        
+        #-- Return NULL --#
+        NULL  
+    })
     
-    version = get.version()
-    location = get.selected.location(input, suffix)
-    
-    filenames = c(
-        'Baseline' = get.baseline.filename(version=version, location=location),
-        'No Intervention' = get.no.intervention.filename(version=version, location=location),
-        'Intervention' = get.intervention.filenames(intervention.codes,
-                                                    version=version, location=location)
-    )
-
-    pull.files.to.cache(filenames, cache)
-
-    #-- Make the plot --# ####
-    plot.results = make.simulations.plot.and.table(
-        cache=cache,
-        version=version,
-        location=location,
-        filenames = filenames,
-        years=get.selected.years(input, suffix),
-        data.types=get.selected.outcomes(input, suffix),
-        facet.by=get.selected.facet.by(input, suffix),
-        split.by=get.selected.split.by(input, suffix),
-        dimension.subsets=get.selected.dimension.subsets(input, suffix),
-        plot.format=get.selected.plot.format(input, suffix),
-        plot.interval.coverage = get.selected.interval.coverage(input, suffix),
-        label.change = get.selected.show.change(input, suffix),
-        change.years = get.selected.change.years(input, suffix),
-        data.type.names = WEB.DATA.TYPE.NAMES,
-        change.decrease.is.positive = F)
-    
-    
-    
-    #-- Add the intervention --#
-    # This is assuming just ONE intervention code for now
-    selected.int = NULL
-    if (!is.null(intervention.codes))
-    {
-      if (!is.null(intervention.map))
-          selected.int = map.codes.to.interventions(intervention.codes[1], intervention.map)[[1]]
-      if (is.null(selected.int))
-          selected.int = intervention.from.code(intervention.codes[1])
-      plot.results$intervention = selected.int
-    }
-    plot.results$intervention.codes = intervention.codes
-    
-    
-    #-- Return --#
-    plot.results
 }
 
 
+# Returnst true if success, false otherwise
 pull.files.to.cache <- function(filenames, cache)
 {
     filenames = filenames[!are.simsets.in.disk.cache(filenames, cache) &
                               !are.simsets.in.explicit.cache(filenames, cache)]
-    
+    success = T
     #-- Pre-fetch the simsets --#
     if (length(filenames)>0)
     {
@@ -90,18 +107,22 @@ pull.files.to.cache <- function(filenames, cache)
             {
                 for (i in 1:length(filenames))
                 {
-                    if (i>1)
-                        setProgress(
-                            (i-1)/length(filenames),
-                            detail=paste("Fetching file ", i, " of ", 
-                                         length(filenames)))
-                    filename = filenames[i]
-                    pull.simsets.to.cache(filename, cache)
-                    
-                    setProgress(1, detail='Done')
+                    if (success)
+                    {
+                        if (i>1)
+                            setProgress(
+                                (i-1)/length(filenames),
+                                detail=paste("Fetching file ", i, " of ", 
+                                             length(filenames)))
+                        filename = filenames[i]
+                        success = pull.simsets.to.cache(filename, cache)
+                    }
                 }
+                setProgress(1, detail='Done')
             })
     }
+    
+    return (success)
 }
 
 ##----------------##
@@ -109,7 +130,6 @@ pull.files.to.cache <- function(filenames, cache)
 ##----------------##
 
 format.plotly.toolbar <- function(plot,
-                                  input,
                                   always.visible=F)
 {
   # https://plotly.com/r/reference/#layout-updatemenus
@@ -135,7 +155,7 @@ format.plotly.toolbar <- function(plot,
                 displaylogo=F,
                 scrollZoom=F,
                 
-                toImageButtonOptions=list(filename=get.default.download.filename(input)),
+   #             toImageButtonOptions=list(filename=get.default.download.filename(input)),
                 
                 modeBarButtons=list(
             #      list('toImage'),
@@ -160,116 +180,4 @@ format.plotly.toolbar <- function(plot,
 ##--------------------##
 ##-- LOCATION NAMES --##
 ##--------------------##
-get.location.long.name <- function(location)
-{
-    unlist(msa.names(location))
-}
-
-
-NYC.MSA = '35620'
-MIAMI.MSA = '33100'
-LA.MSA = '31080'
-
-ATLANTA.MSA = '12060'
-HOUSTON.MSA = '26420'
-DALLAS.MSA = '19100'
-
-CHICAGO.MSA = '16980'
-DC.MSA = '47900'
-PHILADELPHIA.MSA = '37980'
-
-ORLANDO.MSA = '36740'
-SF.MSA = '41860'
-PHOENIX.MSA = '38060'
-
-TAMPA.MSA = '45300'
-RIVERSIDE.MSA = '40140'
-DETROIT.MSA = '19820'
-
-BALTIMORE.MSA = '12580'
-VEGAS.MSA = '29820'
-BOSTON.MSA = '14460'
-
-SAN.DIEGO.MSA = '41740'
-CHARLOTTE.MSA = '16740'
-SAN.ANTONIO.MSA = '41700'
-
-JACKSONVILLE.MSA = '27260'
-NEW.ORLEANS.MSA = '35380'
-MEMPHIS.MSA = '32820'
-
-SEATTLE.MSA = '42660'
-AUSTIN.MSA = '12420'
-INDIANAPOLIS.MSA = '26900'
-
-CINCINATTI.MSA = '17140'
-COLUMBUS.MSA = '18140'
-BATON.ROUGE.MSA = '12940'
-
-SACRAMENTO.MSA = '40900'
-CLEVELAND.MSA = '17460'
-
-MSA.SHORT.NAMES = c(
-  '35620' = 'NYC',
-  '33100' = 'Miami',
-  '31080' = 'LA',
-  '12060' = 'Atlanta',
-  '26420' = 'Houston',
-  '19100' = 'Dallas',
-  '16980' = 'Chicago',
-  '47900' = 'DC',
-  '37980' = 'Philadelphia',
-  '36740' = 'Orlando',
-  '41860' = 'SF',
-  '38060' = 'Phoenix',
-  '45300' = 'Tampa',
-  '40140' = 'Riverside',
-  '19820' = 'Detroit',
-  '12580' = 'Baltimore',
-  '29820' = 'Vegas',
-  '14460' = 'Boston',
-  '41740' = 'San_Diego',
-  '16740' = 'Charlotte',
-  '41700' = 'San_Antonio',
-  '27260' = 'Jacksonville',
-  '35380' = 'New_Orleans',
-  '32820' = 'Memphis',
-  '42660' = 'Seattle',
-  '12420' = 'Austin',
-  '26900' = 'Indianapolis',
-  '17140' = 'Cincinatti',
-  '18140' = 'Columbus',
-  '12940' = 'Baton_Rouge',
-  '40900' = 'Sacramento',
-  '17460' = 'Cleveland'
-)
-
-get.location.short.name <- function(location)
-{
-    MSA.SHORT.NAMES[location]
-}
-
-get.default.download.filename <- function(input,
-                                          ext='')
-{
-    if (ext != '' && !grepl("^\\.", ext))
-        ext = paste0(".", ext)
-    
-    location = NULL
-    data.types = input[['epidemiological-indicators']]
-    
-    facet.by = input[['facet']]
-    split.by = input[['split']]
-    
-    if (length(facet.by)==0 && length(split.by)==0)
-        by.suffix = ''
-    else
-        by.suffix = paste0(" by ",
-                           paste0(unique(c(facet.by, split.by)), collapse=', ')
-                           )
-    
-    paste0(get.location.short.name(location), " - ",
-           paste0(WEB.DATA.TYPE.NAMES[data.types], collapse=", "),
-           by.suffix,
-           ext)
-}
+# n/a

@@ -93,7 +93,10 @@ sims.list <- function(version='1.0',
     rv
 }
 
-
+sim.exists <- function(filename)
+{
+  
+}
 
 
 

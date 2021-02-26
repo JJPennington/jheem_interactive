@@ -38,7 +38,7 @@ source('ui/custom_interventions.R', local=T)
 
 
 ##------------------##
-##-- DEFINE the UI--####
+##-- DEFINE the UI--##
 ##------------------##
 # Variables
 app.title = "JHEEM: Ending HIV in the US"
@@ -51,22 +51,26 @@ ui = tags$html(style='height:100%',
   shinyjs::useShinyjs(),
   extendShinyjs(script = 'sounds.js', functions = c('chime', 'chime_if_checked', 'chime_alert')),
   extendShinyjs(script = 'onload.js', functions = c('ping_display_size', 'set_input_value')),
+  extendShinyjs(script = 'js/download.js', functions = c('download_plotly')),
+  extendShinyjs(script = 'accordion.css', functions = c('trigger_accordion')),
   
   # Add CSS Files
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "display_layout.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main_layout.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "display_panel.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "custom_controls.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "plot_controls.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "box_colors.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "color_schemes/color_scheme_grayscale.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "accordion.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/chevrons.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
     
  #   tags$script(src = 'window_height.js'),
     tags$script(src = 'window_sizes.js'),
     tags$script(src = 'accordion.js'),
     tags$script(src = 'setup_tooltips.js'),
+    tags$script(src = 'box_expansion.js'),
   ),
 
   # Other R dependencies
@@ -91,13 +95,16 @@ ui = tags$html(style='height:100%',
         CUSTOM.CONTENT
       ),
       tabPanel(
-        "About the Model",
+        "About the JHEEM",
+        make.tab.popover("about_the_jheem", title=ABOUT.POPOVER.TITLE, content=ABOUT.POPOVER),
         uiOutput("about")),
       tabPanel(
-        "FAQ",
+        "Our Team",
+        make.tab.popover("our_team", title=OUR.TEAM.POPOVER.TITLE, content=OUR.TEAM.POPOVER),
         uiOutput("faq")),
       tabPanel(
         "Contact Us",
+        make.tab.popover("contact_us", title=CONTACT.POPOVER.TITLE, content=CONTACT.POPOVER),
         CONTACT.CONTENT
       )
     )  # </navbarPage>

@@ -32,16 +32,67 @@
     right: 0;
     bottom: 0;
     
-    z-index: 99999;
-    bottom: 5px;
-    
-    padding-left: 5px;
-    padding-right: 5px;
+    z-index: 50;
+
+    padding-left: 10px;
+    padding-right: 10px;
     padding-bottom: 0px;
+}
+
+.intervention_panel_header {
+    font-size: 2rem;
+    font-weight: bold;
+    
+    border-top: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    border-radius: 3px 3px 0px 0px;
+    
+    padding: 10px;
+}
+
+.intervention_panel_header td {
+    text-align: right;
+}
+
+.intervention_panel_header td:first-child {
+    text-align: left;
+    width: 100%;
+}
+
+.intervention_panel_header:hover{
+    cursor: pointer;
+}
+
+.intervention_panel_body {
+    font-size: 1.5rem;
+    border: 1px solid;
+    padding: 10px;
+}
+
+.collapsible_vertical {
+    overflow-y: hidden;
+    transition: 2s;
+}
+
+.collapsed_vertical {
+    max-height: 0px;
+    overflow-y: hidden;
+}
+
+.expanded_vertical {
+    max-height: 100vh;
 }
 
 .intervention_panel_buffer {
     height: 5rem;
+}
+
+.share_container {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 4px;
 }
 
 

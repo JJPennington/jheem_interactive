@@ -22,7 +22,6 @@ make.accordion.button <- function(id,
     else
         chevron.class = 'chevron_left'
     
- #   chevron.class='chevron'
     
     #-- Set up the style attribute --#
     style = paste0("font-size: ", height, "; ")
@@ -33,16 +32,63 @@ make.accordion.button <- function(id,
     if (!visible)
         style = paste0(style, "display: none; ")
     
+    
+    make.accordion.div(class='accordion_button accordion_trigger',
+                       id=id,
+                       style=style,
+                       tags$div(class=chevron.class),
+                   #the data attributes
+                       show.ids=show.ids,
+                       hide.ids=hide.ids,
+                       remove.class.ids=remove.class.ids,
+                       remove.classes=remove.classes,
+                       add.class.ids=add.class.ids,
+                       add.classes=add.classes,
+                       shiny.ids=shiny.ids,
+                       shiny.values=shiny.values)
+}
+
+make.accordion.div <- function(...,
+                               show.ids=NULL,
+                               hide.ids=id,
+                               remove.class.ids=NULL,
+                               remove.classes=NULL,
+                               add.class.ids=remove.class.ids,
+                               add.classes=NULL,
+                               shiny.ids=NULL,
+                               shiny.values=NULL)
+{
+    rv = tags$div(...)
+    add.accordion.attributes(rv,
+                             show.ids=show.ids,
+                             hide.ids=hide.ids,
+                             remove.class.ids=remove.class.ids,
+                             remove.classes=remove.classes,
+                             add.class.ids=add.class.ids,
+                             add.classes=add.classes,
+                             shiny.ids=shiny.ids,
+                             shiny.values=shiny.values)
+}
+
+add.accordion.attributes <- function(target.tag,
+                                     show.ids=NULL,
+                                     hide.ids=NULL,
+                                     remove.class.ids=NULL,
+                                     remove.classes=NULL,
+                                     add.class.ids=remove.class.ids,
+                                     add.classes=NULL,
+                                     shiny.ids=NULL,
+                                     shiny.values=NULL)
+{
     #-- Set up the data attributes --#
-    data.attributes = ''
     
     if (!is.null(show.ids))
-        data.attributes = paste0(data.attributes,
-                                 "data-show_targets='", paste0(show.ids, collapse=';'), "' ")
+        target.tag = tagAppendAttributes(target.tag,
+                                              "data-show_targets" = paste0(show.ids, collapse=';'))
     
     if (!is.null(hide.ids))
-        data.attributes = paste0(data.attributes,
-                                 "data-hide_targets='", paste0(hide.ids, collapse=';'), "' ")
+        target.tag = tagAppendAttributes(target.tag,
+                                              "data-hide_targets" = paste0(hide.ids, collapse=';'))
     
     if (!is.null(remove.class.ids))
     {
@@ -52,11 +98,11 @@ make.accordion.button <- function(id,
         if (is.null(remove.classes) || length(remove.classes) != length(remove.class.ids))
             stop("remove.classes must have the same length as remove.class.ids")
         
-        data.attributes = paste0(data.attributes,
-                                 "data-remove_class_targets='", paste0(remove.class.ids, collapse=';'), "' ",
-                                 "data-remove_classes='", paste0(remove.classes, collapse=';'), "' ")
+        target.tag = tagAppendAttributes(target.tag,
+                            "data-remove_class_targets" = paste0(remove.class.ids, collapse=';'),
+                            "data-remove_classes" = paste0(remove.classes, collapse=';'))
     }
-  
+    
     if (!is.null(add.class.ids))
     {
         if (!is.null(add.classes) && length(add.classes)==1)
@@ -65,9 +111,9 @@ make.accordion.button <- function(id,
         if (is.null(add.classes) || length(add.classes) != length(add.class.ids))
             stop("add.classes must have the same length as add.class.ids")
         
-        data.attributes = paste0(data.attributes,
-                                 "data-add_class_targets='", paste0(add.class.ids, collapse=';'), "' ",
-                                 "data-add_classes='", paste0(add.classes, collapse=';'), "' ")
+        target.tag = tagAppendAttributes(target.tag,
+                            "data-add_class_targets" = paste0(add.class.ids, collapse=';'),
+                            "data-add_classes" = paste0(add.classes, collapse=';'))
     }
     
     if (!is.null(shiny.ids))
@@ -78,17 +124,11 @@ make.accordion.button <- function(id,
         if (is.null(shiny.values) || length(shiny.values) != length(shiny.ids))
             stop("shiny.values must have the same length as shiny.ids")
         
-        data.attributes = paste0(data.attributes,
-                                 "data-shiny_targets='", paste0(shiny.ids, collapse=';'), "' ",
-                                 "data-shiny_values='", paste0(shiny.values, collapse=';'), "' ")
+        target.tag = tagAppendAttributes(target.tag,
+                            "data-shiny_targets" = paste0(shiny.ids, collapse=';'),
+                            "data-shiny_values" = paste0(shiny.values, collapse=';'))
     }
     
-    #-- Make the HTML
-    HTML(paste0("<div class='accordion_button' id='", id, "' ",
-                "style='", style, "' ",
-                data.attributes,
-                ">",
-                     "<div class='", chevron.class, "'></div>",
-                "</div>"
-                ))
+    #-- Return --#
+    target.tag
 }

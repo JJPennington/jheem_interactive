@@ -67,7 +67,7 @@ create.custom.tpop.box <- function(i) {
             lapply(dimension.value.options,
                    function(dim) {
                        switchId = paste0('custom_tpop_all_', dim$code, '_', i)
-                       materialSwitch.value = T
+                       materialSwitch.value = F
                        
                        fluidRow(
                            fluidRow(
@@ -76,7 +76,7 @@ create.custom.tpop.box <- function(i) {
                            fluidRow(
                                checkboxInput(
                                    inputId=switchId,
-                                   label=paste0('Target All ', dim$label.plural),
+                                   label=tags$div(style='font-style: italic', paste0('Include All ', dim$label.plural)),
                                    value=materialSwitch.value),
                          #      materialSwitch(
                          #          inputId=switchId,
@@ -92,7 +92,7 @@ create.custom.tpop.box <- function(i) {
                                            label=NULL,
                                            choiceNames=dim$names,
                                            choiceValues=dim$values,
-                                           selected = dim$values) 
+                                           selected = NULL) 
                                )
                            ),  # </fluidRow>
                            verticalSpacer(10)

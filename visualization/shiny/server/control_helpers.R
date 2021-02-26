@@ -70,13 +70,13 @@ create.plot.control.panel <- function(suffix)
 
         tags$div(style='height: 20px;'),
         
-        tags$div(style='margin-right:-5px; margin-left:-5px',
-        box(title='Advanced Options',
-            status = 'info',
-            solidHeader = T,
-            width=12,
-            collapsible = T,
-            collapsed=T,
+ #       tags$div(style='margin-right:-5px; margin-left:-5px',
+ #       box(title='Advanced Options',
+ #           status = 'info',
+ #           solidHeader = T,
+ #           width=12,
+ #           collapsible = T,
+ #           collapsed=T,
             
             #-- Plot Format --#
             radioButtons(inputId = paste0('plot_format_', suffix),
@@ -100,8 +100,8 @@ create.plot.control.panel <- function(suffix)
                          content="Within each panel, plot a separate line for each combination of the selected attributes. (Note: clicking more than one attribute is going to make a LOT of lines)",
                          placement='left'),
         
-        ) #</box>
-        ) #</div>
+#        ) #</box>
+#        ) #</div>
     )
     
     
@@ -136,6 +136,83 @@ add.year.range.dropdown.handler <- function(session, input,
                           selected = max(prev.to, min(new.choices))
         )
     })
+}
+
+##-----------------------------##
+##-- CONTROL SETTINGS OBJECT --##
+##-----------------------------##
+
+get.control.settings <- function(input, suffix)
+{
+    list(
+        years=get.selected.years(input, suffix),
+        data.types=get.selected.outcomes(input, suffix),
+        facet.by=get.selected.facet.by(input, suffix),
+        split.by=get.selected.split.by(input, suffix),
+        dimension.subsets=get.selected.dimension.subsets(input, suffix),
+        plot.format=get.selected.plot.format(input, suffix),
+        plot.interval.coverage = get.selected.interval.coverage(input, suffix),
+        label.change = get.selected.show.change(input, suffix),
+        change.years = get.selected.change.years(input, suffix)
+    )
+}
+
+# all others are strings
+CONTROL.SETTINGS.DATA.TYPES = c(
+    years = 'numeric',
+    plot.interval.coverage = 'numeric',
+    label.change = 'logical',
+    change.years = 'numeric'
+)
+
+set.controls.to.settings <- function(input,
+                                     suffix,
+                                     settings)
+{
+    print('not implemented')
+}
+
+get.main.settings <- function(input,
+                              suffix)
+{
+    list(
+        version = get.version(),
+        location = get.selected.location(input, suffix)
+    )
+}
+
+set.main.to.settings <- function(input,
+                                 suffix,
+                                 settings)
+{
+    print('not implemented')
+}
+
+settings.to.string <- function(settings,
+                               assignment='=',
+                               outer.delimeter=';',
+                               inner.delimiter=',')
+{
+    stop('need to handle dimension subsets')
+    values = sapply(settings, paste0, collapse=inner.delimiter)
+    paste0(names(settings), assignment, values, collapse=outer.delimeter)
+}
+
+string.to.settings <- function(str,
+                               delimeter,
+                               assignment='=',
+                               outer.delimeter=';',
+                               inner.delimiter=',')
+{
+    raw.components = strsplit(strsplit(str, outer.delimiter)[[1]], assignment)
+    rv.names = sapply(raw.components, function(comp){comp[1]})
+    raw.values = sapply(raw.components, function(comp){comp[2]})
+    
+    rv = strsplit(raw.values, inner.delimiter)
+    names(rv) = rv.names
+    
+    
+    rv
 }
 
 ##-------------##
