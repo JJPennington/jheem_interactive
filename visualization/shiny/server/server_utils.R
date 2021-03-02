@@ -256,9 +256,16 @@ db.connect <- function() {
   )
 }
 
-db.presets.read.all <- function (
+db.presets.read.all <- function(
   connection=db.connect(),
   table.name=DB_TABLENAME_PRESETS
+) {
+  dbReadTable(conn=connection, name=table.name)
+}
+
+db.analytics.read.all <- function(
+  connection=db.connect(),
+  table.name='analytics'
 ) {
   dbReadTable(conn=connection, name=table.name)
 }

@@ -1,3 +1,5 @@
+source('server/server_utils.R')
+
 # Functions ####
 # This should have innate error handling and fail silently
 # The database needs to track all these, plus the date/time
@@ -68,31 +70,34 @@ do.track.request <- function(session.id, #non-unique string
 }
 
 # Testing ####
-do.track.request(
-    session.id='xxx', #non-unique string
-    called.from='xxx', #string
-    version='xxx', #string
-    location='xxx', #string
-    intervention.code='xxx', #string
-    n.target.subgroups=3, #integer
-    intervention.start=1.0, #numeric
-    intervention.end=1.0, #numeric
-    target.ages='xxx', #string
-    target.races='xxx', #string
-    target.sexes='xxx', #string
-    target.risks='xxx', #string
-    testing='', #may be NA
-    prep=NA, #may be NA
-    viral.suppression=NA, #may be NA
-    outcomes='xxx', #string
-    facet.by='xxx', #string
-    split.by='xxx', #string
-    change.outcome.start=1.5, #numeric
-    change.outcome.end=999.8492, #numeric
-    show.change=1.0, #numeric
-    plot.format='xxx', #string
-    show.ages='xxx', #string
-    show.races='xxx', #string
-    show.sexes='xxx', #string
-    show.risks='xxx' #string
-)
+if (1 == 0) {
+    do.track.request(
+        session.id='xxx', #non-unique string
+        called.from='xxx', #string
+        version='xxx', #string
+        location='xxx', #string
+        intervention.code='xxx', #string
+        n.target.subgroups=3, #integer
+        intervention.start=1.0, #numeric
+        intervention.end=1.0, #numeric
+        target.ages='xxx', #string
+        target.races='xxx', #string
+        target.sexes='xxx', #string
+        target.risks='xxx', #string
+        testing='', #may be NA
+        prep=NA, #may be NA
+        viral.suppression=NA, #may be NA
+        outcomes='xxx', #string
+        facet.by='xxx', #string
+        split.by='xxx', #string
+        change.outcome.start=1.5, #numeric
+        change.outcome.end=999.8492, #numeric
+        show.change=1.0, #numeric
+        plot.format='xxx', #string
+        show.ages='xxx', #string
+        show.races='xxx', #string
+        show.sexes='xxx', #string
+        show.risks='xxx' #string
+    )
+    
+}
