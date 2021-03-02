@@ -69,16 +69,6 @@ save.link <- function(session, plot.and.table, suffix, cache)
     })
 }
 
-save.prerun.link <- function(session, plot.and.table)
-{
-    do.save.link(session, plot.and.table, suffix='prerun')
-}
-
-do.save.link <- function(session, plot.and.table, suffix)
-{
-
-}
-
 
 ##---------------------##
 ##-- INTERFACE TO S3 --##
