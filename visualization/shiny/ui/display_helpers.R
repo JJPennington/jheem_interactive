@@ -43,7 +43,7 @@ create.share.menu <- function(suffix)
         <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708l3-3z"/>
         </svg>'
     
-    tags$div(class='share_container',
+    tags$div(class='share_container shaded_dropdown',
              dropdownButton(
                  label=HTML(paste0(share.icon, ' Share')),
                  circle=F,
@@ -75,7 +75,7 @@ create.projected.intervention.panel <- function(suffix)
                           width=12,
                           collapsible = T,
                           collapsed = T,
-                          status='info',
+                     #     status='info',
                           solidHeader = T,
                           uiOutput(outputId = paste0('selected_intervention_', suffix)))
              
@@ -301,32 +301,10 @@ set.share.enabled <- function(input,
                                suffix,
                                enabled)
 {
-#    nav.id = paste0('nav_', suffix)
-#    target.value = paste0("share_", suffix)
- #   if (enabled)
-  #      showTab(nav.id, target.value, select=F)
-   # else
-    #    hideTab(nav.id, target.value)
-     
     if (enabled)
         shinyjs::enable(paste0('share_menu_', suffix))
     else
         shinyjs::disable(paste0('share_menu_', suffix))
-    #OLD
-#    ids = paste0(c('download_figure_', 'download_table_', 'share_link_'),
-#                 suffix)
-    
-#    for (id in ids)
-#    {
-#        if (enabled)
-#        {
-#            shinyjs::enable(id)
-#        }
-#        else
-#        {
-#            shinyjs::disable(id)
-#        }
-#    }
 }
 
 ##----------##

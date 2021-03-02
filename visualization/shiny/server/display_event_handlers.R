@@ -20,7 +20,7 @@ add.display.event.handlers <- function(session, input, output, cache,
 
     
     #-- General Handler for Running/Redrawing --#
-    do.run = function(intervention.codes, suffix, intervention.settings)
+    do.run = function(intervention.codes, suffix, intervention.settings=NULL)
     {   
         get.display.size(input, 'prerun')
         
@@ -202,10 +202,10 @@ add.display.event.handlers <- function(session, input, output, cache,
         })
     })
     
-    # Get the size on load
+    #-- Some Initial Set-Up Once Loaded --#
     
     session$onFlushed(function(){
-        print('on flush')
+    #    print('on flush')
         
         js$ping_display_size()
         

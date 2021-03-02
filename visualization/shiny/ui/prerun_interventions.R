@@ -1,4 +1,4 @@
-PRERUN.CONTENT = tags$table(class='display_table', tags$tbody(class='display_tbody',
+PRERUN.CONTENT = tags$table(class='display_table fill_page1', tags$tbody(class='display_tbody',
     
 ##-- HEADERS AND DISPLAY --##  
 tags$tr(

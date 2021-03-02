@@ -144,3 +144,13 @@
   width: 100%;
   padding: 10px;
 }
+
+
+.shaded_dropdown ul {
+  background: #f8f8f8;
+  border: 1px dotted black;
+}
+
+.shaded_dropdown li {
+  font-size: 120%;
+}

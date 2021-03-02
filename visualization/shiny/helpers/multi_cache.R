@@ -112,7 +112,7 @@ pull.simsets.to.cache <- function(session,
         else
         {
             filename = paste0(code, '.Rdata')
-            print(paste0("pulling from s3: ", filename))
+#            print(paste0("pulling from s3: ", filename))
             
             tryCatch({
                 

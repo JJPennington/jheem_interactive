@@ -1,4 +1,4 @@
-CUSTOM.CONTENT = tags$table(class='display_table', tags$tbody(
+CUSTOM.CONTENT = tags$table(class='display_table fill_page2', tags$tbody(
     class='display_tbody',
     
 ##-- HEADERS AND DISPLAY --####

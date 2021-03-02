@@ -36,7 +36,6 @@ source('ui/contact.R', local=T)
 source('ui/prerun_interventions.R', local=T)
 source('ui/custom_interventions.R', local=T)
 
-
 ##------------------##
 ##-- DEFINE the UI--##
 ##------------------##
@@ -66,6 +65,7 @@ ui = tags$html(style='height:100%',
     tags$link(rel = "stylesheet", type = "text/css", href = "css/chevrons.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/errors.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/about.css"),
     
  #   tags$script(src = 'window_height.js'),
     tags$script(src = 'window_sizes.js'),
@@ -100,11 +100,13 @@ ui = tags$html(style='height:100%',
       tabPanel(
         "About the JHEEM",
         make.tab.popover("about_the_jheem", title=ABOUT.POPOVER.TITLE, content=ABOUT.POPOVER),
-        uiOutput("about")),
-      tabPanel(
-        "Our Team",
-        make.tab.popover("our_team", title=OUR.TEAM.POPOVER.TITLE, content=OUR.TEAM.POPOVER),
-        uiOutput("faq")),
+        includeHTML('ui/about.html')
+      ),
+#      tabPanel(
+#        "Our Team",
+#        make.tab.popover("our_team", title=OUR.TEAM.POPOVER.TITLE, content=OUR.TEAM.POPOVER),
+#        uiOutput("faq")
+#      ),
       tabPanel(
         "Contact Us",
         make.tab.popover("contact_us", title=CONTACT.POPOVER.TITLE, content=CONTACT.POPOVER),

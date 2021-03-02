@@ -1,10 +1,4 @@
 
-# Make and save the intervention list to be universally available
-#  Note - this is executed on launching the app
-print("Making Intervention List")
-INTERVENTION.LIST = get.interventions.list(disregard.location=T) 
-#for now, we just assume that every location has every intervention
-# and just assume that every location has every intervention
 
 ##----------------------##
 ##-- CREATE THE PANEL --##
@@ -312,3 +306,18 @@ target.population.codes.to.pretty.name <- function(tpop.codes)
                        "</td></tr>", collapse=''), 
                 "</table>"))
 }
+
+
+
+
+##----------------------------------##
+##-- SET UP THE INTERVENTION LIST --##
+##----------------------------------##
+
+
+# Make and save the intervention list to be universally available
+#  Note - this is executed on launching the app
+print("Making Intervention List")
+INTERVENTION.LIST = get.interventions.list(disregard.location=T) 
+#for now, we just assume that every location has every intervention
+# and just assume that every location has every intervention
