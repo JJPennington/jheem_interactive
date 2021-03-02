@@ -6,7 +6,7 @@ tags$tr(
     #-- Left Header --#
     tags$td(id='left_controls_custom_header',
             class='controls_header_td controls_wide header_color collapsible',
-            tags$div(class='controls_narrow', "Specify Intervention")),
+            tags$div(class='controls_wide', "Specify Intervention")),
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_custom_td',
@@ -134,7 +134,7 @@ tags$tr(
                                                       tags$table(class='specify_custom',
                                                                  tags$tr(
                                                                      tags$th(paste0("Subgroup ", i, " Characteristics:")),
-                                                                     tags$th("Intervention Details:")
+                                                                     tags$th("Intervention Components:")
                                                                  ),
                                                                  tags$tr(
                                                                      tags$td(create.custom.tpop.box(i)),

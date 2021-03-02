@@ -10,6 +10,7 @@ HEIGHT.OFFSET = c(prerun=180,
 
 get.display.size <- function(input, suffix)
 {
+#    print(paste0("input$display_size$width = ", input$display_size$width, "; left_width_prerun = ", input$left_width_prerun))
     size = input$display_size
     
     size$width = size$width -

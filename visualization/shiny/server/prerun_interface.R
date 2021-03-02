@@ -60,10 +60,3 @@ get.intervention.filenames <- function(codes,
                             intervention.code = code)
     })
 }
-
-##-------------##
-##-- HELPERS --##
-##-------------##
-
-#get.sim.filenames.to.load
-#is.sim.cached

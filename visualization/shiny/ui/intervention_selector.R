@@ -1,4 +1,11 @@
 
+# Make and save the intervention list to be universally available
+#  Note - this is executed on launching the app
+print("Making Intervention List")
+INTERVENTION.LIST = get.interventions.list(disregard.location=T) 
+#for now, we just assume that every location has every intervention
+# and just assume that every location has every intervention
+
 ##----------------------##
 ##-- CREATE THE PANEL --##
 ##----------------------##
@@ -6,24 +13,18 @@
 create.intervention.selector.panel <- function(suffix,
                                                lump.idu=T)
 {
-    print('Creating Intervention Selector Panel')
-    int.list = get.interventions.list(disregard.location=T) 
-        #for now, we will not use this full list
-        # and just assume that every location has every intervention
-        
-
     # Make the Aspect Selector
-    aspect.selector = make.intervention.aspect.selector(int.list,
+    aspect.selector = make.intervention.aspect.selector(INTERVENTION.LIST,
                                                         suffix=suffix,
                                                         include.none=T)
     
     # Make the Target Population Selector
     tpop.selector = conditionalPanel(condition=paste0("input.int_aspect_", suffix," != 'none'"),
-                                     make.intervention.tpop.selector(int.list,
+                                     make.intervention.tpop.selector(INTERVENTION.LIST,
                                                                      suffix=suffix))
     
     # Make the Final Selector
-    final.selector = make.intervention.final.selector(int.list,
+    final.selector = make.intervention.final.selector(INTERVENTION.LIST,
                                                       suffix=suffix)
     
     
@@ -35,9 +36,9 @@ create.intervention.selector.panel <- function(suffix,
     )
 }
 
-##----------------------------------##
-##-- GETTING INPUT FROM THE PANEL --##
-##----------------------------------##
+##---------------------------------------------##
+##-- GETTING/SETTING INPUT FROM/TO THE PANEL --##
+##---------------------------------------------##
 
 get.intervention.selection <- function(input, suffix)
 {
@@ -49,6 +50,38 @@ get.intervention.selection <- function(input, suffix)
         tpop.selection = input[[paste0("int_tpop_", suffix)]]
         final.selector.id = paste0('int_', tpop.selection, "_", aspect.selection, "_", suffix)
         input[[final.selector.id]]
+    }
+}
+
+set.intervention.selection <- function(session, suffix, int.code)
+{
+    mask = INTERVENTION.LIST$intervention.code == int.code
+
+    if (is.null(int.code) || !any(mask))
+        updateRadioButtons(session, 
+                           inputId = paste0("int_aspect_", suffix), 
+                           selected = 'none')
+    else
+    {
+        index = (1:length(mask))[mask][1]
+        
+        # Aspect
+        aspect.selection = INTERVENTION.LIST$unit.type.code[index]
+        updateRadioButtons(session,
+                           inputId = paste0("int_aspect_", suffix),
+                           selected = aspect.selection)
+        
+        # Target Population
+        tpop.selection = INTERVENTION.LIST$target.population.index[index]
+        updateRadioButtons(session,
+                           inputId = paste0("int_tpop_", suffix),
+                           selected = tpop.selection)
+        
+        # Final
+        final.selector.id = paste0('int_', tpop.selection, "_", aspect.selection, "_", suffix)
+        updateRadioButtons(session,
+                           inputId = final.selector.id,
+                           selected = int.code)
     }
 }
 

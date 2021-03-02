@@ -17,6 +17,7 @@ library(shinyBS)
 source('load_resources.R')
 source('plot_interface/options.R')
 source('server/server_utils.R')
+source('server/simulation_storage.R')
 source('server/prerun_interface.R')
 
 #-- HELPERS --#
@@ -27,7 +28,6 @@ source('ui/ui_helpers.R')
 source('ui/popovers.R')
 source('ui/intervention_selector.R')
 source('ui/display_helpers.R')
-source('ui/styling_helpers.R')
 source('server/control_helpers.R')
 source('ui/custom_helpers.R')
 
@@ -64,6 +64,7 @@ ui = tags$html(style='height:100%',
     tags$link(rel = "stylesheet", type = "text/css", href = "color_schemes/color_scheme_grayscale.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "accordion.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/chevrons.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/errors.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "notifications.css"),
     
  #   tags$script(src = 'window_height.js'),
@@ -86,11 +87,13 @@ ui = tags$html(style='height:100%',
       collapsible=F,
       tabPanel(
         title = 'Pre-Run Interventions',
+        value = 'prerun_interventions',
         make.tab.popover("prerun_interventions", title=PRERUN.POPOVER.TITLE, content=PRERUN.POPOVER),
         PRERUN.CONTENT
       ),
       tabPanel(
         title = "Custom Interventions",
+        value = 'custom_interventions',
         make.tab.popover("custom_interventions", title=CUSTOM.POPOVER.TITLE, content=CUSTOM.POPOVER),
         CUSTOM.CONTENT
       ),

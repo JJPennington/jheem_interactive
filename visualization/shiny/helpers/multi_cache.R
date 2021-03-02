@@ -84,10 +84,12 @@ are.simsets.in.disk.cache <- function(codes, cache)
 # Put in the appropriate disk cache
 # AND put in mem cache
 # Returns true if successful, false if there was an error
-pull.simsets.to.cache <- function(codes,
+pull.simsets.to.cache <- function(session,
+                                  codes,
                                   cache,
-                                  bucket.name=BUCKET.NAME.SIMS)
+                                  pull.to.explicit = NULL)
 {
+    print(codes)
     codes = gsub('\\.Rdata', '', codes)
     
     for (code in codes)
@@ -110,41 +112,55 @@ pull.simsets.to.cache <- function(codes,
         else
         {
             filename = paste0(code, '.Rdata')
-            
-            parsed.filename = parse.simset.filenames(filename)
             print(paste0("pulling from s3: ", filename))
             
             tryCatch({
-                full.filename = file.path(parsed.filename['version'],
-                                          parsed.filename['location'],
-                                          filename)
                 
-                if (length(get_bucket(bucket=bucket.name,
-                                      prefix=full.filename))==0)
+                if (is.sim.stored(filename))
+                    simset = sims.load(filename)
+                else    
                 {
-                    show.error.message("Simulation File(s) Unavailable",
-                                       "The simulation file(s) needed are not currently available on the remote server. We apologize, but we cannot process the requested interventions at this time.")
-                    return (F)
+                    show.error.message(session,
+                                       title="Simulation File(s) Unavailable",
+                                       message="The simulation file(s) needed are not currently available on the remote server. We apologize, but we cannot process the requested interventions at this time.")
+                    
+                    if (!is.null(pull.to.explicit))
+                        return (NULL)
+                    else
+                        return (F)
                 }
-                
-                s3load(full.filename,
-                       bucket=bucket.name,
-                       envir=environment())
             },
             error = function(e){
-                show.error.message("Error Retrieving File(s)",
-                                   "There was an unexpected error while retrieving the file(s) from the remote server. We apologize - please try again in a few minutes.")
-                return (F)
+                show.error.message(session,
+                                   title="Error Retrieving File(s)",
+                                   message = "There was an unexpected error while retrieving the file(s) from the remote server. We apologize - please try again in a few minutes.")
+                
+                if (!is.null(pull.to.explicit))
+                    return (NULL)
+                else
+                    return (F)
             })
             
-            disk.cache$set(key, simset)
-            cache$mem.cache$set(key, simset)
+            if (!is.null(pull.to.explicit))
+            {
+                cache = put.simset.to.explicit.cache(codes=code,
+                                                     simsets = simset,
+                                                     cache = cache,
+                                                     explicit.name = pull.to.explicit)
+            }
+            else
+            {
+                disk.cache$set(key, simset)
+                cache$mem.cache$set(key, simset)
+            }
         }
     }
         
-    print('here')
     #-- Return TRUE for success --#
-    return (T);
+    if (!is.null(pull.to.explicit))
+        return (cache)
+    else
+        return (T)
 }
 
 ##---------------------##

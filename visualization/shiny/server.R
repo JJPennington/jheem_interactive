@@ -5,6 +5,7 @@
 #library(processx)
 #library(orca)
 library(shiny)
+library(shinyWidgets)
 library(mailR)
 library(cachem)
 library(DT)
@@ -14,8 +15,6 @@ library(shinycssloaders)
 ##-- SOURCE FILES --##
 ##------------------##
 
-#for now
-source('helpers/test.R')
 
 source('env.R')
 source('helpers/location_names.R')
@@ -25,7 +24,7 @@ source('plot_interface/generate_plot.R')
 source('server/display_event_handlers.R')
 source('helpers/display_size.R')
 source('helpers/error_checking.R')
-source('helpers/error_handling.R')
+source('helpers/alerts.R')
 source('server/control_helpers.R')
 source('plot_interface/generate_plot.R')
 source('plot_interface/plot_interface.R')
@@ -37,6 +36,7 @@ source('ui/custom_interventions.R', local=T)
 source('ui/modals.R')
 source('helpers/time_text.R')
 source('simulation/simulate_intervention.R')
+source('links/link_interface.R')
 
 
 ##----------------------##
@@ -91,4 +91,5 @@ server <- function(input, output, session, cache)
     ##-----------------------------------------------##
     
     # in ui/custom_helpers.R
+    add.custom.event.handlers(session, input, output)
 }

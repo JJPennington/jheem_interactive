@@ -5,7 +5,8 @@ tags$tr(
     #-- Left Header --#
     tags$td(id='left_controls_prerun_header',
             class='controls_header_td controls_narrow header_color collapsible',
-            tags$div(class='controls_narrow', "Select Intervention")),
+            tags$div(class='controls_narrow', "Select Intervention")
+            ),
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_prerun_td',

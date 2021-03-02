@@ -49,6 +49,7 @@ create.share.menu <- function(suffix)
                  circle=F,
                  icon=icon('box-arrow-up', lib='glyphicon'),
                  right=T,
+                status = 'info',
                  inputId = paste0('share_menu_', suffix),
                  actionLink(inputId = paste0('download_figure_', suffix),
                             label = HTML("Download&nbsp;Figure")),
