@@ -79,17 +79,6 @@ do.save.link <- function(session, plot.and.table, suffix)
 
 }
 
-create.link <- function(type = c('prerun','custom')[1],
-                        plot.and.table)
-{
-    list(type=type,
-         intervention.codes=plot.and.table$intervention.codes,
-         main.settings=plot.and.table$main.settings,
-         control.settings=plot.and.table$control.settings,
-         intervention.settings=plot.and.table$intervention.settings,
-         time=Sys.time())
-}
-
 
 ##---------------------##
 ##-- INTERFACE TO S3 --##
