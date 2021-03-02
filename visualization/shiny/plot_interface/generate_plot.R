@@ -11,9 +11,11 @@
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
 ##---------------------------------------------##
 
-generate.plot.and.table <- function(main.settings,
+generate.plot.and.table <- function(session,
+                                    main.settings,
                                     control.settings,
                                     intervention.codes,
+                                    intervention.settings=NULL,
                                     cache, 
                                     intervention.map=NULL) 
 {
@@ -27,7 +29,7 @@ generate.plot.and.table <- function(main.settings,
                                                         version=main.settings$version, location=main.settings$location)
         )
         
-        if (!pull.files.to.cache(filenames, cache))
+        if (!pull.files.to.cache(session, filenames, cache))
             return (NULL)
         
         #-- Make the plot --# ####
@@ -69,60 +71,22 @@ generate.plot.and.table <- function(main.settings,
         
         plot.results$main.settings = main.settings
         plot.results$control.settings = control.settings
+        plot.results$intervention.settings = intervention.settings
         
         
         #-- Return --#
         plot.results
     },
     error = function(e){
-        
-        show.error.message("Error Generating Figure",
+        log.error(e)
+        show.error.message(session,
+                           "Error Generating Figure",
                            "We could not generate the figure and table due to an unexpected error. We apologize. Please let us know if this continues to happen.")
         
         #-- Return NULL --#
         NULL  
     })
     
-}
-
-
-# Returnst true if success, false otherwise
-pull.files.to.cache <- function(filenames, cache)
-{
-    filenames = filenames[!are.simsets.in.disk.cache(filenames, cache) &
-                              !are.simsets.in.explicit.cache(filenames, cache)]
-    success = T
-    #-- Pre-fetch the simsets --#
-    if (length(filenames)>0)
-    {
-        #      print(paste0('need to fetch: ', paste0(filenames, collapse=', ')))
-        if (length(filenames)==1)
-            msg = "Fetching 1 Simulation File from Remote Server:"
-        else
-            msg = paste0("Fetching ", length(filenames), 
-                         " Simulation Files from Remote Server:")
-        withProgress(
-            message=msg, min=0, max=1, value=0.2/length(filenames),
-            detail=paste("Fetching file 1 of ", length(filenames)),
-            {
-                for (i in 1:length(filenames))
-                {
-                    if (success)
-                    {
-                        if (i>1)
-                            setProgress(
-                                (i-1)/length(filenames),
-                                detail=paste("Fetching file ", i, " of ", 
-                                             length(filenames)))
-                        filename = filenames[i]
-                        success = pull.simsets.to.cache(filename, cache)
-                    }
-                }
-                setProgress(1, detail='Done')
-            })
-    }
-    
-    return (success)
 }
 
 ##----------------##
@@ -175,9 +139,3 @@ format.plotly.toolbar <- function(plot,
 }
 
 
-
-# Location names ####
-##--------------------##
-##-- LOCATION NAMES --##
-##--------------------##
-# n/a

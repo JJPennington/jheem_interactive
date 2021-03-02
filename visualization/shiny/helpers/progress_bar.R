@@ -52,6 +52,7 @@ create.modal.progress <- function(session,
                                   total,
                                   display_pct=T)
 {
+    # AsyncProgress (package ipc)
     progress.bar = progressBar(id,
                                value=value,
                                total=total,
@@ -64,5 +65,10 @@ create.modal.progress <- function(session,
                  uiOutput(paste0(id, '_text')))
     )
     
-    modal = mo
+    modal = bsModal(content,
+                        easyClose = F)
+    
+    #to hide buttons
+    # https://stackoverflow.com/questions/46241308/is-there-a-way-to-hide-disable-the-close-button-on-a-bsmodal-window
+    
 }

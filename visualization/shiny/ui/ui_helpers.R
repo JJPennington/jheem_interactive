@@ -30,3 +30,42 @@ inline.select.input <- function(inputId,
         ))
     )
 }
+
+
+verticalSpacer <- function(height, unit='px')
+{
+    div(style=paste0("height: ", height, unit))
+}
+
+horizontalSpacer <- function(width, unit='px')
+{
+    div(style=paste0("width: ", width, unit))
+}
+
+tableRow <- function(...,
+                     fill.width=T,
+                     vertical.align='top',
+                     inner.padding='25px')
+{
+    args = list(...)
+    tds = lapply(1:length(args), function(i){
+        elem = args[[i]]
+        style = paste0("vertical-align: ", vertical.align)
+        if (i>1)
+            style = paste0(style, "; ",
+                           "padding-left: ", inner.padding)
+        
+        tags$td(elem,
+                style=style)
+    })
+    
+    if (fill.width)
+        tags$table(
+            style='width: 100%',
+            do.call(tags$tr, tds)
+        )
+    else
+        tags$table(
+            do.call(tags$tr, tds)
+        )
+}

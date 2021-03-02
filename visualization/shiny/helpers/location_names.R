@@ -86,3 +86,12 @@ get.location.short.name <- function(location)
 {
     MSA.SHORT.NAMES[location]
 }
+
+match.location.name <- function(name)
+{
+    mask = tolower(name) == tolower(MSA.SHORT.NAMES)
+    if (any(mask))
+        names(MSA.SHORT.NAMES)[mask][1]
+    else
+        NULL
+}

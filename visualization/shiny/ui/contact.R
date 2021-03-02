@@ -4,8 +4,6 @@ CONTACT.CONTENT =
   fluidPage(
     fluidRow(verticalSpacer(40)),
     fluidRow(
-    #  ,
-      
       column(width=1),
       box(
         width=10, 
@@ -20,9 +18,6 @@ CONTACT.CONTENT =
           column(
             width=12,
             fluidRow(
-              # tableRow(
-              # vertical.align='top',
-              # inner.padding='25px',
               textInput(
                 inputId='feedback_name', 
                 label='Your name') ),

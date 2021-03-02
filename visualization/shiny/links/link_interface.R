@@ -1,65 +1,130 @@
-source('server/server_utils.R')
+LINK.BUCKET = 'endinghiv.links'
+DOMAIN.NAME = 'www.jheem.org'
 
-LINK.DELIMITER = '&'
+library(shinybusy)
 
-#returns a named vector
-#if url is www.jheem.org/?preset=123
-# --> id = 123
-get.link.key.values <- function(id, method=c('s3', 'db')[1]) {
-  # @Todd: server_utils.R/getPresetIdFromUrl() also fetches URL from session
-  # - Code below taken from server.routes.runModel.old.R:70
-  if (method == 'db') {
-    # 1. get record
-    presetTable.df = db.presets.read.all()
-    presetRecord = presetTable.df[presetTable.df$id==id,]
-    presetStr = presetRecord$urlQueryParamString
-    # 2. parse it
-    presets.list = presets.urlQueryParamString.parse(presetStr)  # list
-    presets = unlist(presets)
-  } else if (method == 's3') {
-    presets = presets.load(id)
-  }
-  
-  return(presets)
+##--------------##
+##-- MAKE URL --##
+##--------------##
+
+make.link.url <- function(link)
+{
+    paste0(DOMAIN.NAME, "?", link)
 }
 
-#key values is a named list
-#each element of this list is a character vector (which may be named or not)
-#Side effects: also shows modal.
-set.link.key.values <- function(id, key.values, showModal=T) {
-  # This test was ok. Can delete these comments:
-  # key.values = c('key1'='lkjslkdfjl', 'key2'='eopwtuq', 'key3'='cxmvnzxvi')
-  # queryStr = presets.urlQueryParamString.create(key.values)
-  handleCreatePreset(id, key.values, showModal=showModal)
+##---------------------------##
+##-- CREATING LINK OBJECTS --##
+##---------------------------##
+
+# returns the link id, or NULL if there was an error
+save.link <- function(session, plot.and.table, suffix, cache)
+{
+    if (suffix=='custom')
+    {
+        filename = get.intervention.filenames(plot.and.table$intervention.codes,
+                                              version=plot.and.table$main.settings$version, 
+                                              location=plot.and.table$main.settings$location)
+        
+        if (!is.sim.stored(filename))
+        {
+            show_modal_spinner(session=session,
+                               text='Uploading Simulation File to Remote Server...',
+                               spin='bounce')
+            tryCatch({
+                    simset = get.simsets.from.cache(filename, cache)[[1]]
+                    
+                    sims.save(simset=simset,
+                              filename = filename)
+                    
+                    remove_modal_spinner(session)
+                },
+                error=function(e){
+                    log.error(e)
+                    remove_modal_spinner(session)
+                    show.error.message(session,
+                                       title='Error Creating Link',
+                                       message='There was an error uploading the simulation files to the remote server. We apologize, but we are unable to generate a link at this time. Please try again after a few minutes.')
+                    return (NULL)
+                }  
+            )
+        }
+    }
+    #if intervention not uploaded
+    # upload intervention
+    
+    # Generate a link
+    tryCatch({
+        id = get.new.link.id()
+        link.obj = create.link(type=suffix, plot.and.table)
+        
+        set.link.data(id, link.obj)
+        
+        id
+    },
+    error = function(e){
+        show.error.message(session,
+                           title="Error Creating Link",
+                           message = "There was an error saving the data to generate a link. We apologize. Please try again after a few minutes.")
+        NULL
+    })
 }
 
-# Random String
-# Quicker than my own implementation
-# https://stackoverflow.com/questions/42734547/generating-random-strings
-randString <- function(
-  characters=0, numbers=0, symbols=0, lowerCase=0, upperCase=0
-) {
-  ASCII <- NULL
-  if(symbols>0) 
-    ASCII <- c(ASCII, sample(c(33:47, 58:34, 91:96, 123:126), symbols))
-  if(numbers>0) ASCII <- c(ASCII, sample(48:57, numbers))
-  if(upperCase>0) ASCII <- c(ASCII, sample(65:90, upperCase))
-  if(lowerCase>0) ASCII <- c(ASCII, sample(97:122, lowerCase))
-  if(characters>0) ASCII <- c(ASCII, sample(c(65:90, 97:122), characters))
-  
-  return( rawToChar(as.raw(sample(ASCII, length(ASCII)))) )
+save.prerun.link <- function(session, plot.and.table)
+{
+    do.save.link(session, plot.and.table, suffix='prerun')
 }
 
-#return a random 5-character alphanumeric key that is not already in the DB
-get.new.link.id <- function(method=c('s3', 'db')[1]) {
-  if (method == 'db') 
-    ids = db.presets.read.all()$id
-  else if (method == 's3')
-    ids = presets.list()  %>% str_replace('.Rdata', '')
-  while (TRUE) {
-    id = randString(characters=3, numbers=2)
-    if (!(id %in% ids))
-      break
-  }
-  return(id)
+do.save.link <- function(session, plot.and.table, suffix)
+{
+
+}
+
+
+##---------------------##
+##-- INTERFACE TO S3 --##
+##---------------------##
+
+get.link.data <- function(id)
+{
+    tryCatch({
+        filename = paste0(id, '.Rdata')
+        s3load(filename, bucket=LINK.BUCKET)
+        data
+    },
+    error=function(e){
+        NULL
+    })
+}
+
+set.link.data <- function(id, data)
+{
+    filename = paste0(id, '.Rdata')
+    s3save(data, object=filename, bucket=LINK.BUCKET)
+}
+
+link.exists <- function(id)
+{
+    filename = paste0(id, '.Rdata')
+    x = get_bucket(bucket=LINK.BUCKET,
+                   prefix=filename)
+    x.names = sapply(x, function(z) {z$Key} )
+    any(x.names == filename)
+}
+
+get.new.link.id <- function(len=5)
+{
+    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    id = NULL
+    
+    while(is.null(id))
+    {
+        indices = ceiling(runif(len, .000001, nchar(choices)))
+        chars = sapply(indices, function(i){substr(choices, i, i)})
+        id = paste0(chars, collapse='')
+        
+        if (link.exists(id))
+            id = NULL
+    }
+    
+    id
 }
