@@ -1,4 +1,5 @@
-PRERUN.CONTENT = tags$table(class='display_table fill_page1', tags$tbody(class='display_tbody',
+PRERUN.CONTENT = tags$table(id='prerun_table',
+                            class='display_table fill_page1', tags$tbody(class='display_tbody',
     
 ##-- HEADERS AND DISPLAY --##  
 tags$tr(
@@ -10,8 +11,9 @@ tags$tr(
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_prerun_td',
-            rowspan=4,
+            rowspan=2,
             tags$div(class='display',
+                     create.share.menu('prerun'),
                      create.display.panel('prerun')
             ),
                      
@@ -59,7 +61,7 @@ tags$tr(
                                                   'right_controls_custom','right_custom_cta','right_controls_custom_header'),
                                   remove.classes='controls_narrow',
                                   add.classes='collapsed',
-                                  shiny.ids='right_width_prerun',
+                                  shiny.ids=c('right_width_prerun','right_width_custom'),
                                   shiny.values=0,
                                   visible=F
             ),
@@ -76,8 +78,8 @@ tags$tr(
                                                   'right_controls_custom','right_custom_cta','right_controls_custom_header'),
                                   remove.classes='collapsed',
                                   add.classes='controls_narrow',
-                                  shiny.ids='right_width_prerun',
-                                  shiny.values=RIGHT.PANEL.SIZE['prerun'],
+                                  shiny.ids=c('right_width_prerun','right_width_custom'),
+                                  shiny.values=c(RIGHT.PANEL.SIZE['prerun'], RIGHT.PANEL.SIZE['custom']),
                                   visible=T
             ),  
             make.popover('prerun_expand_right', 'Show Figure Settings',
@@ -99,19 +101,21 @@ tags$tr(
     tags$td(id='left_controls_prerun',
             class='controls_td controls_narrow controls_color collapsible',
             tags$div(class='controls controls_narrow',
-                     selectInput(
-                         inputId="location_prerun", 
-                         # label=NULL,
-                         label="Location",
-                         choices=invert.keyVals(get.prerun.locations(version=VERSION)),
-                         # selected=location.choice,
-                         selected=NULL,
-                         multiple=FALSE,
-                         selectize=TRUE, 
-                         width=NULL, 
-                         size=NULL),
+                     tags$div(id='locatoin_prerun_holder',
+                         selectInput(
+                             inputId="location_prerun", 
+                             # label=NULL,
+                             label="Location",
+                             choices=invert.keyVals(get.prerun.locations(version=VERSION)),
+                             # selected=location.choice,
+                             selected=NULL,
+                             multiple=FALSE,
+                             selectize=TRUE, 
+                             width=NULL, 
+                             size=NULL)
+                     ),
                      
-                     make.popover('location_prerun',
+                     make.popover('location_prerun_holder',
                                   title='What City to Project Interventions For',
                                   content="Choose from among the 32 Metropolitan Statistical Areas encompassing the 48 high-burden counties and Washington DC identified by the Ending the HIV Epidemic Initiative.",
                                   placement='right'),
@@ -128,13 +132,13 @@ tags$tr(
     
 ), #</tr>
 
-##-- CTA TEXT --##
+##-- CTA TEXT and UNDER-DISPLAY --##
 tags$tr(
     
     #-- Left panel text --#
     tags$td(id='left_prerun_cta_text',
             class='cta_text_td controls_narrow cta_background_color collapsible',
-            tags$div(class='controls_narrow',
+            tags$div(class='cta_text_sub_td controls_narrow',
                 tags$div(class='cta_text',
                     HTML("This will take 10-30 seconds<BR>
                           <input type='checkbox' id='chime_run_prerun' name='chime_run_prerun' style='float: left'>
@@ -142,6 +146,12 @@ tags$tr(
                 )
             )
     ),
+    
+    tags$td(id='under_display_prerun',
+            class='under_display_td content_color',
+            rowspan=2,
+            create.projected.intervention.panel(suffix='prerun')
+    )
     
 ), #</tr>
 
@@ -151,14 +161,14 @@ tags$tr(
     #-- Left panel button --#
     tags$td(id='left_prerun_cta',
             class='cta_td controls_narrow cta_background_color collapsible',
-            tags$div(class='controls_narrow', 
+            tags$div(class='controls_narrow cta_sub_td',
                      actionButton(class='cta cta_color', inputId='run_prerun', label='Generate Projections'))
             ),
     
     #-- Right panel button --#
     tags$td(id='right_prerun_cta',
-            class='cta_td cta_background_color collapsible collapsed',
-            tags$div(class='controls_narrow', 
+            class='cta_td cta_background_color collapsible collapsed', 
+            tags$div(class='controls_narrow cta_sub_td',
                      actionButton(class='cta cta_color', inputId='redraw_prerun', label='Adjust Projections'))
             )
     

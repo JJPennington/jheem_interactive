@@ -6,9 +6,14 @@
 #'@return A named character vector. The values of the vector are 'display
 #'able' names of places; the names of the vector are the location codes to
 #' be passed to plot.simulations
-get.prerun.locations <- function(version)
+get.prerun.locations <- function(version,
+                                 from.s3=F)
 {
-    sims.names = sims.list()
+    if (from.s3)
+        sims.names = sims.list()
+    else
+        sims.names = CACHED.SIMS.NAMES
+    
     locations = get.locations.from.filenames(sims.names)
     locations = unique(locations)
     location.names = unlist(msa.names(locations))
@@ -23,9 +28,13 @@ get.prerun.locations <- function(version)
 ##-- GETTING INTERVENTIONS FROM THE CLOUD --##
 ##------------------------------------------##
 
-get.prerun.intervention.codes <- function()
+get.prerun.intervention.codes <- function(from.s3=F)
 {
-    sims.names = sims.list()
+    if (from.s3)
+        sims.names = sims.list()
+    else
+        sims.names = CACHED.SIMS.NAMES
+    
     locations = get.locations.from.filenames(sims.names)
     
     intervention.codes = get.intervention.codes.from.filenames(sims.names)

@@ -20,11 +20,20 @@ show.warning.message <- function(session, title, message)
                    html=T)
 }
 
+show.success.message <- function(session, title, message)
+{
+    sendSweetAlert(session=session,
+                   title=title,
+                   text=message,
+                   type='success',
+                   btn_labels='Close',
+                   html=T)
+}
 
 show.link.message <- function(session,
                               link)
 {
-    msg = tags$div("We have created a link to this content. This link will remain active for one year.",
+    msg = tags$div("We have created a link to these projections. This link will remain active for one year.",
                    tags$br(),
                    tags$br(),
                    make.link.url(link))
@@ -40,7 +49,15 @@ show.link.message <- function(session,
 
 
 
-log.error <- function(msg, error=NULL)
+log.error <- function(error, msg=NULL)
 {
-    print(msg)
+    print("-------------------------")
+    print("--------- ERROR ---------")
+    print(error)
+    if (!is.null(msg))
+    {
+        print("***")
+        print(msg)
+    }
+    print("-------------------------")
 }

@@ -1,4 +1,5 @@
-CUSTOM.CONTENT = tags$table(class='display_table fill_page2', tags$tbody(
+CUSTOM.CONTENT = tags$table(id='custom_table',
+                            class='display_table fill_page2', tags$tbody(
     class='display_tbody',
     
 ##-- HEADERS AND DISPLAY --####
@@ -10,8 +11,9 @@ tags$tr(
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_custom_td',
-            rowspan=3,
+            rowspan=2,
             tags$div(class='display',
+                     create.share.menu('custom'),
                      create.display.panel('custom')        
             ),
             
@@ -35,8 +37,8 @@ tags$tr(
                                   left.offset='0px',
                                   direction='right',
                                   show.ids=c('custom_collapse_left'),
-                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
-                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_custom_cta_text','left_controls_custom_header'),
+                                  remove.class.ids=c('left_controls_custom','left_custom_cta','left_controls_custom_header'),
+                                  add.class.ids=c('left_controls_custom','left_custom_cta','left_controls_custom_header'),
                                   remove.classes='collapsed',
                                   add.classes='controls_wide',
                                   shiny.ids='left_width_custom',
@@ -59,7 +61,7 @@ tags$tr(
                                                   'right_controls_custom','right_custom_cta','right_controls_custom_header'),
                                   remove.classes='controls_narrow',
                                   add.classes='collapsed',
-                                  shiny.ids='right_width_custom',
+                                  shiny.ids=c('right_width_prerun','right_width_custom'),
                                   shiny.values=0,
                                   visible=F
             ),
@@ -76,8 +78,8 @@ tags$tr(
                                                   'right_controls_custom','right_custom_cta','right_controls_custom_header'),
                                   remove.classes='collapsed',
                                   add.classes='controls_narrow',
-                                  shiny.ids='right_width_custom',
-                                  shiny.values=RIGHT.PANEL.SIZE['custom'],
+                                  shiny.ids=c('right_width_prerun','right_width_custom'),
+                                  shiny.values=c(RIGHT.PANEL.SIZE['prerun'], RIGHT.PANEL.SIZE['custom']),
                                   visible=T
             ),  
             make.popover('custom_expand_right', 'Show Figure Settings',
@@ -120,7 +122,7 @@ tags$tr(
                      ),
                      make.popover('n_subpop_panel',
                                   title="Number of Target Subgroups",
-                                  content="Select the number of different subgroups to which you want to deliver an intervention. Once you have chosen the number, specify the details for each subgroup below.",
+                                  content="Select the number of different subgroups to which you want to deliver an intervention. Each subgroup can have a distinct intervention applied. Once you have chosen the number, specify the details for each subgroup below.",
                                   placement='right'),
                      
                      HTML('<strong>Specify Intervention for Subgroup:</strong>'),
@@ -167,7 +169,7 @@ tags$tr(
     #-- Left panel button --#
     tags$td(id='left_custom_cta',
             class='cta_td controls_wide cta_background_color collapsible',
-            tags$div(class='controls_wide', 
+            tags$div(class='controls_wide cta_sub_td', 
                      
                      tags$table(class='cta_text_wrapper', tags$tr(
                          tags$td(
@@ -182,10 +184,17 @@ tags$tr(
             ),
     ),
     
+    #-- Under Display --#
+    
+    tags$td(id='under_display_custom',
+            class='under_display_td content_color',
+            create.projected.intervention.panel(suffix='custom')
+    ),
+    
     #-- Right panel button --#
     tags$td(id='right_custom_cta',
             class='cta_td cta_background_color collapsible collapsed',
-            tags$div(class='controls_narrow', 
+            tags$div(class='controls_narrow cta_sub_td', 
                 actionButton(class='cta cta_color', inputId='redraw_custom', label='Adjust Projections'))
             )
     

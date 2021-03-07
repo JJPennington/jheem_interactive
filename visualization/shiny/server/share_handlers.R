@@ -24,7 +24,7 @@ download.plot <- function(plot.and.table, suffix)
 {
     js$download_plotly(id = get.plot.id(suffix),
                        filename = get.default.download.filename(plot.and.table,
-                                                                ext='png'))
+                                                                ext=''))
 }
 
 # https://plotly.com/javascript/static-image-export/#saving-as-png

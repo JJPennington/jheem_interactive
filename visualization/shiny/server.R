@@ -25,11 +25,13 @@ source('server/display_event_handlers.R')
 source('helpers/display_size.R')
 source('helpers/error_checking.R')
 source('helpers/alerts.R')
+source('server/contact_handlers.R')
 source('server/control_helpers.R')
 source('plot_interface/generate_plot.R')
 source('plot_interface/plot_interface.R')
 source('helpers/multi_cache.R')
 source('helpers/intervention_map.R')
+source('helpers/analytics.R')
 #source('load_resources.R')
 #source('ui/display_helpers.R', local=T)
 source('ui/custom_interventions.R', local=T)
@@ -66,7 +68,9 @@ server <- function(input, output, session, cache)
     
     #-- Make our session cache --#
     mem.cache = cachem::cache_mem(max_size = 300e6, evict='lru')
-    cache = create.multi.cache(mem.cache=mem.cache, disk.caches=list(DISK.CACHE.1, DISK.CACHE.2))
+    cache = create.multi.cache(mem.cache=mem.cache, 
+                               disk.caches=list(DISK.CACHE.1, DISK.CACHE.2),
+                               directories = 'sim_cache')
     
     
     ##-----------------------------------------##
@@ -76,8 +80,7 @@ server <- function(input, output, session, cache)
     # in server/display_event_handlers.R
     add.display.event.handlers(session, input, output, cache)
     
-    add.display.size.observers(session, input)
-    
+
     ##-----------------------------------------------##
     ##-- EVENT HANDLERS FOR UPDATING PLOT CONTROLS --##
     ##-----------------------------------------------##
@@ -92,4 +95,22 @@ server <- function(input, output, session, cache)
     
     # in ui/custom_helpers.R
     add.custom.event.handlers(session, input, output)
+    
+    
+    ##------------------##
+    ##-- CONTACT FORM --##
+    ##------------------##
+    
+    add.contact.handlers(session, input, output)
+    
+    ##-------------------------##
+    ##-- LINKS FROM OVERVIEW --##
+    ##-------------------------##
+    
+    observeEvent(input$link_from_overview, {
+        print(paste0('link to ', input$link_from_overview))
+        updateNavbarPage(session,
+                         inputId = 'main_nav',
+                         selected = input$link_from_overview)
+    })
 }

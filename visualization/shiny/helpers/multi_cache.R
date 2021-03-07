@@ -9,9 +9,11 @@ library(aws.s3)
 # $mem.cache
 
 create.multi.cache <- function(mem.cache,
-                               disk.caches)
+                               disk.caches,
+                               directories=character())
 {
-    list(mem.cache = mem.cache,
+    list(directories=directories,
+         mem.cache = mem.cache,
          disk.caches = disk.caches,
          explicit.caches = list()
     )
@@ -37,17 +39,33 @@ get.simsets.from.cache <- function(codes,
             cache$mem.cache$get(key, missing=NULL)
         else
         {
-            disk.cache = cache$disk.caches[[which.disk.cache.for.simset(code)]]
-        #else if in the disk cache, put it in the mem cache and return it
-            if (disk.cache$exists(key))
+            simset = NULL
+            # see if it is in a directory
+            for (one.dir in cache$directories)
             {
-                simset = disk.cache$get(key, missing=NULL)
-                cache$mem.cache$set(key, simset)
-                simset
+                full.filename = file.path(one.dir, paste0(code, '.Rdata'))
+                if (file.exists(full.filename))
+                {
+                    obj.name = load(full.filename)
+                    simset = get(obj.name[1])
+                    break
+                }
             }
-        #else return null
-            else
-                NULL
+            
+            # Otherwise check the disk caceh
+            if (is.null(simset))
+            {
+                disk.cache = cache$disk.caches[[which.disk.cache.for.simset(code)]]
+                if (disk.cache$exists(key))
+                    simset = disk.cache$get(key, missing=NULL)
+            }
+            
+            # If we had it, put it in the mem cache
+            if (!is.null(simset))
+                cache$mem.cache$set(key, simset)
+            
+            # Return the simset (could be null if we didn't find it)
+            simset
         }
     })
 }
@@ -69,6 +87,22 @@ put.simsets.to.cache <- function(codes,
         # put it in the mem cache
         cache$mem.cache$set(keys[i], simsets[[i]])
     }
+}
+
+are.simsets.in.cache.directory <- function(codes, cache)
+{
+    filenames = paste0(gsub('\\.Rdata', '', codes), '.Rdata')
+    sapply(filenames, function(filename){
+        for (one.dir in cache$directories)
+        {
+            full.filename = file.path(one.dir, filename)
+            if (file.exists(full.filename))
+                return (T)
+        }
+        
+        # We didn't find it
+        F
+    })
 }
 
 are.simsets.in.disk.cache <- function(codes, cache)

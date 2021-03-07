@@ -57,3 +57,12 @@
     padding: 0;
     margin: 0;
 }
+
+.uploading_custom h1 {
+    font-size: 140%;
+}
+
+.uploading_custom h2 {
+    font-style: italic;
+    font-size: 125%;
+}

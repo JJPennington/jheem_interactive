@@ -76,7 +76,7 @@ create.custom.tpop.box <- function(i) {
                            fluidRow(
                                checkboxInput(
                                    inputId=switchId,
-                                   label=tags$div(style='font-style: italic', paste0('Include All ', dim$label.plural)),
+                                   label=paste0('Include All ', dim$label.plural),#tags$div(style='font-style: italic', paste0('Include All ', dim$label.plural)),
                                    value=materialSwitch.value),
                          #      materialSwitch(
                          #          inputId=switchId,
@@ -237,7 +237,7 @@ get.custom.settings <- function(input)
     rv
 }
 
-set.custom.to.settings <- function(session, settings)
+set.custom.to.settings <- function(session, input, settings)
 {
     set.custom.n.subpopulations(session, settings$n.subpopulations)
     lapply(1:settings$n.subpopulations, function(i){
@@ -248,8 +248,10 @@ set.custom.to.settings <- function(session, settings)
             do.set.custom.tpop.selection(session, num=i, dim=dim, values=sub[[dim$code]])
         })
         
-        set.custom.start.year(session, num=i, year=sub$start.year)
-        set.custom.end.year(session, num=i, year=sub$end.year)
+        set.custom.year.range(session, input, 
+                              num=i,
+                              start.year = sub$start.year,
+                              end.year = sub$end.year)
         
         set.custom.use.testing(session, num=i, use=sub$use.testing)
         set.custom.testing.frequency(session, num=i, testing.frequency = sub$testing.frequency)
@@ -375,28 +377,22 @@ get.custom.start.year <- function(input, num)
     as.numeric(input[[paste0('custom_int_from_', num)]])
 }
 
-set.custom.start.year <- function(session, num, year)
-{
-  print(paste0('start year ', year))
-    updateSelectInput(session,
-                      inputId = paste0('custom_int_from_', num),
-                      selected = year)
-}
-
-
 get.custom.end.year <- function(input, num)
 {
     as.numeric(input[[paste0('custom_int_to_', num)]])
 }
 
-set.custom.end.year <- function(session, num, year)
+set.custom.year.range <- function(session, input, 
+                                  num,
+                                  start.year,
+                                  end.year)
 {
-  print(paste0('end year ', year))
-    updateSelectInput(session,
-                      inputId = paste0('custom_int_to_', num),
-                      selected = year)
+    update.year.range.dropdown(session, input,
+                               id1 = paste0('custom_int_from_', num),
+                               value1 = start.year,
+                               id2 =  paste0('custom_int_to_', num),
+                               value2 = end.year)
 }
-
 
 get.custom.use.testing <- function(input, num)
 {
@@ -409,6 +405,7 @@ set.custom.use.testing <- function(session, num, use)
                         inputId = paste0('custom_testing_switch', num),
                         value = use)
 }
+
 
 get.custom.testing.frequency <- function(input, num)
 {

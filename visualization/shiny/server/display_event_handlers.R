@@ -13,6 +13,15 @@ add.display.event.handlers <- function(session, input, output, cache,
     names(links) = suffixes
     is.first.plot = T
     
+    #-- Make a random session id --#
+    # (for analytics)
+    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    n.char.id = 20
+    set.seed(NULL)
+    session.id = paste0(sapply(ceiling(runif(n.char.id, 0.00001, nchar(choices))), function(index){
+        substr(choices, index, index)
+    }), collapse='')
+    
     #-- The Intervention Map for Custom Interventions --#
     custom.int.map = create.intervention.map()
 
@@ -20,7 +29,7 @@ add.display.event.handlers <- function(session, input, output, cache,
 
     
     #-- General Handler for Running/Redrawing --#
-    do.run = function(intervention.codes, suffix, intervention.settings=NULL)
+    do.run = function(intervention.codes, suffix, called.from, intervention.settings=NULL)
     {   
         get.display.size(input, 'prerun')
         
@@ -46,6 +55,14 @@ add.display.event.handlers <- function(session, input, output, cache,
                 #-- Update the UI --#
                 set.display(input, output, suffix, plot.and.table.list[[suffix]])
                 sync.buttons.to.plot(input, plot.and.table.list)
+                
+                # Track with analytics
+                track.request(session.id=session.id,
+                              called.from=called.from,
+                              main.settings=new.plot.and.table$main.settings,
+                              control.settings=new.plot.and.table$control.settings,
+                              intervention.code=paste0(new.plot.and.table$intervention.codes, collapse=';'),
+                              intervention=new.plot.and.table$intervention)
             }
         }
         
@@ -58,6 +75,8 @@ add.display.event.handlers <- function(session, input, output, cache,
             is.first.plot <<- F
             js$trigger_accordion('prerun_expand_right')
         }
+        
+        
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
@@ -66,20 +85,21 @@ add.display.event.handlers <- function(session, input, output, cache,
   #    return()
       
         do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
-               suffix='prerun')
+               called.from = 'run_prerun', suffix='prerun')
         js$chime_if_checked('chime_run_prerun')
     })
 
     observeEvent(input$redraw_prerun, {
         do.run(intervention.codes=plot.and.table.list$prerun$intervention.codes,
-               suffix='prerun')
+               called.from = 'redraw_prerun', suffix='prerun')
     })
     
     
     #-- The Handlers for Generating/Redrawing Custom --#
     
     observeEvent(input$run_custom, {
-        
+      
+      
         if (check.custom.inputs(session, input))
         {
             # Lock the appropriate buttons
@@ -124,6 +144,7 @@ add.display.event.handlers <- function(session, input, output, cache,
             }
             
             do.run(intervention.codes = selected.int.code,
+                   called.from = 'run_custom',
                    suffix='custom',
                    intervention.settings = int.settings)
             
@@ -146,6 +167,7 @@ add.display.event.handlers <- function(session, input, output, cache,
     
     observeEvent(input$redraw_custom, {
         do.run(intervention.codes = plot.and.table.list$custom$intervention.codes,
+               called.from = 'redraw_custom',
                suffix='custom',
                intervention.settings = plot.and.table.list$custom$intervention.settings)
     })
@@ -184,8 +206,6 @@ add.display.event.handlers <- function(session, input, output, cache,
         )
         
         observeEvent(input[[paste0('share_link_', suffix)]], {
-            print(paste0("Share ", suffix, ' link'))
-            
             if (!is.null(plot.and.table.list[[suffix]]))
             {
                 if (is.null(links[[suffix]]))
@@ -196,8 +216,6 @@ add.display.event.handlers <- function(session, input, output, cache,
                 
                 if (!is.null(links[[suffix]]))
                     show.link.message(session, links[[suffix]])
-                
-                print('done share link')
             }
         })
     })
@@ -205,9 +223,7 @@ add.display.event.handlers <- function(session, input, output, cache,
     #-- Some Initial Set-Up Once Loaded --#
     
     session$onFlushed(function(){
-    #    print('on flush')
-        
-        js$ping_display_size()
+        js$ping_display_size_onload()
         
         js$set_input_value(name='left_width_prerun', value=as.numeric(LEFT.PANEL.SIZE['prerun']))
         js$set_input_value(name='right_width_prerun', value=0)
@@ -231,6 +247,8 @@ add.display.event.handlers <- function(session, input, output, cache,
     
     render.from.link <- function()
     {   
+        is.first.plot <<- F # So we don't pop out the sidebar controls
+      
         int.code = initial.link.data$intervention.codes
 
         do.run(intervention.codes = int.code, 
@@ -269,11 +287,16 @@ add.display.event.handlers <- function(session, input, output, cache,
         })
     }
     
-    observeEvent(input$display_size, handle.resize(names(plot.and.table.list)) )
+    observeEvent(input$display_size_prerun, handle.resize('prerun') )
+    observeEvent(input$display_size_custom, handle.resize('custom') )
     observeEvent(input$left_width_prerun, handle.resize('prerun') )
     observeEvent(input$right_width_prerun, handle.resize('prerun') )
     observeEvent(input$left_width_custom, handle.resize('custom') )
     observeEvent(input$right_width_custom, handle.resize('custom') )
+    
+    observeEvent(input$main_nav, {
+      js$ping_display_size() 
+    })
     
     # The observe handler that sets things in motion
     initial.link = NULL
@@ -299,11 +322,12 @@ add.display.event.handlers <- function(session, input, output, cache,
                     if (!is.null(link.data))
                     {
                         set.main.to.settings(session, suffix=link.data$type, link.data$main.settings)
-                        set.controls.to.settings(session, suffix=link.data$type, link.data$control.settings)
+                        set.controls.to.settings(session, input, suffix=link.data$type, link.data$control.settings)
                         
                         if (link.data$type=='custom')
                         {
                             set.custom.to.settings(session,
+                                                   input,
                                                    settings = link.data$intervention.settings)
                         }
                         else
@@ -312,20 +336,18 @@ add.display.event.handlers <- function(session, input, output, cache,
                                                        suffix='prerun', 
                                                        int.code=link.data$intervention.codes)
                         }
-                        updateNavbarPage(session,
-                                         inputId = 'main_nav',
-                                         selected = paste0(link.data$type, "_interventions"))
                         
                         initial.link <<- query.string
                         initial.link.data <<- link.data 
                         
-                        print('done setting to link')
+                        updateNavbarPage(session,
+                                         inputId = 'main_nav',
+                                         selected = paste0(initial.link.data$type, "_interventions"))
                     }
                 }
             }
             else
             {
-                print(paste0("setting initial location to ", query.location))
                 lapply(names(plot.and.table.list), set.selected.location,
                        session=session, location=query.location)
             }

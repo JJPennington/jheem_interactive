@@ -16,6 +16,17 @@ make.link.url <- function(link)
 ##-- CREATING LINK OBJECTS --##
 ##---------------------------##
 
+create.link <- function(type = c('prerun','custom')[1],
+                        plot.and.table)
+{
+    list(type=type,
+         intervention.codes=plot.and.table$intervention.codes,
+         main.settings=plot.and.table$main.settings,
+         control.settings=plot.and.table$control.settings,
+         intervention.settings=plot.and.table$intervention.settings,
+         time=Sys.time())
+}
+
 # returns the link id, or NULL if there was an error
 save.link <- function(session, plot.and.table, suffix, cache)
 {
@@ -28,7 +39,7 @@ save.link <- function(session, plot.and.table, suffix, cache)
         if (!is.sim.stored(filename))
         {
             show_modal_spinner(session=session,
-                               text='Uploading Simulation File to Remote Server...',
+                               text=HTML('<div class="uploading_custom"><h1>Uploading Simulation File to Remote Server...</h1><h2>(This will take 10-20 seconds)</h2></div>'),
                                spin='bounce')
             tryCatch({
                     simset = get.simsets.from.cache(filename, cache)[[1]]
@@ -62,6 +73,7 @@ save.link <- function(session, plot.and.table, suffix, cache)
         id
     },
     error = function(e){
+        log.error(e)
         show.error.message(session,
                            title="Error Creating Link",
                            message = "There was an error saving the data to generate a link. We apologize. Please try again after a few minutes.")

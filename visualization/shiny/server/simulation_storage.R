@@ -12,6 +12,7 @@ CUSTOM.PREFIX = 'CSTM.'
 pull.files.to.cache <- function(session, filenames, cache)
 {
     filenames = filenames[!are.simsets.in.disk.cache(filenames, cache) &
+                            !are.simsets.in.cache.directory(filenames, cache) &
                               !are.simsets.in.explicit.cache(filenames, cache)]
     success = T
     #-- Pre-fetch the simsets --#
@@ -77,13 +78,13 @@ sims.load <- function(filename)
 {
     full.filename = get.filename.for.s3(filename)
 
-    progress = function(...){
-        print("I hacked it")
-        httr::progress(...)
-    }
+ #   progress = function(...){
+  #      print("I hacked it")
+   #     httr::progress(...)
+    #}
     
-    s3load(full.filename, bucket=BUCKET.NAME.SIMS,
-           show_progress=T)
+    s3load(full.filename, bucket=BUCKET.NAME.SIMS)
+     #      show_progress=T)
     simset
 }
 

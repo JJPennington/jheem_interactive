@@ -66,7 +66,7 @@ body {
 @supports (-moz-appearance:none) {
     .fill_page1 { 
         width: 100%;
-        height: calc(100vh - 20rem);
+        height: calc(100vh - 20.5rem);
     } 
     .fill_page2 { 
         width: 100%;
@@ -78,8 +78,15 @@ body {
     } 
 }
 
-
-
+	
+@media not all and (min-resolution:.001dpcm) { 
+    @media {
+        .fill_page1, .fill_page2, .fill_page3 {
+            width: 100%;
+            height: calc(100vh - 15rem);
+        }
+    }
+}
     /* This fixes the layout in firefox */
 .display_tbody {
     width: 100%;
@@ -93,21 +100,33 @@ body {
     min-height:100px; 
     vertical-align: text-top;
     padding:0px;
-    
-    width: 100%;
-    height: 100%;
+    margin: 0px;    
 }
 
 .display_td {
     position: relative;
     
-    border: 1px solid;
+    border-top: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
     
     padding: 0; 
     margin: 0;
     height: 100%;
     
     vertical-align: top;
+}
+
+.under_display_td {
+    position: relative;
+    
+    border-bottom: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    
+    padding: 0; 
+    margin: 0;
+    height: 100%;
 }
 
 .display_narrow {
@@ -195,6 +214,8 @@ body {
     overflow: hidden;
     
     white-space: nowrap;
+    
+    height: 2em;
 }
 
 /** CALL-TO-ACTION and HOLDERS **/
@@ -205,15 +226,15 @@ body {
     height: 45px;
     
     font-size: 140%;
-    margin: 0;
+    margin: 0px;
+    
+    vertical-align: middle;
 }
 
-.cta_text { /** put this padding here so it can collapse **/
-    padding-top: 5px;
-    width: 210px;
-    text-align: left;
-    
-    margin: 0 auto;
+.cta_sub_td {
+    margin: 0px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 .cta_td {
@@ -224,14 +245,29 @@ body {
     text-align: center;
     vertical-align: middle;
     
-    margin:0;
-    height: 60px;
+    margin: 0px;
+    padding: 0px;
 }
 
+.cta_text { /** put this padding here so it can collapse **/
+    
+    width: 210px;
+    height: 45px;
+    max-height: 45px;
+    
+    text-align: left;
+    
+    font-style: italic;
+    margin: 0 auto;
+}
+
+.cta_text_sub_td {
+    padding: 8px 0px 0px 0px;
+    margin: 0px;
+}
 
 .cta_text_td {
-    padding-bottom: 0;
-    font-style: italic;
+    padding: 0px;
 
     border-top: 1px solid;
     border-left: 1px solid;
@@ -241,13 +277,20 @@ body {
 }
 
 .cta_text_wrapper {
+    margin: 0px;
+    padding: 0px;
     width: 100%;
 }
 
 .cta_text_wrapper td {
     padding-left: 5px;
     padding-right: 5px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    
     text-align: left;
+    vertical-align: middle;
+    
     width: 50%;
 }
 

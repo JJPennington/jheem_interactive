@@ -90,15 +90,16 @@ create.plot.control.panel <- function(suffix)
                          placement='left'),
             
             #-- Split By --#
-            checkboxGroupInput(inputId = paste0('split_by_', suffix),
-                               label = "Plot a Separate Line for Each:",
-                               choiceValues = DIMENSION.OPTIONS.1$values,
-                               choiceNames = DIMENSION.OPTIONS.1$names,
-                               selected = c()),
-            make.popover(paste0('split_by_', suffix),
-                         title='Make Separate Lines by Subgroup',
-                         content="Within each panel, plot a separate line for each combination of the selected attributes. (Note: clicking more than one attribute is going to make a LOT of lines)",
-                         placement='left'),
+            # (we're no longer using this)
+#            checkboxGroupInput(inputId = paste0('split_by_', suffix),
+ #                              label = "Plot a Separate Line for Each:",
+  #                             choiceValues = DIMENSION.OPTIONS.1$values,
+   #                            choiceNames = DIMENSION.OPTIONS.1$names,
+    #                           selected = c()),
+     #       make.popover(paste0('split_by_', suffix),
+      #                   title='Make Separate Lines by Subgroup',
+       #                  content="Within each panel, plot a separate line for each combination of the selected attributes. (Note: clicking more than one attribute is going to make a LOT of lines)",
+        #                 placement='left'),
         
 #        ) #</box>
 #        ) #</div>
@@ -138,6 +139,25 @@ add.year.range.dropdown.handler <- function(session, input,
     })
 }
 
+update.year.range.dropdown <- function(session,
+                                       input,
+                                       id1, value1,
+                                       id2, value2)
+{
+    observeEvent(input[[id1]], {
+        updateSelectInput(session,
+                          inputId = id2,
+                          selected = value2)
+    },
+    priority=-1,
+    once=T)
+    
+    updateSelectInput(session,
+                      inputId = id1,
+                      selected = value1)
+    
+}
+
 ##-----------------------------##
 ##-- CONTROL SETTINGS OBJECT --##
 ##-----------------------------##
@@ -158,6 +178,7 @@ get.control.settings <- function(input, suffix)
 }
 
 set.controls.to.settings <- function(session,
+                                     input,
                                      suffix,
                                      settings)
 {
@@ -169,7 +190,7 @@ set.controls.to.settings <- function(session,
     set.selected.plot.format(session, suffix, plot.format = settings$plot.format)
     set.selected.interval.coverage(session, suffix, interval.coverage = settings$plot.interval.coverage)
     set.selected.show.change(session, suffix, show.change = settings$label.change)
-    set.selected.change.years(session, suffix, change.years = settings$change.years)
+    set.selected.change.years(session, input, suffix, change.years = settings$change.years)
 }
 
 get.main.settings <- function(input,
@@ -256,14 +277,18 @@ set.selected.facet.by <- function(session, suffix, facet.by)
 
 get.selected.split.by <- function(input, suffix)
 {
-    input[[paste0('split_by_', suffix)]]
+    #for now, hard-coded
+    NULL
+#    input[[paste0('split_by_', suffix)]]
 }
 
 set.selected.split.by <- function(session, suffix, split.by)
 {
-    updateCheckboxGroupInput(session,
-                             inputId = paste0('split_by_', suffix),
-                             selected = split.by)
+    # Do nothing - hard coded
+  
+#    updateCheckboxGroupInput(session,
+ #                            inputId = paste0('split_by_', suffix),
+  #                           selected = split.by)
 }
 
 
@@ -321,13 +346,11 @@ get.selected.change.years <- function(input, suffix)
                  input[[paste0('change_to_', suffix)]]))
 }
 
-set.selected.change.years <- function(session, suffix, change.years)
+set.selected.change.years <- function(session, input, suffix, change.years)
 {
-    updateSelectInput(session,
-                      inputId = paste0('change_from_', suffix),
-                      selected = change.years[1])
-    
-    updateSelectInput(session,
-                      inputId = paste0('change_to_', suffix),
-                      selected = change.years[2])
+    update.year.range.dropdown(session, input,
+                               id1 = paste0('change_from_', suffix),
+                               value1 = change.years[1],
+                               id2 = paste0('change_to_', suffix),
+                               value2 = change.years[2])
 }
