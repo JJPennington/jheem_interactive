@@ -139,7 +139,7 @@ create.projected.intervention.panel <- function(suffix)
 
 set.display <- function(input, output, suffix, plot.and.table)
 {
-    set.plot(input, output, suffix, plot.and.table$plot)
+    set.plot(input, output, suffix, plot.and.table)
     set.table(input, output, suffix, plot.and.table$change.df)
     set.intervention.panel(output, suffix, plot.and.table$intervention)
 }
@@ -154,16 +154,23 @@ clear.display <- function(input, output, suffix)
 set.plot <- function(input,
                      output,
                      suffix,
-                     plot)
+                     plot.and.table)
 {
     holder.id = paste0('figure_', suffix)
     plot.id = paste0('plot_', suffix)
     
     display.size = get.display.size(input, suffix)
-    height = display.size$height - DISPLAY_Y_CUSHION
+    holder.height = display.size$height - DISPLAY_Y_CUSHION
+    figure.size = get.figure.size(plot.and.table,
+                                  input=input,
+                                  suffix=suffix)    
+    height = figure.size$height
+    
+
+    print(paste0('holder.height=', holder.height, ', figure height=', height))
     
     output[[holder.id]] = renderUI(tags$div(class='plot_holder',
-                                           withSpinner(type=1,
+                                            style=paste0('max-height: ', holder.height, 'px;'),                                            withSpinner(type=1,
                                                plotlyOutput(outputId = plot.id,
                                                                     height=paste0(height, 'px')))
     ))
@@ -171,17 +178,17 @@ set.plot <- function(input,
     do.render.plot(input=input,
                    output=output,
                    suffix=suffix,
-                   plot=plot)
+                   plot=plot.and.table)
 }
 
 do.render.plot = function(input,
                           output,
                           suffix,
-                          plot)
+                          plot.and.table)
 {
-    settings = calculate.optimal.nrows.and.label.size(input, suffix)
+    settings = calculate.optimal.nrows.and.label.size(plot.and.table, input, suffix)
     
-    the.plot = do.plot.from.components(plot, 
+    the.plot = do.plot.from.components(plot.and.table$plot, 
                                        nrows=settings$nrows,
                                        label.change.size = settings$label.size)
     the.plot = format.plotly.toolbar(the.plot)
@@ -324,19 +331,41 @@ set.share.enabled <- function(input,
 ##-- NCOL --##
 ##----------##
 
-calculate.optimal.nrows.and.label.size <- function(input, suffix,
-                                    ideal.w.h.ratio=1.5)
+MIN.PANEL.WIDTH = 300
+MIN.PANEL.HEIGHT = 280
+
+get.figure.size <- function(plot.and.table, 
+                            input, suffix,
+                            ideal.w.h.ratio=1.5,
+                            y.cushion=DISPLAY_Y_CUSHION+2*FIGURE.PADDING)
 {
     display.size = get.display.size(input, suffix)
     
-    nrows = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(input, suffix),
+    settings = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(plot.and.table$control.settings),
+                                       display.width = display.size$width,
+                                       display.height = display.size$height,
+                                       ideal.w.h.ratio = ideal.w.h.ratio)
+
+    list(width=display.size$width,
+         height=max(display.size$height-y.cushion,
+             settings$nrows * MIN.PANEL.HEIGHT))
+    
+}
+
+calculate.optimal.nrows.and.label.size <- function(plot.and.table,
+                                                   input, suffix,
+                                                   ideal.w.h.ratio=1.5)
+{
+    display.size = get.display.size(input, suffix)
+    
+    settings = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(plot.and.table$control.settings),
                                        display.width = display.size$width,
                                        display.height = display.size$height,
                                        ideal.w.h.ratio = ideal.w.h.ratio)
     
-    list(nrows=nrows,
-         label.size=do.calculate.label.height(display.size$height, nrows)
-         )
+    settings$label.size=do.calculate.label.height(display.size$height, settings$nrows)
+    
+    settings
 }
 
 do.calculate.label.height <- function(height,nrows)
@@ -365,15 +394,31 @@ do.calculate.optimal.nrows <- function(n.panels,
     ratio.diff = abs(possible.ratios - ideal.w.h.ratio)
     best.mask = ratio.diff == min(ratio.diff)
     
-    possible.n.row[best.mask][1]
+    best.fit.nrows = possible.n.row[best.mask][1]
+    best.fit.ncols = ceiling(n.panels / best.fit.nrows)
+    
+    best.fit.panel.width = display.width / best.fit.ncols
+    if (best.fit.panel.width < MIN.PANEL.WIDTH)
+    {
+        min.width.ncols = floor(display.width / MIN.PANEL.WIDTH)
+        min.width.nrows = ceiling(n.panels / min.width.ncols)
+        
+        list(nrows=min.width.nrows,
+             ncols=min.width.ncols)
+    }
+    else
+    {
+        list(nrows=best.fit.nrows,
+             ncols=best.fit.ncols)
+    }
 }
 
-get.num.panels.to.plot <- function(input, suffix)
+get.num.panels.to.plot <- function(control.settings)
 {
-    selected.outcomes = get.selected.outcomes(input, suffix)
+    selected.outcomes = control.settings$data.types
     n.selected.outcomes = length(selected.outcomes)
     
-    facet.by = get.selected.facet.by(input, suffix)
+    facet.by = control.settings$facet.by
     if (is.null(facet.by))
         n.facet = 1
     else

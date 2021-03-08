@@ -431,9 +431,9 @@ do.plot.simulations <- function(
     if (is(colors, 'function'))
     {
         if (color.by=='intervention' && !is.null(truth.color))
-            colors = c(truth.color, colors(length(color.names)-1))
+            colors = suppressWarnings(c(truth.color, colors(length(color.names)-1)))
         else
-            colors = colors(length(color.names))
+            colors = suppressWarnings(colors(length(color.names)))
     }
     else if (is(colors, 'character'))
     {
@@ -1105,11 +1105,28 @@ do.plot.from.components <- function(plot.components, nrows,
     else
         subplots = plot.components$subplots
     
+    # This block of code fixes plotly's (inner) making of middle rows/columns smaller
+    outer.width.inflation = 1.15
+    outer.height.inflation = 1.375
+    
+    ncols = ceiling(length(facet.categories)/nrows)
+    subplot.widths = rep(1, ncols)
+    subplot.widths[1] = subplot.widths[ncols] = 1/outer.width.inflation
+    subplot.widths = subplot.widths / sum(subplot.widths)
+    
+    subplot.heights = rep(1, nrows)
+    subplot.heights[1] = subplot.heights[nrows] = 1/outer.height.inflation
+    subplot.heights = subplot.heights / sum(subplot.heights)
+    
+    print(paste0("subplot widths: ", paste0(round(subplot.widths, 3), collapse=', ')))
+    print(paste0("subplot heights: ", paste0(round(subplot.heights, 3), collapse=', ')))
     
     if (length(facet.categories)==1)
         plot = subplots[[1]]
     else
         plot = subplot(subplots, shareY = fixed.y, titleY=T, nrows=nrows, 
+                       widths=subplot.widths,
+                       heights=subplot.heights,
                        margin=c(0.05,0.05,0.06,0.06)) #L,R,T,B
     
     

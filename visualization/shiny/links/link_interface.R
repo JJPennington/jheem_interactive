@@ -115,7 +115,7 @@ link.exists <- function(id)
 
 get.new.link.id <- function(len=5)
 {
-    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    choices = 'ABCDEFGHIJKLMNOPQRSTUWXYZ0123456789' #no v as special character
     id = NULL
     
     while(is.null(id))

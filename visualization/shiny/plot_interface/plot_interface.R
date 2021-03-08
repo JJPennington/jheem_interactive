@@ -91,8 +91,6 @@ make.simulations.plot.and.table <- function(
     withProgress(min=0, max=1, value = 0, 
                  message="Building Figure and Table...", {
         
-        print(paste0("In mem cache: ", 
-                     paste0(cache$mem.cache$keys(), collapse=', ')))
         simsets = get.simsets.from.cache(filenames, cache)
         names(simsets) = names(filenames)
         

@@ -28,7 +28,7 @@
 .chevron_right:after {
     left:0;
     border-width:.4em 0 .4em .4em;
-    border-color:transparent transparent transparent #BFD7EA;//*#C0C0C0;    */
+    border-color:transparent transparent transparent #dce8f8;//*#C0C0C0;    */
 }
 .chevron_right.skinny {
     width:.4em;
@@ -65,7 +65,7 @@
 .chevron_left:after {
     right:0;
     border-width:.4em .4em .4em 0;
-    border-color:transparent #BFD7EA transparent transparent;    
+    border-color:transparent #dce8f8 transparent transparent;    
 }
 .chevron_left.skinny {
     width:.4em;

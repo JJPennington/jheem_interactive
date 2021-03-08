@@ -21,9 +21,12 @@
 
 .plot_holder {
     width: 100%;
-    height: 100%;
     
     padding: 10px;
+    
+    border: 1px dotted;
+    padding: 0px;
+    overflow-y: auto;
 }
 
 .intervention_panel_holder {

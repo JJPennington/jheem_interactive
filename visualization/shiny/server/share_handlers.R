@@ -22,10 +22,13 @@ get.default.download.filename <- function(plot.and.table,
 
 download.plot <- function(plot.and.table, input, suffix)
 {
-    display.size = get.display.size(input, suffix)
+    figure.size = get.figure.size(plot.and.table,
+                                  input=input, 
+                                  suffix=suffix)
+    
     js$download_plotly(id = get.plot.id(suffix),
-                       width = display.size$width,
-                       height = display.size$height,
+                       width = figure.size$width,
+                       height = figure.size$height,
                        filename = get.default.download.filename(plot.and.table,
                                                                 ext=''))
 }

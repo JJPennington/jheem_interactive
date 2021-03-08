@@ -187,3 +187,12 @@ body {
 .shaded_dropdown li {
   font-size: 120%;
 }
+
+/** NOT USING - but to override share button, do this: 
+.btn-info.action-button {
+  background:#dce8f8;
+  color: black;
+
+  box-shadow: 2px 1px 2px 0px black;
+}
+**/

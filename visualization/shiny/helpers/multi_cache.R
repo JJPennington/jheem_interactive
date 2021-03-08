@@ -123,7 +123,6 @@ pull.simsets.to.cache <- function(session,
                                   cache,
                                   pull.to.explicit = NULL)
 {
-    print(codes)
     codes = gsub('\\.Rdata', '', codes)
     
     for (code in codes)

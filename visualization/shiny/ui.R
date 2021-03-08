@@ -79,6 +79,7 @@ tags$script(src = 'window_sizes.js'),
 tags$script(src = 'accordion.js'),
 tags$script(src = 'setup_tooltips.js'),
 tags$script(src = 'box_expansion.js'),
+tags$script(src = 'copy_to_clipboard.js'),
 ),
 
 # Other R dependencies
