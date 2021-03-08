@@ -26,9 +26,13 @@
 }
 
 .overview td, .contact td {
-    padding: 20px 20px 5px 20px;
-    vertical-align: middle;
+    padding: 20px 20px 5px 0px;
+    vertical-align: top;
     border-radius: 10px 10px 0px 0px;
+}
+
+.overview td:first-child, .contact td:first-child {
+    padding-left: 20px;
 }
 
 .overview img {
