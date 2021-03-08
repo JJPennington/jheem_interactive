@@ -13,19 +13,19 @@ add.contact.handlers <- function(session, input, output)
             contents = input[['feedback_contents']]
             
             if (email=='')
-                show.error.message(session,
+                show.warning.message(session,
                                    title='E-mail Address Missing',
                                    message = "Your e-mail address cannot be blank")
             else if (!is.valid.email(email))
-                show.error.message(session,
+                show.warning.message(session,
                                    title='Invalid E-mail Address',
                                    message = paste0("'", email, "' is not a valid e-mail address."))
             else if (name=='')
-                show.error.message(session,
+                show.warning.message(session,
                                    title='Name Missing',
                                    message = "Please enter your name")
             else if (contents=='')
-                show.error.message(session,
+                show.warning.message(session,
                                    title='Message Missing',
                                    message = "Please enter a message to send")
             else

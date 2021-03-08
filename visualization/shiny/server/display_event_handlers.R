@@ -194,7 +194,9 @@ add.display.event.handlers <- function(session, input, output, cache,
         #-- Figure --#
         observeEvent(input[[paste0('download_figure_', suffix)]], {
             if (!is.null(plot.and.table.list[[suffix]]))
-                download.plot(plot.and.table.list[[suffix]], suffix=suffix)
+                download.plot(plot.and.table.list[[suffix]], 
+                              input=input,
+                              suffix=suffix)
         })
         
         #-- Table --#

@@ -2,6 +2,8 @@
 WEB.DATA.TYPE.NAMES = OUTCOME.OPTIONS$names
 names(WEB.DATA.TYPE.NAMES) = OUTCOME.OPTIONS$values
 
+TEXT.SIZE = 16
+
 # Main Function: THE PLOT FUNCTION ####
 #'@param description The function that actually generates plots
 #'
@@ -143,7 +145,8 @@ make.simulations.plot.and.table <- function(
             
             margin.top=30,
             
-            label.change.size = 12
+            label.change.size = 12,
+            text.size = TEXT.SIZE
             )
         
         

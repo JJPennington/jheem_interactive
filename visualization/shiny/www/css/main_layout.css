@@ -66,11 +66,11 @@ body {
 @supports (-moz-appearance:none) {
     .fill_page1 { 
         width: 100%;
-        height: calc(100vh - 20.5rem);
+        height: calc(100vh - 21.5rem);
     } 
     .fill_page2 { 
         width: 100%;
-        height: calc(100vh - 15rem);
+        height: calc(100vh - 16rem);
     } 
     .fill_page3 { 
         width: 100%;
