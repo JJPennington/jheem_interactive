@@ -204,20 +204,9 @@ get.intervention.description.table <- function(int,
                                                prep.descriptor = 'on PrEP',
                                                suppression.descriptor = 'suppressed')
 {
+    target.populations = get.unique.target.populations(int)
+    
     types = names(int$raw)
-    all.target.populations = list()
-    for (subset in int$raw)
-        all.target.populations = c(all.target.populations, subset$target.populations)
-    all.target.population.hashes = sapply(all.target.populations, target.population.hash)
-        
-    #unique
-    target.population.hashes = unique(all.target.population.hashes)
-    target.populations = lapply(target.population.hashes, function(hash){
-        all.target.populations[all.target.population.hashes==hash][[1]]
-    })
-    
-    names(target.populations) = NULL
-    
     rv = sapply(types, function(type){
         subset = int$raw[[type]]
         sapply(target.populations, function(tpop){
@@ -620,6 +609,28 @@ process.intervention <- function(intervention)
     }
 
     intervention
+}
+
+##----------------------------------##
+##-- SUMMARIZE TARGET POPULATIONS --##
+##----------------------------------##
+
+get.unique.target.populations <- function(int)
+{
+    all.target.populations = list()
+    for (subset in int$raw)
+        all.target.populations = c(all.target.populations, subset$target.populations)
+    all.target.population.hashes = sapply(all.target.populations, target.population.hash)
+    
+    #unique
+    target.population.hashes = unique(all.target.population.hashes)
+    target.populations = lapply(target.population.hashes, function(hash){
+        all.target.populations[all.target.population.hashes==hash][[1]]
+    })
+    
+    names(target.populations) = NULL
+    
+    target.populations
 }
 
 ##-----------------------##

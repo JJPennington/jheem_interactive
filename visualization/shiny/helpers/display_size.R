@@ -5,22 +5,19 @@ LEFT.PANEL.SIZE = c(prerun=250,
                     custom=500)
 RIGHT.PANEL.SIZE = c(prerun=250,
                      custom=250)
-HEIGHT.OFFSET = c(prerun=180,
-                  custom=180) #to allow for the bottom panel if collapsed
+
+DISPLAY_PADDING = 10
+DISPLAY_Y_CUSHION = 2*DISPLAY_PADDING + 10
+DISPLAY_X_CUSHION = 2*DISPLAY_PADDING + 25
 
 get.display.size <- function(input, suffix)
 {
-    size = input$display_size
+    size = input[[paste0('display_size_', suffix)]]
     
     size$width = size$width -
         as.numeric(input[[paste0('left_width_', suffix)]]) -
         as.numeric(input[[paste0('right_width_', suffix)]])
-    size$height = size$height - HEIGHT.OFFSET[suffix]
-    
-    size
-}
 
-# window_size.js updates the input on a resize
-add.display.size.observers <- function(session, input)
-{
+#    print(paste0(suffix, " size: ", paste0(size, collapse=', ')))
+    size
 }

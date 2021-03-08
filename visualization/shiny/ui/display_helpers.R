@@ -12,6 +12,8 @@ create.display.panel <- function(suffix)
     else
         css.class = 'display_panel_table display_wide_smaller'
     
+    if (1==2)
+    {
     tags$table(class=css.class,
                create.share.menu(suffix),
                
@@ -34,7 +36,21 @@ create.display.panel <- function(suffix)
         )), #</td></tr>
         create.projected.intervention.panel(suffix)
     ) #</table>
+    }
+    
+    tabsetPanel(
+        id=paste0('nav_', suffix),
+        tabPanel(
+            title="Figure",
+            uiOutput(outputId = paste0('figure_', suffix), class='fill_div')
+        ),
+        tabPanel(
+            title="Table",
+            uiOutput(outputId = paste0('table_', suffix), class='fill_div')
+        )
+    )  # </tabsetPanel>
 }
+
 
 create.share.menu <- function(suffix)
 {
@@ -43,12 +59,13 @@ create.share.menu <- function(suffix)
         <path fill-rule="evenodd" d="M7.646.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 1.707V10.5a.5.5 0 0 1-1 0V1.707L5.354 3.854a.5.5 0 1 1-.708-.708l3-3z"/>
         </svg>'
     
-    tags$div(class='share_container',
+    tags$div(class='share_container shaded_dropdown',
              dropdownButton(
                  label=HTML(paste0(share.icon, ' Share')),
                  circle=F,
                  icon=icon('box-arrow-up', lib='glyphicon'),
                  right=T,
+            #    status = 'info',
                  inputId = paste0('share_menu_', suffix),
                  actionLink(inputId = paste0('download_figure_', suffix),
                             label = HTML("Download&nbsp;Figure")),
@@ -61,15 +78,10 @@ create.share.menu <- function(suffix)
 
 create.projected.intervention.panel <- function(suffix)
 {
-    if (suffix=='custom')
-        css.class = 'intervention_panel_holder'# display_narrow'
-    else
-        css.class = 'intervention_panel_holder'# display_wide'
-
     if (1==1)
     {
     #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
-    tags$div(class=css.class,
+    tags$div(class='intervention_panel_holder',
                       box(title='Details of Projected Intervention',
                           width=12,
                           collapsible = T,
@@ -139,7 +151,6 @@ clear.display <- function(input, output, suffix)
     clear.intervention.panel(output, input, suffix)
 }
 
-
 set.plot <- function(input,
                      output,
                      suffix,
@@ -149,7 +160,8 @@ set.plot <- function(input,
     plot.id = paste0('plot_', suffix)
     
     display.size = get.display.size(input, suffix)
-    height = display.size$height - 20
+    height = display.size$height - DISPLAY_Y_CUSHION
+    
     output[[holder.id]] = renderUI(tags$div(class='plot_holder',
                                            withSpinner(type=1,
                                                plotlyOutput(outputId = plot.id,
@@ -167,9 +179,11 @@ do.render.plot = function(input,
                           suffix,
                           plot)
 {
-    nrows = calculate.optimal.nrows(input, suffix)
+    settings = calculate.optimal.nrows.and.label.size(input, suffix)
     
-    the.plot = do.plot.from.components(plot, nrows)
+    the.plot = do.plot.from.components(plot, 
+                                       nrows=settings$nrows,
+                                       label.change.size = settings$label.size)
     the.plot = format.plotly.toolbar(the.plot)
     
     plot.id = get.plot.id(suffix)
@@ -190,8 +204,8 @@ set.table <- function(input,
     dt.id = paste0('dt_', suffix)
     
     display.size = get.display.size(input, suffix)
-    width = display.size$width - 45
-    height = display.size$height
+    width = display.size$width - DISPLAY_X_CUSHION
+    height = display.size$height - DISPLAY_Y_CUSHION
     
     output[[table.id]] = renderUI(tags$div(class='table_holder',
                                           style=paste0('max-height: ', height, 'px; max-width: ', width, 'px;'),
@@ -300,47 +314,39 @@ set.share.enabled <- function(input,
                                suffix,
                                enabled)
 {
-#    nav.id = paste0('nav_', suffix)
-#    target.value = paste0("share_", suffix)
- #   if (enabled)
-  #      showTab(nav.id, target.value, select=F)
-   # else
-    #    hideTab(nav.id, target.value)
-     
     if (enabled)
         shinyjs::enable(paste0('share_menu_', suffix))
     else
         shinyjs::disable(paste0('share_menu_', suffix))
-    #OLD
-#    ids = paste0(c('download_figure_', 'download_table_', 'share_link_'),
-#                 suffix)
-    
-#    for (id in ids)
-#    {
-#        if (enabled)
-#        {
-#            shinyjs::enable(id)
-#        }
-#        else
-#        {
-#            shinyjs::disable(id)
-#        }
-#    }
 }
 
 ##----------##
 ##-- NCOL --##
 ##----------##
 
-calculate.optimal.nrows <- function(input, suffix,
+calculate.optimal.nrows.and.label.size <- function(input, suffix,
                                     ideal.w.h.ratio=1.5)
 {
     display.size = get.display.size(input, suffix)
     
-    do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(input, suffix),
-                               display.width = display.size$width,
-                               display.height = display.size$height,
-                               ideal.w.h.ratio = ideal.w.h.ratio)
+    nrows = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(input, suffix),
+                                       display.width = display.size$width,
+                                       display.height = display.size$height,
+                                       ideal.w.h.ratio = ideal.w.h.ratio)
+    
+    list(nrows=nrows,
+         label.size=do.calculate.label.height(display.size$height, nrows)
+         )
+}
+
+do.calculate.label.height <- function(height,nrows)
+{
+    height.per.panel = height / nrows
+    
+    #12 / log(700) * log(height.per.panel)
+    
+    max(5,
+        height.per.panel^.25 * 14 / (700^.25))
 }
 
 do.calculate.optimal.nrows <- function(n.panels,
@@ -384,7 +390,7 @@ get.num.panels.to.plot <- function(input, suffix)
 
 make.intervention.pretty.table <- function(int, use.default.tpop.names)
 {
-    tryCatch({
+#    tryCatch({
         raw = get.intervention.description.table(int, include.start.text = NULL,
                                                  testing.descriptor='',
                                                  prep.descriptor='uptake',
@@ -430,18 +436,10 @@ make.intervention.pretty.table <- function(int, use.default.tpop.names)
         
         all.trs = c(list(header.tr), other.trs)
         do.call(tags$table, list(all.trs, class='intervention_summary'))
-    },
-    error = function(e){
-        log.error(e$message)
-        tags$div(class='error_message', 
-                      "There was an error generating a summary of the selected intervention. We apologize - the rest of the app will continue to function")
-    })
-}
-
-log.error <- function(msg)
-{
-    print("-------ERROR-------")
-    print(Sys.time())
-    print(msg)
-    print("-----End Error-----")
+  #  },
+   # error = function(e){
+    #    log.error(e)
+     #   tags$div(class='error_message', 
+      #                "There was an error generating a summary of the selected intervention. We apologize - the rest of the app will continue to function")
+    #})
 }

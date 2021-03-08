@@ -8,91 +8,30 @@
 #  else pop up a dialog and return false
 check.custom.inputs <- function(session, input)
 {
-  valid = TRUE
-  subpop_errs = list()
-  
-  for (i in 1:get.custom.n.subpopulations(input)) {
-    subpop_errs[[as.character(i)]] = list(
-      'no_custom_options_selected'=FALSE,
-      'msm_selections_without_males'=FALSE,
-      # No demographics selected
-      'no_demographics_selected'=list(
-        'ages'=length(get.custom.ages(input, i)) < 1,
-        'races'=length(get.custom.races(input, i)) < 1,
-        'sexes'=length(get.custom.sexes(input, i)) < 1,
-        'risks'=length(get.custom.risks(input, i)) < 1
-    ))
-    
-    # MSM & !male
-    risks = get.custom.risks(input, i)
-    sexes = get.custom.sexes(input, i)
-    msm_selected = (('msm' %in% risks) || ('msm_active_idu' %in% risks) || 
-        ('msm_prior_idu' %in% risks))
-    subpop_errs[[i]][['msm_selections_without_males']] = 
-      !('male' %in% sexes) && msm_selected
-    
-    # No intervention details selected
-    testing = get.custom.use.testing(input, i)
-    prep = get.custom.use.prep(input, i)
-    suppression = get.custom.use.suppression(input, i)
-    subpop_errs[[i]][['no_custom_options_selected']] = 
-      !testing && !prep && !suppression
-  }
-  
-  # Create error message
-  message_list = list()
-  for (i in 1:length(names(subpop_errs))) {
-    # Find issues
-    # - to-do: refactor?
-    report = subpop_errs[[i]]
-    demog_report = report[['no_demographics_selected']]
-    demog_issue_groups = c()
-    for (group in names(demog_report))
-      if (demog_report[[group]])
-        demog_issue_groups = c(demog_issue_groups, group)
-    
-    subpop_issues_found = report[['no_custom_options_selected']] ||
-      report[['msm_selections_without_males']] || 
-      length(demog_issue_groups) > 0
-    
-    # Assemble subpop message
-    if (!subpop_issues_found)
-      break
-    
-    header_i = paste0('<h4>Subpopulation ', as.character(i), '</h4>')
-    msm_err_i = ''
-    custom_err_i = ''
-    demog_err_i = ''
-    
-    if (report[['msm_selections_without_males']])
-      msm_err_i = paste0(
-        '<p><strong>MSM: </strong>', 'Sex "male" must be selected if any MSM 
-        options are selected under "risk factors".</p>')
-    if (report[['no_custom_options_selected']])
-      custom_err_i = paste0(
-        '<p><strong>Intervention details: </strong>', 'At least 1 intervention
-        detail (testing, PreP, or suppression) must be selected.</p>')
-    if (length(demog_issue_groups) > 0)
-      demog_err_i = paste0(
-        '<p><strong>Demographics: </strong>', 'Please select 1 or more option 
-        for the following categories: ', 
-        paste(demog_issue_groups, collapse=', '),'</p>')
-    
-    message_list[[as.character(i)]] = paste0(
-      header_i, msm_err_i, custom_err_i, demog_err_i, '<br/>')
-  }  # </for>
-  
-  message = ''
-  for (i in names(message_list))
-    message = paste0(message, message_list[[as.character(i)]])
-  
-  # Handle validity
-  valid = length(names(message_list)) < 1
-  if (!valid)
-    showMessageModal(title='Invalid selection(s)', message=HTML(message))
-
-  return(valid)
+    errors = get.custom.errors(input)
+    if (length(errors)==0)
+        T
+    else
+    {
+        msg = do.call(tags$div, lapply(names(errors), function(i){
+            sub.errors = errors[[i]]
+            names(sub.errors) = NULL
+            
+            errors.list = do.call(tags$ul, lapply(sub.errors, tags$li))
+            tags$div(tags$h4(paste0("Subgroup ", i, ":")),
+                     errors.list)
+        }))
+        msg = tagAppendAttributes(msg,
+                                  class='errors')
+        
+        show.warning.message(session,
+                           title='Intervention Not Fully Specified:',
+                           message = msg)
+        
+        F
+    }
 }
+
 
 # 1. Check that at least one outcome is checked
 # If not, pop up dialog and return false
@@ -110,8 +49,54 @@ check.plot.controls <- function(session, input, suffix)
     valid = length(selected.outcomes) >= 1
     
     if (!valid)
-      showMessageModal(paste0(
-          INVALID_ERR_MSG_HEADER, 'At least one outcome must be checked.'))
+    {
+      outcome.string = paste0(paste0(OUTCOME.OPTIONS$names[-length(OUTCOME.OPTIONS$names)], collapse=', '),
+                              ", or ",
+                              OUTCOME.OPTIONS$names[length(OUTCOME.OPTIONS$names)])
+      show.warning.message(session,
+                         title='Invalid Outcome Selection', 
+                         paste0('At least one outcome (', outcome.string, ') must be checked.'))
+    }
     
     return(valid)
  }
+
+
+
+
+get.custom.errors <- function(input)
+{
+    errors = lapply(1:get.custom.n.subpopulations(input), function(i){
+        
+        sub.errors = sapply(DIMENSION.VALUES.2, function(dimension){
+            
+            selection = do.get.custom.tpop.selection(input, i, dim=dimension)
+            if (length(selection)>0)
+                as.character(NA)
+            else
+                paste0("You must specify at least one ",
+                       tolower(dimension$label))
+        })
+        sub.errors = sub.errors[!is.na(sub.errors)]
+        
+        if (all(names(sub.errors)!='sex') &&
+            all(names(sub.errors)!='risk') &&
+            all(get.custom.sexes(input, i) != 'male') &
+            any(grepl('msm', get.custom.risks(input, i))))
+            sub.errors = c(sub.errors,
+                           "If you include MSM as a risk factor, you must include male sex")
+        
+        if (!get.custom.use.testing(input, i) &&
+            !get.custom.use.prep(input, i) &&
+            !get.custom.use.suppression(input, i))
+            sub.errors = c(sub.errors,
+                           "You must specify at least one intervention component (HIV Testing, Viral Suppression, or PrEP)")
+        
+        names(sub.errors) = NULL
+        sub.errors
+    })
+    names(errors) = 1:get.custom.n.subpopulations(input)
+    
+    errors = errors[sapply(errors, function(sub){length(sub)>0})]
+    errors
+}

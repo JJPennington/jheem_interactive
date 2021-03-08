@@ -13,10 +13,3 @@ shinyjs.chime_if_checked = function(check_id)
         snd.play();
     }
 }
-
-shinyjs.chime_alert = function()
-{
-    var snd = new Audio("Ripples.mp3");
- //   snd.play();
-    alert('sound alert');
-}

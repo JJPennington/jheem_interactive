@@ -26,7 +26,6 @@ source('env.R')
 # Constants ####
 # BUCKET.NAME.GENERAL = 'endinghiv'
 CACHE = list()
-BUCKET.NAME.SIMS = 'endinghiv.sims'
 BUCKET.NAME.STATIC = 'endinghiv.static'
 BUCKET.NAME.PRESETS = 'endinghiv.presets'
 DB_TABLENAME_PRESETS = 'option_presets'
@@ -50,62 +49,23 @@ invert.keyVals <- function(x) {
   y
 }
 
-# Utils: AWS S3 Storage ####
-s3.list <- function(
-  dir,
-  full.path,
-  bucket.name
-) {
-    if (is.null(dir) || is.na(dir))
-        dir = ''
-    if (dir != '' && substr(dir, nchar(dir)-1, nchar(dir))!='/')
-        dir = paste0(dir, '/')
-        
-    items.list = get_bucket(bucket=bucket.name, max=Inf, prefix = dir)
-    items.names = sapply(items.list, function(x) x$Key )
-    if (!full.path)
-    {
-        items.names = sapply(items.names, function(item.name){
-            substr(item.name, 1 + nchar(dir), nchar(item.name))
-        })
-    }
-    
-    names(items.names) = NULL
-    items.names = items.names[items.names != '']
-    return(items.names)
-}
 
-sims.list <- function(
-  version='1.0',
-  include.location=F,
-  include.version=F,
-  bucket.name=BUCKET.NAME.SIMS
-) {
-    rv = s3.list(bucket.name,
-                 dir=version,
-                 full.path=include.version)
-    
-    if (!include.version && !include.location)
-    {
-        split = strsplit(rv, '/')
-        rv = sapply(split, function(one.split){
-            paste0(one.split[-1], collapse='/')
-        })
-    }
-    
-    rv
-}
 
-sim.exists <- function(filename)
-{
-  
-}
-
-presets.list <- function() {
+presets.list <- function(prefix=NULL) {
   s3.list(
     BUCKET.NAME.PRESETS,
     dir=NULL,
-    full.path=FALSE)
+    full.path=FALSE,
+    prefix=prefix)
+}
+
+preset.exists <- function(name)
+{
+    contents = presets.list(prefix=name)
+    if (length(contents)>1)
+        any(contents==name)
+    else
+        F
 }
 
 s3.save <- function(

@@ -2,7 +2,8 @@
 MAX.KEEP.FROM.YEAR = 2018
 RUN.TO.YEAR = 2030
 
-simulate.intervention <- function(version,
+simulate.intervention <- function(session,
+                                  version,
                                   location,
                                   intervention,
                                   cache)
@@ -10,7 +11,7 @@ simulate.intervention <- function(version,
     seed.filename = get.seed.filename(location=location,
                                           version=version)
     
-    success = pull.files.to.cache(seed.filename, cache)
+    success = pull.files.to.cache(session, seed.filename, cache)
     if (!success)
         return(NULL)
     
@@ -18,8 +19,8 @@ simulate.intervention <- function(version,
         
         seed.simset = get.simsets.from.cache(seed.filename, cache)[[1]]
         
-print("Using limited seed for now")
-seed.simset = subset.simset(seed.simset, 1:5)
+#print("Using limited seed for now")
+#seed.simset = subset.simset(seed.simset, 1:5)
         
         withProgress(
             message=paste0("Preparing to run ", seed.simset@n.sim, " simulations"), 
@@ -158,27 +159,4 @@ get.custom.unit.interventions <- function(input, num)
     }
     
     rv
-}
-
-get.new.custom.intervention.code <- function()
-{
-    # Strip the time of non-numeric numbers
-    time.marker = Sys.time()
-    time.marker = gsub("[^1-9 ]", '', time.marker)
-    time.marker = trimws(time.marker)
-    time.marker = gsub(' ', '_', time.marker)
-    
-    time.marker
-    
-    # Generate a random string
-    random.str.len = 4
-    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    
-    random.indices = ceiling(runif(random.str.len, .0000001, nchar(chars)))
-    random.str = paste0(sapply(random.indices, function(i){
-        substr(chars, i, i)
-    }), collapse='')
-    
-    # Put them together
-    paste0(time.marker, '_', random.str)
 }

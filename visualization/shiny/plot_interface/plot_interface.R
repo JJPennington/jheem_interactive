@@ -141,7 +141,9 @@ make.simulations.plot.and.table <- function(
             wrap.axis.labels = T,
             vline.change.years = T,
             
-            margin.top=30
+            margin.top=30,
+            
+            label.change.size = 12
             )
         
         

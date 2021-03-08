@@ -1,4 +1,8 @@
 
+body {
+    background-color: #f8f8f8;
+}
+
 .header_color {
     background-color: #e2e2e2;
     border-color: black;
@@ -143,4 +147,14 @@
 .box-header h3 {
   width: 100%;
   padding: 10px;
+}
+
+
+.shaded_dropdown ul {
+  background: #f8f8f8;
+  border: 1px dotted black;
+}
+
+.shaded_dropdown li {
+  font-size: 120%;
 }

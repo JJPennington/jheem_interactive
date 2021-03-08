@@ -76,7 +76,7 @@ create.custom.tpop.box <- function(i) {
                            fluidRow(
                                checkboxInput(
                                    inputId=switchId,
-                                   label=tags$div(style='font-style: italic', paste0('Include All ', dim$label.plural)),
+                                   label=paste0('Include All ', dim$label.plural),#tags$div(style='font-style: italic', paste0('Include All ', dim$label.plural)),
                                    value=materialSwitch.value),
                          #      materialSwitch(
                          #          inputId=switchId,
@@ -206,10 +206,68 @@ add.custom.event.handlers <- function(session, input, output)
     })
 }
 
+##----------------------##
+##-- SETTINGS OBJECTS --##
+##----------------------##
 
-##-------------##
-##-- GETTERS --##
-##-------------##
+get.custom.settings <- function(input)
+{
+    rv = list(n.subpopulations = get.custom.n.subpopulations(input))
+    
+    rv$sub.settings = lapply(1:rv$n.subpopulations, function(i){
+        sub = lapply(DIMENSION.VALUES.2, function(dim){
+            do.get.custom.tpop.selection(input, num=i, dim=dim)
+        })
+        
+        sub$start.year = get.custom.start.year(input, num=i)
+        sub$end.year = get.custom.end.year(input, num=i)
+        
+        sub$use.testing = get.custom.use.testing(input, num=i)
+        sub$testing.frequency = get.custom.testing.frequency(input, num=i)
+        
+        sub$use.prep = get.custom.use.prep(input, num=i)
+        sub$prep.uptake = get.custom.prep.uptake(input, num=i)
+        
+        sub$use.suppression = get.custom.use.suppression(input, num=i)
+        sub$suppressed.proportion = get.custom.suppressed.proportion(input, num=i)
+        
+        sub
+    })
+
+    rv
+}
+
+set.custom.to.settings <- function(session, input, settings)
+{
+    set.custom.n.subpopulations(session, settings$n.subpopulations)
+    lapply(1:settings$n.subpopulations, function(i){
+        
+        sub = settings$sub.settings[[i]]
+        
+        lapply(DIMENSION.VALUES.2, function(dim){
+            do.set.custom.tpop.selection(session, num=i, dim=dim, values=sub[[dim$code]])
+        })
+        
+        set.custom.year.range(session, input, 
+                              num=i,
+                              start.year = sub$start.year,
+                              end.year = sub$end.year)
+        
+        set.custom.use.testing(session, num=i, use=sub$use.testing)
+        set.custom.testing.frequency(session, num=i, testing.frequency = sub$testing.frequency)
+        
+        set.custom.use.prep(session, num=i, use = sub$use.prep)
+        set.custom.prep.uptake(session, num=i, prep.uptake = sub$prep.uptake)
+        
+        set.custom.use.suppression(session, num=i, use=sub$use.suppression)
+        set.custom.suppressed.proportion(session, num=i, suppressed.proportion = sub$suppressed.proportion)
+    })
+}
+
+
+##-------------------------##
+##-- GETTERS and SETTERS --##
+##-------------------------##
 
 #-- N SUBGROUPS --#
 get.custom.n.subpopulations <- function(input)
@@ -217,15 +275,40 @@ get.custom.n.subpopulations <- function(input)
     as.integer(input$n_subpops)
 }
 
+set.custom.n.subpopulations <- function(session, n.subpops)
+{
+    updateSelectInput(session,
+                      inputId = 'n_subpops',
+                      selected = n.subpops)
+}
+
+
 #-- TARGET POPULATION SPECIFICATION --#
 get.custom.ages <- function(input, num)
 {
     do.get.custom.tpop.selection(input, num, AGE.OPTIONS)
 }
 
+set.custom.ages <- function(session, num, ages)
+{
+    do.set.custom.tpop.selection(session,
+                                 num=num,
+                                 dim=AGE.OPTIONS,
+                                 values=ages)
+}
+
+
 get.custom.races <- function(input, num)
 {
     do.get.custom.tpop.selection(input, num, RACE.OPTIONS)
+}
+
+set.custom.races <- function(session, num, races)
+{
+    do.set.custom.tpop.selection(session,
+                                 num=num,
+                                 dim=RACE.OPTIONS,
+                                 values=races)
 }
 
 get.custom.sexes <- function(input, num)
@@ -233,10 +316,28 @@ get.custom.sexes <- function(input, num)
     do.get.custom.tpop.selection(input, num, SEX.OPTIONS)
 }
 
+set.custom.sexes <- function(session, num, sexes)
+{
+    do.set.custom.tpop.selection(session,
+                                 num=num,
+                                 dim=SEX.OPTIONS,
+                                 values=sexes)
+}
+
+
 get.custom.risks <- function(input, num)
 {
     do.get.custom.tpop.selection(input, num, RISK.OPTIONS.2)
 }
+
+set.custom.risks <- function(session, num, risks)
+{
+    do.set.custom.tpop.selection(session,
+                                 num=num,
+                                 dim=RISK.OPTIONS,
+                                 values=risks)
+}
+
 
 do.get.custom.tpop.selection <- function(input, num,
                                          dim)
@@ -248,6 +349,24 @@ do.get.custom.tpop.selection <- function(input, num,
     {
         selector.id = paste0('custom_tpop_', dim$code, '_', num)
         input[[selector.id]]
+    }
+}
+
+do.set.custom.tpop.selection <- function(session, num,
+                                         dim, values)
+{
+    all.id = paste0('custom_tpop_all_', dim$code, '_', num)
+    all.selected = setequal(values, dim$values)
+    
+    updateCheckboxInput(session,
+                        inputId = all.id,
+                        value = all.selected)
+    if (!all.selected)
+    {
+        selector.id = paste0('custom_tpop_', dim$code, '_', num)
+        updateCheckboxGroupInput(session,
+                                 inputId = selector.id,
+                                 selected = values)
     }
 }
 
@@ -263,32 +382,91 @@ get.custom.end.year <- function(input, num)
     as.numeric(input[[paste0('custom_int_to_', num)]])
 }
 
+set.custom.year.range <- function(session, input, 
+                                  num,
+                                  start.year,
+                                  end.year)
+{
+    update.year.range.dropdown(session, input,
+                               id1 = paste0('custom_int_from_', num),
+                               value1 = start.year,
+                               id2 =  paste0('custom_int_to_', num),
+                               value2 = end.year)
+}
+
 get.custom.use.testing <- function(input, num)
 {
     input[[paste0('custom_testing_switch', num)]]
 }
+
+set.custom.use.testing <- function(session, num, use)
+{
+    updateCheckboxInput(session,
+                        inputId = paste0('custom_testing_switch', num),
+                        value = use)
+}
+
 
 get.custom.testing.frequency <- function(input, num)
 {
     as.numeric(input[[paste0('custom_testing_value', num)]])
 }
 
+set.custom.testing.frequency <- function(session, num, testing.frequency)
+{
+    updateSelectInput(session,
+                      inputId = paste0('custom_testing_value', num),
+                      selected = testing.frequency)
+}
+
+
 get.custom.use.prep <- function(input, num)
 {
     input[[paste0('custom_prep_switch', num)]]
 }
+
+set.custom.use.prep <- function(session, num, use)
+{
+    updateCheckboxInput(session,
+                        inputId = paste0('custom_prep_switch', num),
+                        value = use)
+}
+
 
 get.custom.prep.uptake <- function(input, num)
 {
     as.numeric(input[[paste0('custom_prep_value', num)]])
 }
 
+set.custom.prep.uptake <- function(session, num, prep.uptake)
+{
+    updateSelectInput(session,
+                      inputId = paste0('custom_prep_value', num),
+                      selected = prep.uptake)
+}
+
+
 get.custom.use.suppression <- function(input, num)
 {
     input[[paste0('custom_suppression_switch', num)]]
 }
 
+set.custom.use.suppression <- function(session, num, use)
+{
+    updateCheckboxInput(session,
+                        inputId = paste0('custom_suppression_switch', num),
+                        value = use)
+}
+
+
 get.custom.suppressed.proportion <- function(input, num)
 {
     as.numeric(input[[paste0('custom_suppression_value', num)]])
+}
+
+set.custom.suppressed.proportion <- function(session, num, suppressed.proportion)
+{
+    updateSelectInput(session,
+                      inputId = paste0('custom_suppression_value', num),
+                      selected = suppressed.proportion)
 }

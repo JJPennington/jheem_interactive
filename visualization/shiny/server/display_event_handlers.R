@@ -9,33 +9,27 @@ add.display.event.handlers <- function(session, input, output, cache,
     #-- Variables for storing plot/table --#
     plot.and.table.list = lapply(suffixes, function(s){NULL})
     names(plot.and.table.list) = suffixes
+    links = lapply(suffixes, function(s){NULL})
+    names(links) = suffixes
     is.first.plot = T
+    
+    #-- Make a random session id --#
+    # (for analytics)
+    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    n.char.id = 20
+    set.seed(NULL)
+    session.id = paste0(sapply(ceiling(runif(n.char.id, 0.00001, nchar(choices))), function(index){
+        substr(choices, index, index)
+    }), collapse='')
     
     #-- The Intervention Map for Custom Interventions --#
     custom.int.map = create.intervention.map()
 
     
-    #-- Resize Listener --#
-    
-    handle.resize <- function(suffixes)
-    {
-        lapply(suffixes, function(suffix){
-            if (!is.null(plot.and.table.list[[suffix]]))
-                set.display(input=input,
-                            output=output,
-                            suffix=suffix,
-                            plot.and.table = plot.and.table.list[[suffix]])
-        })
-    }
-    
-    observeEvent(input$display_size, handle.resize(names(plot.and.table.list)) )
-    observeEvent(input$left_width_prerun, handle.resize('prerun') )
-    observeEvent(input$right_width_prerun, handle.resize('prerun') )
-    observeEvent(input$left_width_custom, handle.resize('custom') )
-    observeEvent(input$right_width_custom, handle.resize('custom') )
+
     
     #-- General Handler for Running/Redrawing --#
-    do.run = function(intervention.codes, suffix)
+    do.run = function(intervention.codes, suffix, called.from, intervention.settings=NULL)
     {   
         get.display.size(input, 'prerun')
         
@@ -45,19 +39,30 @@ add.display.event.handlers <- function(session, input, output, cache,
         
         if (check.plot.controls(session, input, suffix))
         {
-            new.plot.and.table = generate.plot.and.table(main.settings = get.main.settings(input, suffix),
+            new.plot.and.table = generate.plot.and.table(session,
+                                                         main.settings = get.main.settings(input, suffix),
                                                          control.settings = get.control.settings(input, suffix),
                                                          intervention.codes=intervention.codes,
+                                                         intervention.settings=intervention.settings,
                                                          cache=cache,
                                                          intervention.map = custom.int.map)
-            
+ 
             if (!is.null(new.plot.and.table))
             {
                 plot.and.table.list[[suffix]] <<- new.plot.and.table
+                links[[suffix]] <<- NULL
                 
                 #-- Update the UI --#
                 set.display(input, output, suffix, plot.and.table.list[[suffix]])
                 sync.buttons.to.plot(input, plot.and.table.list)
+                
+                # Track with analytics
+                track.request(session.id=session.id,
+                              called.from=called.from,
+                              main.settings=new.plot.and.table$main.settings,
+                              control.settings=new.plot.and.table$control.settings,
+                              intervention.code=paste0(new.plot.and.table$intervention.codes, collapse=';'),
+                              intervention=new.plot.and.table$intervention)
             }
         }
         
@@ -70,6 +75,8 @@ add.display.event.handlers <- function(session, input, output, cache,
             is.first.plot <<- F
             js$trigger_accordion('prerun_expand_right')
         }
+        
+        
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
@@ -78,20 +85,21 @@ add.display.event.handlers <- function(session, input, output, cache,
   #    return()
       
         do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
-               suffix='prerun')
+               called.from = 'run_prerun', suffix='prerun')
         js$chime_if_checked('chime_run_prerun')
     })
 
     observeEvent(input$redraw_prerun, {
         do.run(intervention.codes=plot.and.table.list$prerun$intervention.codes,
-               suffix='prerun')
+               called.from = 'redraw_prerun', suffix='prerun')
     })
     
     
     #-- The Handlers for Generating/Redrawing Custom --#
     
     observeEvent(input$run_custom, {
-        
+      
+      
         if (check.custom.inputs(session, input))
         {
             # Lock the appropriate buttons
@@ -100,6 +108,7 @@ add.display.event.handlers <- function(session, input, output, cache,
             
             # Get the selected intervention
             selected.int = get.selected.custom.intervention(input)
+            int.settings = get.custom.settings(input)
             selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
             
             #set.intervention.panel(output, 'custom', selected.int)
@@ -110,7 +119,8 @@ add.display.event.handlers <- function(session, input, output, cache,
                 version = get.version()
                 location = get.selected.location(input, 'custom')
                 
-                simset = simulate.intervention(version = version,
+                simset = simulate.intervention(session,
+                                               version = version,
                                                location = location,
                                                intervention = selected.int,
                                                cache = cache)
@@ -134,7 +144,9 @@ add.display.event.handlers <- function(session, input, output, cache,
             }
             
             do.run(intervention.codes = selected.int.code,
-                   suffix='custom')
+                   called.from = 'run_custom',
+                   suffix='custom',
+                   intervention.settings = int.settings)
             
             # Keep only the simsets we need
             custom.int.map <<- thin.map(keep.codes = plot.and.table.list$custom$intervention.codes,
@@ -149,26 +161,28 @@ add.display.event.handlers <- function(session, input, output, cache,
             
             # Play the chime
             js$chime_if_checked('chime_run_custom')
-        } else {
-            # @Todd: I put error messages inside `error_checking.R`
         }
     })
     
     
     observeEvent(input$redraw_custom, {
         do.run(intervention.codes = plot.and.table.list$custom$intervention.codes,
-               suffix='custom')
+               called.from = 'redraw_custom',
+               suffix='custom',
+               intervention.settings = plot.and.table.list$custom$intervention.settings)
     })
     
     #-- The Handler for Locations --#
     observeEvent(input$location_prerun, {
         plot.and.table.list['prerun'] <<- list(NULL)
+        links['prerun'] <<- list(NULL)
         clear.display(input, output, 'prerun')
         sync.buttons.to.plot(input, plot.and.table.list)
     })
     
     observeEvent(input$location_custom, {
         plot.and.table.list['custom'] <<- list(NULL)
+        links['custom'] <<- list(NULL)
         clear.display(input, output, 'custom')
         sync.buttons.to.plot(input, plot.and.table.list)
     })
@@ -179,25 +193,37 @@ add.display.event.handlers <- function(session, input, output, cache,
       
         #-- Figure --#
         observeEvent(input[[paste0('download_figure_', suffix)]], {
-            download.plot(plot.and.table.list[[suffix]], suffix=suffix)
+            if (!is.null(plot.and.table.list[[suffix]]))
+                download.plot(plot.and.table.list[[suffix]], suffix=suffix)
         })
         
         #-- Table --#
         output[[paste0('download_table_', suffix)]] = downloadHandler(
-            filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
-            content = function(filepath) {
-                write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
+                filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
+                content = function(filepath) {
+                    write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
             }
         )
         
         observeEvent(input[[paste0('share_link_', suffix)]], {
-            print(paste0("Share ", suffix, ' link'))
+            if (!is.null(plot.and.table.list[[suffix]]))
+            {
+                if (is.null(links[[suffix]]))
+                    links[[suffix]] <<- save.link(session, 
+                                                  plot.and.table=plot.and.table.list[[suffix]], 
+                                                  suffix=suffix, 
+                                                  cache=cache)
+                
+                if (!is.null(links[[suffix]]))
+                    show.link.message(session, links[[suffix]])
+            }
         })
     })
     
-    # Get the size on load
+    #-- Some Initial Set-Up Once Loaded --#
+    
     session$onFlushed(function(){
-        js$ping_display_size()
+        js$ping_display_size_onload()
         
         js$set_input_value(name='left_width_prerun', value=as.numeric(LEFT.PANEL.SIZE['prerun']))
         js$set_input_value(name='right_width_prerun', value=0)
@@ -209,9 +235,127 @@ add.display.event.handlers <- function(session, input, output, cache,
                input=input,
                output=output)
         
+        # Sync up
         sync.buttons.to.plot(input, plot.and.table.list)
+        
     }, once=T)
+    
+    
+    #-- Process the query string --#
+    
+    # Listeners to render if loading a preset
+    
+    render.from.link <- function()
+    {   
+        is.first.plot <<- F # So we don't pop out the sidebar controls
+      
+        int.code = initial.link.data$intervention.codes
+
+        do.run(intervention.codes = int.code, 
+               suffix=initial.link.data$type, 
+               intervention.settings = initial.link.data$intervention.settings)
+        links[[initial.link.data$type]] <<- initial.link
+        js$chime_if_checked(paste0('chime_run_', initial.link.data$type))
+
+        initial.link.data <<- NULL
+        initial.link <<- NULL
+    }
+    
+    #-- Resize Listener --#
+    
+    handle.resize <- function(suffixes)
+    {
+        lapply(suffixes, function(suffix){
+            display.size = get.display.size(input, suffix)
+            if (length(display.size$width)>0 && length(display.size$height)>0)
+            {
+                if (!is.null(plot.and.table.list[[suffix]]))
+                {
+                    set.display(input=input,
+                                output=output,
+                                suffix=suffix,
+                                plot.and.table = plot.and.table.list[[suffix]])
+                }
+                else # We check here for render from a link, because we don't want to 
+                     #  render before display size is synced up
+                {
+                    if (!is.null(initial.link.data) && initial.link.data$type == suffix)
+                        render.from.link()
+                        
+                }
+            }
+        })
+    }
+    
+    observeEvent(input$display_size_prerun, handle.resize('prerun') )
+    observeEvent(input$display_size_custom, handle.resize('custom') )
+    observeEvent(input$left_width_prerun, handle.resize('prerun') )
+    observeEvent(input$right_width_prerun, handle.resize('prerun') )
+    observeEvent(input$left_width_custom, handle.resize('custom') )
+    observeEvent(input$right_width_custom, handle.resize('custom') )
+    
+    observeEvent(input$main_nav, {
+      js$ping_display_size() 
+    })
+    
+    # The observe handler that sets things in motion
+    initial.link = NULL
+    initial.link.data = NULL
+    observe({
+
+        # Check for a query string to kick us off
+        query.string = session$clientData$url_search
+        if (query.string != '')
+        {
+            query.string = substr(query.string, 2, nchar(query.string))
+            query.location = match.location.name(query.string)
+            
+            if (is.null(query.location))
+            {
+                if (link.exists(query.string))
+                {
+                    link.data = get.link.data(query.string)
+                    
+                    if (link.data$type=='custom')
+                    {} #need to pull the saved intervention
+                    
+                    if (!is.null(link.data))
+                    {
+                        set.main.to.settings(session, suffix=link.data$type, link.data$main.settings)
+                        set.controls.to.settings(session, input, suffix=link.data$type, link.data$control.settings)
+                        
+                        if (link.data$type=='custom')
+                        {
+                            set.custom.to.settings(session,
+                                                   input,
+                                                   settings = link.data$intervention.settings)
+                        }
+                        else
+                        {
+                            set.intervention.selection(session, 
+                                                       suffix='prerun', 
+                                                       int.code=link.data$intervention.codes)
+                        }
+                        
+                        initial.link <<- query.string
+                        initial.link.data <<- link.data 
+                        
+                        updateNavbarPage(session,
+                                         inputId = 'main_nav',
+                                         selected = paste0(initial.link.data$type, "_interventions"))
+                    }
+                }
+            }
+            else
+            {
+                lapply(names(plot.and.table.list), set.selected.location,
+                       session=session, location=query.location)
+            }
+        }
+    })
+    
 }
+
 
 
 ##-- ENABLING AND DISABLING --##
