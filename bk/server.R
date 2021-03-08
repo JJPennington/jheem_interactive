@@ -450,14 +450,6 @@ Contents:
       # debug=T
       authenticate=T, 
       send=T)
-    
-    # Warning: Error in : FATAL:  no pg_hba.conf entry for host 
-    # "73.135.116.183", user "jklcmyywfuzgrf", database "d7kjdf34erfuu8", 
-    # SSL off
-    # db.write.contactForm(
-    #   name=name, email=email, message=contents)
-    
-    # showMessageModal('Your message has been sent')
   })
   
 }
