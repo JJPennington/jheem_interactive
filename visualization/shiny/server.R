@@ -18,10 +18,7 @@ library(shinycssloaders)
 
 source('env.R')
 source('helpers/location_names.R')
-source('server/share_handlers.R')
 source('helpers/progress_bar.R')
-source('plot_interface/generate_plot.R')
-source('server/display_event_handlers.R')
 source('helpers/display_size.R')
 source('helpers/error_checking.R')
 source('helpers/alerts.R')
@@ -37,6 +34,12 @@ source('helpers/analytics.R')
 source('ui/custom_interventions.R', local=T)
 source('ui/modals.R')
 source('helpers/time_text.R')
+source('plot_interface/generate_plot.R')
+source('plot_interface/plot_interface.R')
+source('server/share_handlers.R')
+source('server/control_helpers.R')
+source('server/server_utils.R')
+source('server/display_event_handlers.R')
 source('simulation/simulate_intervention.R')
 source('links/link_interface.R')
 
@@ -57,10 +60,6 @@ server <- function(input, output, session, cache)
     ##--------------------##    
     ##-- INITIAL SET-UP --##
     ##--------------------##
-    
-    # TODO
-    query.string = 'hi' 
-    #@joe fill in here
     
     # Print an initial message - useful for debugging on shinyapps.io servers
     print(paste0("Launching server() function - ", Sys.time()))
