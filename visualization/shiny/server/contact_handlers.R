@@ -80,7 +80,7 @@ add.contact.handlers <- function(session, input, output)
                 show.success.message(session,
                                      title='Message Sent',
                                      message="Your message was sent successfully")
-                # tfojo13@aol.com
+
                 updateTextAreaInput(session,
                                     inputId = 'feedback_contents',
                                     value='',
