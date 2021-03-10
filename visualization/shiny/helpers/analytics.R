@@ -113,7 +113,8 @@ track.request <- function(session.id,
 # Functions ####
 # This should have innate error handling and fail silently
 # The database needs to track all these, plus the date/time
-do.track.request <- function(session.id, #non-unique string
+do.track.request <- function(method=c('S3', 'DB')[2],
+                             session.id, #non-unique string
                              called.from, #string
                              version, #string
                              location, #string
@@ -172,12 +173,13 @@ do.track.request <- function(session.id, #non-unique string
             show_risks=show.risks)
    
         # For now, just put it to S3
-        filename = get.analytics.filename()
-        s3save(data, object=filename, bucket=ANALYTICS.BUCKET)
-             
-#        db.write.rows(
- #           table.name='analytics',
-  #          data.df=df)
+        if (method == 'S3') {
+          filename = get.analytics.filename()
+          s3save(data, object=filename, bucket=ANALYTICS.BUCKET)          
+        } else
+         db.write.rows(
+          table.name='analytics',
+           data.df=df)
     },
     error=function(e){
         log.error(e)
@@ -202,6 +204,7 @@ get.analytics.filename <- function()
 if (1==2)
 {
 do.track.request(
+    method='DB',
     session.id='xxx', #non-unique string
     called.from='xxx', #string
     version='xxx', #string
@@ -228,5 +231,5 @@ do.track.request(
     show.races='xxx', #string
     show.sexes='xxx', #string
     show.risks='xxx' #string
-)
+  )
 }

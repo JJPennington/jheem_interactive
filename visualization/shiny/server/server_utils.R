@@ -10,6 +10,7 @@ library(stringr)
 # library('RPostgres')
 library('remotes')
 library('DBI')
+library('RMariaDB')
 library('stringr')
 
 source('env.R')
@@ -54,7 +55,8 @@ invert.keyVals <- function(x) {
 # More potential funcs: dbGetQuery, dbSendQuery
 db.connect <- function() {
   dbConnect(
-    RPostgres::Postgres(), 
+    # RPostgres::Postgres(), 
+    RMariaDB::MariaDB(),
     dbname=Sys.getenv("DB_database"), 
     host=Sys.getenv("DB_host"), 
     port=Sys.getenv("DB_port"), 
