@@ -314,6 +314,11 @@ body {
    margin-left: 0 !important;
  }
  
+ /** This keeps the navbar from showing the title **/
+ .navbar-header {
+     display: none;
+ }
+ 
  .row {
    margin: 0 !important;
  }

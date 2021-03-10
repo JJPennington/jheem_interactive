@@ -44,12 +44,14 @@ source('ui/custom_interventions.R', local=T)
 ##-- DEFINE the UI--##
 ##------------------##
 # Variables
-app.title = ''#"JHEEM: Ending HIV in the US"
+app.title = "JHEEM: Ending HIV in the US"
 
 # UI
 ui = tags$html(style='height:100%',
                
 useShinydashboard(), #this call let's us use dashboard elements (eg box) even though this is not a dashboard
+
+tags$title("JHEEM - Ending HIV"),
 
 # Add js scripts to shinyjs
 shinyjs::useShinyjs(),

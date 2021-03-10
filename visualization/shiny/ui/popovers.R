@@ -4,7 +4,7 @@
 ##---------------##
 
 OVERVIEW.POPOVER.TITLE = 'What this Site is About'
-OVERVIEW.POPOVER = "How we apply JHEEM model of HIV to the Ending the HIV Epidemic Initiative"
+OVERVIEW.POPOVER = "We apply the JHEEM model of HIV transmission to the Ending the HIV Epidemic Initiative"
 
 PRERUN.POPOVER.TITLE = "Explore Pre-defined Interventions Quickly"
 PRERUN.POPOVER = "This tab allows you to try out interventions that we have already simulated. You can get results within a few seconds."

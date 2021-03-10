@@ -29,7 +29,12 @@ add.display.event.handlers <- function(session, input, output, cache,
 
     
     #-- General Handler for Running/Redrawing --#
-    do.run = function(intervention.codes, suffix, called.from, intervention.settings=NULL)
+    do.run = function(intervention.codes, 
+                      suffix, 
+                      called.from,
+                      intervention.settings=NULL,
+                      chime.if.id=NULL,
+                      thin.custom.cache = F)
     {   
         get.display.size(input, 'prerun')
         
@@ -37,6 +42,7 @@ add.display.event.handlers <- function(session, input, output, cache,
         lock.cta.buttons(input, called.from.suffix = suffix,
                          plot.and.table.list=plot.and.table.list)
         
+        need.to.track = F
         if (check.plot.controls(session, input, suffix))
         {
             new.plot.and.table = generate.plot.and.table(session,
@@ -56,13 +62,7 @@ add.display.event.handlers <- function(session, input, output, cache,
                 set.display(input, output, suffix, plot.and.table.list[[suffix]])
                 sync.buttons.to.plot(input, plot.and.table.list)
                 
-                # Track with analytics
-                track.request(session.id=session.id,
-                              called.from=called.from,
-                              main.settings=new.plot.and.table$main.settings,
-                              control.settings=new.plot.and.table$control.settings,
-                              intervention.code=paste0(new.plot.and.table$intervention.codes, collapse=';'),
-                              intervention=new.plot.and.table$intervention)
+                need.to.track=T
             }
         }
         
@@ -76,7 +76,31 @@ add.display.event.handlers <- function(session, input, output, cache,
             js$trigger_accordion('prerun_expand_right')
         }
         
+        # Remove saved custom interventions, if needed
+        if (thin.custom.cache)
+        {
+            custom.int.map <<- thin.map(keep.codes = plot.and.table.list$custom$intervention.codes,
+                                        map = custom.int.map)
+            
+            intervention.filenames = get.intervention.filenames(plot.and.table.list$custom$intervention.codes,
+                                                                version=plot.and.table.list$custom$main.settings$version, 
+                                                                location=plot.and.table.list$custom$main.settings$location)
+            cache <<- thin.explicit.cache(keep.codes = intervention.filenames,
+                                          cache = cache,
+                                          explicit.name = 'custom')
+        }
         
+        # Chime (if applicable)
+        if (!is.null(chime.if.id))
+            js$chime_if_checked(chime.if.id)
+        
+        # Track with analytics
+        track.request(session.id=session.id,
+                      called.from=called.from,
+                      main.settings=new.plot.and.table$main.settings,
+                      control.settings=new.plot.and.table$control.settings,
+                      intervention.code=paste0(new.plot.and.table$intervention.codes, collapse=';'),
+                      intervention=new.plot.and.table$intervention)
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
@@ -85,8 +109,8 @@ add.display.event.handlers <- function(session, input, output, cache,
   #    return()
       
         do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
-               called.from = 'run_prerun', suffix='prerun')
-        js$chime_if_checked('chime_run_prerun')
+               called.from = 'run_prerun', suffix='prerun',
+               chime.if.id = 'chime_run_prerun')
     })
 
     observeEvent(input$redraw_prerun, {
@@ -146,22 +170,10 @@ add.display.event.handlers <- function(session, input, output, cache,
             do.run(intervention.codes = selected.int.code,
                    called.from = 'run_custom',
                    suffix='custom',
-                   intervention.settings = int.settings)
-            
-            # Keep only the simsets we need
-            custom.int.map <<- thin.map(keep.codes = plot.and.table.list$custom$intervention.codes,
-                                        map = custom.int.map)
-            
-            intervention.filenames = get.intervention.filenames(plot.and.table.list$custom$intervention.codes,
-                                                                version=plot.and.table.list$custom$main.settings$version, 
-                                                                location=plot.and.table.list$custom$main.settings$location)
-            cache <<- thin.explicit.cache(keep.codes = intervention.filenames,
-                                          cache = cache,
-                                          explicit.name = 'custom')
-            
-            # Play the chime
-            js$chime_if_checked('chime_run_custom')
-        }
+                   intervention.settings = int.settings,
+                   chime.if.id = 'chime_run_custom',
+                   thin.custom.cache = T)
+          }
     })
     
     

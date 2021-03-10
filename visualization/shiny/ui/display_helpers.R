@@ -400,7 +400,7 @@ do.calculate.optimal.nrows <- function(n.panels,
     best.fit.panel.width = display.width / best.fit.ncols
     if (best.fit.panel.width < MIN.PANEL.WIDTH)
     {
-        min.width.ncols = floor(display.width / MIN.PANEL.WIDTH)
+        min.width.ncols = max(1, floor(display.width / MIN.PANEL.WIDTH))
         min.width.nrows = ceiling(n.panels / min.width.ncols)
         
         list(nrows=min.width.nrows,

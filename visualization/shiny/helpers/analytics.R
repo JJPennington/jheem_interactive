@@ -1,6 +1,7 @@
 
 
 ANALYTICS.DELIMITER = ';'
+ANALYTICS.BUCKET = 'endinghiv.analytics'
 track.request <- function(session.id,
                           called.from,
                           main.settings,
@@ -11,10 +12,12 @@ track.request <- function(session.id,
 {
     is.local = Sys.getenv('SHINY_PORT') == ''
     
-    if (1==1) #(!is.local)
+    if (is.local)
+        print("NOT RECORDING ANALYTICS SINCE WE'RE ON A LOCAL MACHINE")
+    else
     {
-        start.time = Sys.time()
-        print('doing analytics')
+#        start.time = Sys.time()
+ #       print('doing analytics')
         
         if (is.null(intervention) || is.null.intervention(intervention))
         {
@@ -101,9 +104,9 @@ track.request <- function(session.id,
                          show.risks = paste0(control.settings$dimension.subsets$risk, collapse=ANALYTICS.DELIMITER))
         
     
-        print(paste0('done with analytics: ',
-                     difftime(start.time, Sys.time(), units='secs'),
-                     ' sec'))
+#        print(paste0('done with analytics: ',
+ #                    difftime(start.time, Sys.time(), units='secs'),
+  #                   ' sec'))
     }
 }
 
@@ -167,14 +170,32 @@ do.track.request <- function(session.id, #non-unique string
             show_races=show.races,
             show_sexes=show.sexes,
             show_risks=show.risks)
-        
-        db.write.rows(
-            table.name='analytics',
-            data.df=df)
+   
+        # For now, just put it to S3
+        filename = get.analytics.filename()
+        s3save(data, object=filename, bucket=ANALYTICS.BUCKET)
+             
+#        db.write.rows(
+ #           table.name='analytics',
+  #          data.df=df)
     },
     error=function(e){
         log.error(e)
     })
+}
+
+get.analytics.filename <- function()
+{
+    # generate a random string
+    len=5
+    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    indices = ceiling(runif(len, .000001, nchar(choices)))
+    chars = sapply(indices, function(i){substr(choices, i, i)})
+    rand.str = paste0(chars, collapse='')
+        
+    # put the string in a directory path corresponding to the date
+    file.path(gsub('-', '/', Sys.Date()),
+              paste0(rand.str, '.Rdata'))
 }
 
 # Testing ####
