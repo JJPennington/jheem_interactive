@@ -113,7 +113,7 @@ track.request <- function(session.id,
 # Functions ####
 # This should have innate error handling and fail silently
 # The database needs to track all these, plus the date/time
-do.track.request <- function(method=c('S3', 'DB')[2],
+do.track.request <- function(method=c('S3', 'DB')[1],
                              session.id, #non-unique string
                              called.from, #string
                              version, #string
