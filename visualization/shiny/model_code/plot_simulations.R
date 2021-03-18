@@ -11,7 +11,9 @@ DATA.TYPE.NAMES = c(new='Reported Cases (n)',
                     mortality='Mortality Among PWH',
                     testing.rate='Rate of HIV Testing',
                     incidence='Incidence',
-                    population='Population Size')
+                    population='Population Size',
+                    testing.period='HIV Testing Frequency',
+                    prep='PrEP Uptake')
 
 
 DATA.TYPE.AXIS.LABELS = c(
@@ -21,8 +23,10 @@ DATA.TYPE.AXIS.LABELS = c(
     mortality='Deaths in PWH (n)',
     suppression='Proportion Suppressed (%)',
     diagnosed='Proportion Aware (%)',
-    testing.rate='Average Tests per Person per Year',
-    population='Population (n)'
+    testing.rate='Tests per Person per Year',
+    population='Population (n)',
+    testing.period='Years Between Tests',
+    prep='Proportion on PrEP (%)'
 )
 
 DATA.TYPE.UNITS = c(
@@ -33,7 +37,9 @@ DATA.TYPE.UNITS = c(
   suppression = 'Suppressed',
   diagnosed = 'Aware',
   testing.rate = 'Tests per year',
-  population = 'People'
+  population = 'People',
+  testing.period = 'Years between tests',
+  prep = 'Uptake'
 )
 
 DIMENSION.NAMES = c(age='Age',
@@ -138,7 +144,7 @@ do.plot.simulations <- function(
     keep.dimensions = unique(c('year', facet.by, split.by))
     
     if (is.null(y.axis.title.function))
-      y.axis.title.function = function(data.type){DATA.TYPE.NAMES[data.type]}
+      y.axis.title.function = function(data.type){DATA.TYPE.AXIS.LABELS[data.type]}
     
     #-----------------------#
     #-- Argument Checking --#
@@ -495,12 +501,12 @@ do.plot.simulations <- function(
     #-------------------#
     
     #-- SOME INITIAL FORMATTING  (rounding, etc) --#
-    df.sim = format.values.for.plotly(df.sim, data.type.names)
+#    df.sim = format.values.for.plotly(df.sim, data.type.names, category=plot.format)
     condense.legend.names = condense.legend && 
       (color.by=='split' || length(unique(simset.names))==1)
     
-    if (!is.null(df.truth))
-        df.truth = format.values.for.plotly(df.truth, data.type.names)
+#    if (!is.null(df.truth))
+#        df.truth = format.values.for.plotly(df.truth, data.type.names, category='truth')
     
     
     #-- SET UP THE FACET CATEGORIES --#
@@ -554,9 +560,76 @@ do.plot.simulations <- function(
     #-- SET UP FOR PROGRESS --#        
     unique.simset.names = unique(simset.names)
     n.steps = length(facet.categories) * length(unique.simset.names) * length(splits)
-    
+ 
+    #-- FIGURE OUT HOW MANY DIGITS WE'RE GOING TO ROUND TO --#
+    digits = sapply(1:length(facet.categories), function(ff.i){
+        
+        ff = facet.categories[ff.i]
+        data.type = raw.data.types.for.facet.categories[ff.i]
 
+        sim.facet.mask = df.sim$facet==ff
+
+        if (plot.format=='individual.simulations')
+        {
+            max.val = max(df.sim$value[sim.facet.mask])
+            min.val = min(df.sim$value[sim.facet.mask])
+        }
+        else
+        {
+            max.val = max(df.sim$upper[sim.facet.mask])
+            min.val = min(df.sim$lower[sim.facet.mask])
+        }
+        
+        
+        if (!is.null(df.truth))
+        {
+            mask = df.truth$facet==ff
+            if (any(mask) && any(!is.na(df.truth$value[mask])))
+            {
+                max.val = max(max.val, max(df.truth$value[mask]))
+                min.val = min(min.val, min(df.truth$value[mask]))
+            }
+        }
+        
+        DESIRED.DIGITS = 3 #min number of digits before and after decimal place we want
+        span = max.val - min.val
+        pre.decimial.digits.in.span = ceiling(log10(span)+.00000001)
+        
+        rv = max(0, DESIRED.DIGITS-pre.decimial.digits.in.span)
+    })
     
+    digits.for.sim = digits
+    if (plot.format=='individual.simulations')
+        digits.for.sim[is.integer.data.type(raw.data.types.for.facet.categories)] = 0
+    names(digits.for.sim) = facet.categories
+    
+    digits.for.truth = digits
+    digits.for.truth[is.integer.data.type(raw.data.types.for.facet.categories)] = 0
+    names(digits.for.truth) = facet.categories
+    
+    # Actually apply the rounding
+    df.sim$value = sapply(1:dim(df.sim)[1], function(i){
+        round(df.sim$value[i], digits.for.sim[df.sim$facet[i]])
+    })
+    
+    if (plot.format != 'individual.simulations')
+    {
+        df.sim$lower = sapply(1:dim(df.sim)[1], function(i){
+            round(df.sim$lower[i], digits.for.sim[df.sim$facet[i]])
+        })
+        
+        df.sim$upper = sapply(1:dim(df.sim)[1], function(i){
+            round(df.sim$upper[i], digits.for.sim[df.sim$facet[i]])
+        })
+    }
+    
+    if (!is.null(df.truth))
+    {
+        df.truth$value = sapply(1:dim(df.truth)[1], function(i){
+            round(df.truth$value[i], digits.for.truth[df.truth$facet[i]])
+        })
+    }
+
     #-- GENERATE THE PLOTLY OBJECT --#
     #Make a different subplot for each facet panel
     subplots = lapply(1:length(facet.categories), function(ff.i){
@@ -788,7 +861,7 @@ do.plot.simulations <- function(
         
        
         
-        axis.title = DATA.TYPE.AXIS.LABELS[names(data.type.names)[data.types.for.facet.categories[ff]==data.type.names]]
+        #axis.title = DATA.TYPE.AXIS.LABELS[names(data.type.names)[data.types.for.facet.categories[ff]==data.type.names]]
         axis.title = sapply(names(data.type.names)[data.types.for.facet.categories[ff]==data.type.names], function(data.type){
             y.axis.title.function(data.type)
         })
@@ -806,10 +879,17 @@ do.plot.simulations <- function(
                                        font=list(size=y.title.size)),
                           tickfont = list(size=tick.size))
         
+        y.axis.digits = digits.for.sim[ff]-1
         if (is.pct.data.type(data.types.for.facet.categories[ff], data.type.names))
-            yaxis.list$tickformat = '%'
-        else
+            y.axis.digits = y.axis.digits-2
+        y.axis.digits = max(0, y.axis.digits)
+            
+        if (is.pct.data.type(data.types.for.facet.categories[ff], data.type.names))
+            yaxis.list$tickformat = paste0('.', y.axis.digits, '%')
+        else if (y.axis.digits==0)
             yaxis.list$tickformat = ',d'
+        else
+            yaxis.list$tickformat = paste0('.', y.axis.digits, 'd') #',d'
         
         plot = layout(plot,
                       yaxis = yaxis.list,
@@ -1050,7 +1130,7 @@ do.plot.from.components <- function(plot.components, nrows,
     place.labels.to.side = plot.components$place.labels.to.side
     change.years = plot.components$change.years
     
-    if (!is.null(plot.components$subplots))
+    if (!is.null(plot.components$subplot.label.components))
     {
         subplots = lapply(1:length(plot.components$subplots), function(i){
             
@@ -1118,8 +1198,6 @@ do.plot.from.components <- function(plot.components, nrows,
     subplot.heights[1] = subplot.heights[nrows] = 1/outer.height.inflation
     subplot.heights = subplot.heights / sum(subplot.heights)
     
-    print(paste0("subplot widths: ", paste0(round(subplot.widths, 3), collapse=', ')))
-    print(paste0("subplot heights: ", paste0(round(subplot.heights, 3), collapse=', ')))
     
     if (length(facet.categories)==1)
         plot = subplots[[1]]
@@ -1176,10 +1254,14 @@ get.data.type.level.and.change.dist <- function(simset,
         extract.fn = function(sim, years){extract.suppression(sim, years=years, per.population=1)}
     else if (data.type=='mortality')
         extract.fn = function(sim, years){extract.overall.hiv.mortality(sim, years=years, per.population=1)}
-    else if (data.type=='testing.rate')
-        extract.fn = function(sim, years){extract.testing.rates(sim, years=years, per.population=1)}
+ #   else if (data.type=='testing.rate')
+  #      extract.fn = function(sim, years){extract.testing.rates(sim, years=years, per.population=1)}
     else if (data.type=='population')
         extract.fn = function(sim, years){extract.population(sim, years=years)}
+    else if (data.type=='testing.period')
+        extract.fn = function(sim, years){extract.testing.period(sim, years=years, per.population=1)}
+    else if (data.type=='prep')
+        extract.fn = function(sim, years){extract.prep.coverage(sim, years=years, per.population=1)}
     else
         stop(paste0("'", data.type, "' is not a valid data type"))
     
@@ -1213,7 +1295,7 @@ get.truth.df <- function(location,
                                                          surv=surv)
     
     all.dimensions = union(keep.dimensions, names(dimension.subsets))
-    if (data.type=='incidence')
+    if (data.type=='incidence' || data.type=='testing.period' || data.type=='prep')
         return (NULL)
     
     if (data.type=='population')
@@ -1234,12 +1316,21 @@ get.truth.df <- function(location,
                                  aggregate.locations = T, aggregate.years = F,
                                  throw.error.if.missing.data = F)
       
+      data.source = get.surveillance.data.source(surv, location.codes=location, data.type=data.type,
+                                                 years=years,
+                                                 age=any(all.dimensions=='age'), race=any(all.dimensions=='race'),
+                                                 sex=any(all.dimensions=='sex'), risk=any(all.dimensions=='risk'))
+      
       if (data.type=='diagnosed' && is.null(rv) && length(all.dimensions)==1 && all.dimensions=='year')
       {
           rv = get.state.averaged.knowledge.of.status(location,
                                                       state.surveillance,
                                                       years=years,
                                                       census.totals = ALL.DATA.MANAGERS$census.totals)
+          
+          data.source = get.surveillance.data.source(state.surveillance, location=states.for.msa(location),
+                                                     data.type='diagnosed',
+                                                     years=years)
           
           dim(rv) = c(year=length(years))
           dimnames(rv) = list(year = as.character(years))
@@ -1256,6 +1347,11 @@ get.truth.df <- function(location,
                                          sex=any(all.dimensions=='sex'), risk=any(all.dimensions=='risk'),
                                          aggregate.locations = T, aggregate.years = F,
                                          throw.error.if.missing.data = F)
+              
+              data.source = get.surveillance.data.source(state.surveillance, location.codes=states, data.type=data.type.for.surveillance,
+                                                         years = years,
+                                                         age=any(all.dimensions=='age'), race=any(all.dimensions=='race'),
+                                                         sex=any(all.dimensions=='sex'), risk=any(all.dimensions=='risk'))
           }
       }
       
@@ -1274,11 +1370,8 @@ get.truth.df <- function(location,
           rv = reshape2::melt(rv)
           rv = rv[!is.na(rv$value),]
           
-          if (data.type=='suppression' || data.type=='diagnosed')
-              rv$Source = 'Local Health Dept'
-          else
-              rv$Source = 'CDC'
-          
+          rv$Source = data.source
+
           rv
       }
     }
@@ -1360,9 +1453,18 @@ get.sim.dfs <- function(simset,
                                                  years = years, 
                                                  all.dimensions = keep.dimensions,
                                                  dimension.subsets = dimension.subsets)
+    else if (data.type=='testing.period')
+        arr = extract.simset.testing.period(simset,
+                                            years = years, 
+                                            all.dimensions = keep.dimensions,
+                                            dimension.subsets = dimension.subsets)
+    else if (data.type=='prep')
+        arr = extract.simset.prep.coverage(simset,
+                                           years = years, 
+                                           all.dimensions = keep.dimensions,
+                                           dimension.subsets = dimension.subsets)
     else
-        stop(paste0("'", data.type, "' is not a valid data.type. data.type must be one of ",
-                    paste0("'", names(data.type.names), "'", collapse=', ')))
+        stop(paste0("'", data.type, "' is not a valid data.type."))
     
     
     if (get.individual.sims)
@@ -1898,6 +2000,84 @@ extract.simset.suppression <- function(simset, years, all.dimensions,
     rv
 }
 
+extract.simset.prep.coverage <- function(simset, years, all.dimensions,
+                                         dimension.subsets)
+{
+    eg = extract.prep.coverage(simset@simulations[[1]],
+                             years=years, 
+                             keep.dimensions=all.dimensions,
+                             per.population=1,
+                             ages=dimension.subsets[['age']],
+                             races=dimension.subsets[['race']],
+                             subpopulations=dimension.subsets[['subpopulation']],
+                             sexes=dimension.subsets[['sex']],
+                             risks=dimension.subsets[['risk']],
+                             use.cdc.categorizations=T)
+    
+    rv = sapply(simset@simulations, extract.prep.coverage,
+                years=years, 
+                keep.dimensions=all.dimensions,
+                per.population=1,
+                ages=dimension.subsets[['age']],
+                races=dimension.subsets[['race']],
+                subpopulations=dimension.subsets[['subpopulation']],
+                sexes=dimension.subsets[['sex']],
+                risks=dimension.subsets[['risk']],
+                use.cdc.categorizations=T)
+    
+    if (is.null(dim(eg)))
+    {
+        dim.names = list(names(eg), 1:simset@n.sim)
+        names(dim.names) = c(all.dimensions, 'simulation')
+    }
+    else
+        dim.names = c(dimnames(eg), list(simulation=1:simset@n.sim))
+    
+    dim(rv) = sapply(dim.names, length)
+    dimnames(rv) = dim.names
+    
+    rv
+}
+
+extract.simset.testing.period <- function(simset, years, all.dimensions,
+                                         dimension.subsets)
+{
+    eg = extract.testing.period(simset@simulations[[1]],
+                               years=years, 
+                               keep.dimensions=all.dimensions,
+                               per.population=1,
+                               ages=dimension.subsets[['age']],
+                               races=dimension.subsets[['race']],
+                               subpopulations=dimension.subsets[['subpopulation']],
+                               sexes=dimension.subsets[['sex']],
+                               risks=dimension.subsets[['risk']],
+                               use.cdc.categorizations=T)
+    
+    rv = sapply(simset@simulations, extract.testing.period,
+                years=years, 
+                keep.dimensions=all.dimensions,
+                per.population=1,
+                ages=dimension.subsets[['age']],
+                races=dimension.subsets[['race']],
+                subpopulations=dimension.subsets[['subpopulation']],
+                sexes=dimension.subsets[['sex']],
+                risks=dimension.subsets[['risk']],
+                use.cdc.categorizations=T)
+    
+    if (is.null(dim(eg)))
+    {
+        dim.names = list(names(eg), 1:simset@n.sim)
+        names(dim.names) = c(all.dimensions, 'simulation')
+    }
+    else
+        dim.names = c(dimnames(eg), list(simulation=1:simset@n.sim))
+    
+    dim(rv) = sapply(dim.names, length)
+    dimnames(rv) = dim.names
+    
+    rv
+}
+
 extract.simset.knowledge.of.status <- function(simset, years, all.dimensions,
                                                dimension.subsets)
 {
@@ -1962,10 +2142,27 @@ vline <- function(x = 0,
     )
 }
 
+is.integer.data.type <- function(data.type, data.type.names=NULL)
+{
+    rv = !is.pct.data.type(data.type, data.type.names=data.type.names) &
+        data.type != 'testing.period' & data.type != 'testing.rate'
+    
+    
+    if (!is.null(data.type.names))
+    {
+        if (any(names(data.type.names)=='testing.period'))
+            rv = rv & data.type != data.type.names['testing.period']
+        
+        if (any(names(data.type.names)=='testing.rate'))
+            rv = rv & data.type != data.type.names['testing.rate']
+    }
+}
+
 is.pct.data.type <- function(data.type, data.type.names=NULL)
 {
     rv = data.type == 'suppression' |
-         data.type == 'diagnosed'
+         data.type == 'diagnosed' |
+         data.type == 'prep'
     
     if (!is.null(data.type.names))
     {
@@ -1973,6 +2170,8 @@ is.pct.data.type <- function(data.type, data.type.names=NULL)
             rv = rv | data.type == data.type.names['suppression']
         if (any(names(data.type.names)=='diagnosed'))
             rv = rv | data.type == data.type.names['diagnosed']
+        if (any(names(data.type.names)=='prep'))
+            rv = rv | data.type == data.type.names['prep']
     }
     
     rv
@@ -1980,23 +2179,28 @@ is.pct.data.type <- function(data.type, data.type.names=NULL)
 
 format.values.for.plotly <- function(df,
                                      data.type.names,
-                                     pct.digits=1,
+                                     category,
+                                     pct.digits=3,
                                      non.pct.digits=0)
 {
-    pct.mask = is.pct.data.type(df$data.type, data.type.names)
-    
-    df$value[pct.mask] = round(df$value[pct.mask], pct.digits+2)
-    df$value[!pct.mask] = round(df$value[!pct.mask], non.pct.digits)
-    
-    if (any(names(df)=='lower'))
+    if (category=='individual.simulations' || category=='truth')
     {
-        df$lower[!pct.mask] = round(df$lower[!pct.mask], non.pct.digits)
-        df$lower[pct.mask] = round(df$lower[pct.mask], pct.digits+2)
-    }
-    if (any(names(df)=='upper'))
-    {
-        df$upper[!pct.mask] = round(df$upper[!pct.mask], non.pct.digits)
-        df$upper[pct.mask] = round(df$upper[pct.mask], pct.digits+2)
+        pct.mask = is.pct.data.type(df$data.type, data.type.names)
+        integer.mask = is.integer.data.type(df$data.type, data.type.names)
+        
+        df$value[pct.mask] = round(df$value[pct.mask], pct.digits+2)
+        df$value[integer.mask] = round(df$value[!pct.mask], non.pct.digits)
+        
+        if (any(names(df)=='lower'))
+        {
+            df$lower[integer.mask] = round(df$lower[integer.mask], non.pct.digits)
+            df$lower[pct.mask] = round(df$lower[pct.mask], pct.digits+2)
+        }
+        if (any(names(df)=='upper'))
+        {
+            df$upper[integer.mask] = round(df$upper[integer.mask], non.pct.digits)
+            df$upper[pct.mask] = round(df$upper[pct.mask], pct.digits+2)
+        }
     }
     
     df

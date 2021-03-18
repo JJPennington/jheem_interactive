@@ -113,6 +113,12 @@ tags$body(style='height:100%;',
          CUSTOM.CONTENT
      ),
      tabPanel(
+             "FAQ",
+             value='faq',
+             make.tab.popover("faq", title=FAQ.POPOVER.TITLE, content=FAQ.POPOVER),
+             includeHTML('ui/faq.html')
+     ),
+     tabPanel(
          "About the JHEEM",
          value='about_the_jheem',
          make.tab.popover("about_the_jheem", title=ABOUT.POPOVER.TITLE, content=ABOUT.POPOVER),

@@ -520,7 +520,8 @@ clear.dependent.values <- function(components,
                             'suppression.rates.and.times',
                             'testing.rates.and.times',
                             'prep.rates.and.times',
-                            'newly.suppressed.rates.and.times')
+                            'newly.suppressed.rates.and.times',
+                            'linkage.rates.and.times')
     
     dependencies = list(model.idu=all.dependent.names,
                         model.hiv.transmission=all.dependent.names,
@@ -551,6 +552,8 @@ clear.dependent.values <- function(components,
                         foreground.suppression=c('suppression.rates.and.times','hiv.mortality.rates','sexual.transmissibilities','idu.transmissibilities'),
                         background.newly.suppressed=c('newly.suppressed.rates.and.times','continuum.transitions'),
                         foreground.newly.suppressed=c('newly.suppressed.rates.and.times','continuum.transitions'),
+                        background.linkage=c('linkage.rates.and.times','continuum.transitions'),
+                        foreground.linkage=c('linkage.rates.and.times','continuum.transitions'),
                         background.prep.coverage=c('prep.rates.and.times','susceptibility','new.infection.proportions','new.infection.proportions.years'),
                         foreground.prep.coverage=c('prep.rates.and.times','susceptibility','new.infection.proportions','new.infection.proportions.years'),
                         prep.rr.heterosexual='sexual.susceptibility',
@@ -998,7 +1001,7 @@ do.setup.continuum.transitions <- function(components)
         testing.rates = calculate.testing.rates(components)
         
         
-        if (is.null(components$settings$IS_CONTINUUM_COLLAPSED) || components$settings$IS_CONTINUUM_COLLAPSED)
+        if (is.null(components$settings$VERSION) || components$settings$VERSION=='collapsed_1.0')
         {
             components$continuum.transitions = lapply(1:length(testing.rates$rates), function(i){
                 continuum.transitions.for.year = base.transitions
@@ -1150,7 +1153,7 @@ calculate.suppression <- function(components)
 
 do.calculate.suppression <- function(components)
 {
-    if (is.null(components$settings$IS_CONTINUUM_COLLAPSED) || components$settings$IS_CONTINUUM_COLLAPSED)
+    if (is.null(components$settings$VERSION) || components$settings$VERSION=='collapsed_1.0')
     {
         #Pull background suppression proportions from logistic model
         background.suppression = get.background.proportions(base.model = components$background.suppression$model,
@@ -1195,7 +1198,7 @@ do.calculate.suppression <- function(components)
         suppression.array[,,,,,components$settings$SUPPRESSED_STATES,,] = 1
         
         components$suppression.rates.and.times = list(
-            rates = suppression.array,
+            rates = list(suppression.array),
             times = 2000
         )
         
@@ -1315,6 +1318,8 @@ do.calculate.prep.coverage <- function(components)
     components
 }
 
+#-- FOR THE EXPANDED CONTINUUM (below) --#
+
 calculate.newly.suppressed.rates <- function(components)
 {
     if (is.null(components$newly.suppressed.rates.and.times))
@@ -1325,7 +1330,7 @@ calculate.newly.suppressed.rates <- function(components)
 do.calculate.newly.suppressed.rates <- function(components)
 {
     
-    if (!is.null(components$settings$IS_CONTINUUM_COLLAPSED) && !components$settings$IS_CONTINUUM_COLLAPSED)
+    if (!is.null(components$settings$VERSION) && components$settings$VERSION=='expanded_1.0')
     {
         #Pull background suppression proportions from logistic model
         background.p = get.background.proportions(base.model = components$background.newly.suppressed$model,
@@ -1371,6 +1376,66 @@ do.calculate.newly.suppressed.rates <- function(components)
         print("THIS CODE SHOULD NOT HAVE BEEN CALLED - calculating newly suppressed rates with collapsed continuum")
     }
 }
+
+
+calculate.linkage <- function(components)
+{
+    if (is.null(components$linkage.rates.and.times))
+        components = do.calculate.linkage(components)
+    components$linkage.rates.and.times
+}
+
+do.calculate.linkage <- function(components)
+{
+    if (!is.null(components$settings$VERSION) && components$settings$VERSION=='expanded_1.0')
+    {
+        #Pull background suppression proportions from logistic model
+        background.linkage = get.background.proportions(base.model = components$background.linkage$model,
+                                                            years = components$background.linkage$years,
+                                                            additional.intercepts = log(components$background.linkage$additional.intercept.ors),
+                                                            additional.slopes = log(components$background.linkage$additional.slope.ors),
+                                                            future.slope = log(components$background.linkage$future.slope.or),
+                                                            future.slope.after.year = components$background.linkage$future.slope.after.year,
+                                                            idu.applies.to.in.remission = T,
+                                                            idu.applies.to.msm.idu=T,
+                                                            msm.applies.to.msm.idu=T,
+                                                            jheem=components$jheem)
+        
+        #Add in prior linkage
+        
+        background.linkage.years = c(components$background.linkage$linkage.ramp.year, 
+                                         components$background.linkage$years)
+        background.list = c(list(components$background.linkage$linkage.ramp.multiplier * background.linkage[[1]]), background.linkage)
+        
+        linkage.doesnt.apply = setdiff(dimnames(background.linkage[[1]])[['continuum']], 'unengaged')
+        
+        background.linkage = lapply(background.linkage, function(r){
+            r[,,,,,linkage.doesnt.apply,,] = 0
+            r
+        })
+        
+        #Overlay foreground linkage
+        linkage = get.rates.from.background.and.foreground(background.rates = background.linkage,
+                                                               background.times = background.linkage.years,
+                                                               foreground.rates = components$foreground.linkage,
+                                                               foreground.times = components$foreground.linkage.years,
+                                                               foreground.start.times = components$foreground.linkage.start.years,
+                                                               max.background.time = components$background.change.to.years$linkage,
+                                                               allow.foreground.less = F)
+        
+        
+        components$linkage.rates.and.times = linkage
+        components
+    }
+    else
+    {
+        # This code should never be called - if not expanded continuum
+        print("THIS CODE SHOULD NOT HAVE BEEN CALLED - calculating newly suppressed rates with collapsed continuum")
+    }
+}
+
+
+
 if (1==2)
 {
 

@@ -12,6 +12,9 @@ PRERUN.POPOVER = "This tab allows you to try out interventions that we have alre
 CUSTOM.POPOVER.TITLE = "Define and Simulate Your Own Interventions"
 CUSTOM.POPOVER = "This tab allows you to define any intervention you want. It will take several minutes to simulate these interventions."
 
+FAQ.POPOVER.TITLE = "Frequently Asked Questions"
+FAQ.POPOVER = "Answers to common questions about our model and its application here."
+
 ABOUT.POPOVER.TITLE = "The Model Behind the Projections"
 ABOUT.POPOVER = "A brief overview of the Johns Hopkins Epidemiologic and Economic Model of HIV (JHEEM) and the methods we use to calibrate it."
 

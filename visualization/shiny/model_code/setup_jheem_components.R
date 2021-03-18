@@ -1311,6 +1311,8 @@ set.future.background.slopes <- function(components,
                                          future.supression.slope.or=NA,
                                          future.testing.slope.or=NA,
                                          future.prep.slope.or=NA,
+                                         future.newly.suppressed.slope.or=NA,
+                                         future.linkage.slope.or=NA,
                                          after.year=2020)
 {
     if (is.null(components$background.suppression))
@@ -1320,21 +1322,36 @@ set.future.background.slopes <- function(components,
     {
         components$background.suppression$future.slope.or = future.supression.slope.or
         components$background.suppression$future.slope.after.year = after.year
+        components = clear.dependent.values(components, 'background.suppression')
     }
     
     if (!is.na(future.testing.slope.or))
     {
         components$background.testing$future.slope.or = future.testing.slope.or
         components$background.testing$future.slope.after.year = after.year
+        components = clear.dependent.values(components, 'background.testing')
     }
     
     if (!is.na(future.prep.slope.or))
     {
         components$background.prep$future.slope.or = future.prep.slope.or
         components$background.prep$future.slope.after.year = after.year
+        components = clear.dependent.values(components, 'background.prep')
     }
     
-    components = clear.dependent.values(components, 'background.suppression')
+    if (!is.na(future.newly.suppressed.slope.or))
+    {
+        components$background.newly.suppressed$future.slope.or = future.newly.suppressed.slope.or
+        components$background.newly.suppressed$future.slope.after.year = after.year
+        components = clear.dependent.values(components, 'background.newly.suppressed')
+    }
+    
+    if (!is.na(future.linkage.slope.or))
+    {
+        components$background.linkage$future.slope.or = future.linkage.slope.or
+        components$background.linkage$future.slope.after.year = after.year
+        components = clear.dependent.values(components, 'background.linkage')
+    }
     components 
 }
 
@@ -1496,22 +1513,142 @@ set.foreground.newly.suppressed <- function(components,
     components
 }
 
+#-- LINKAGE --#
+setup.background.newly.suppressed <- function(components,
+                                              continuum.manager,
+                                              location,
+                                              years,
+                                              linkage.ramp.year=1996,
+                                              linkage.ramp.multiplier=1)
+{
+    if (is.null(components$background.background.linkage))
+        components$background.newly.suppressed = list()
+    
+    components$background.linkage$years = years
+    components$background.linkage$linkage.ramp.year = linkage.ramp.year
+    components$background.linkage$linkage.ramp.multiplier = linkage.ramp.multiplier
+    
+    components$background.linkage$model = get.linkage.model(continuum.manager, 
+                                                            location=location)
+    
+    components$background.linkage$model$mixed.linear = F
+    
+    components = clear.dependent.values(components, 'background.linkage')
+    components
+}
+
+
+set.background.linkage.ors <- function(components,
+                                                msm.or.intercept=NA,
+                                                heterosexual.or.intercept=NA,
+                                                idu.or.intercept=NA,
+                                                msm.idu.or.intercept=NA,
+                                                black.or.intercept=NA,
+                                                hispanic.or.intercept=NA,
+                                                other.or.intercept=NA,
+                                                age1.or.intercept=NA,
+                                                age2.or.intercept=NA,
+                                                age3.or.intercept=NA,
+                                                age4.or.intercept=NA,
+                                                age5.or.intercept=NA,
+                                                
+                                                total.or.slope=NA,
+                                                
+                                                msm.or.slope=NA,
+                                                heterosexual.or.slope=NA,
+                                                idu.or.slope=NA,
+                                                msm.idu.or.slope=NA,
+                                                black.or.slope=NA,
+                                                hispanic.or.slope=NA,
+                                                other.or.slope=NA,
+                                                age1.or.slope=NA,
+                                                age2.or.slope=NA,
+                                                age3.or.slope=NA,
+                                                age4.or.slope=NA,
+                                                age5.or.slope=NA)
+{
+    components = do.set.background.ors(components,
+                                       component.name='background.linkage',
+                                       
+                                       msm.or.intercept=msm.or.intercept,
+                                       heterosexual.or.intercept=heterosexual.or.intercept,
+                                       idu.or.intercept=idu.or.intercept,
+                                       msm.idu.or.intercept=msm.idu.or.intercept,
+                                       black.or.intercept=black.or.intercept,
+                                       hispanic.or.intercept=hispanic.or.intercept,
+                                       other.or.intercept=other.or.intercept,
+                                       age1.or.intercept=age1.or.intercept,
+                                       age2.or.intercept=age2.or.intercept,
+                                       age3.or.intercept=age3.or.intercept,
+                                       age4.or.intercept=age4.or.intercept,
+                                       age5.or.intercept=age5.or.intercept,
+                                       
+                                       total.or.slope=total.or.slope,
+                                       
+                                       msm.or.slope=msm.or.slope,
+                                       heterosexual.or.slope=heterosexual.or.slope,
+                                       idu.or.slope=idu.or.slope,
+                                       msm.idu.or.slope=msm.idu.or.slope,
+                                       black.or.slope=black.or.slope,
+                                       hispanic.or.slope=hispanic.or.slope,
+                                       other.or.slope=other.or.slope,
+                                       age1.or.slope=age1.or.slope,
+                                       age2.or.slope=age2.or.slope,
+                                       age3.or.slope=age3.or.slope,
+                                       age4.or.slope=age4.or.slope,
+                                       age5.or.slope=age5.or.slope
+    )
+    
+    components = clear.dependent.values(components, 'background.linkage')
+    components
+}
+
+
+set.foreground.linkage <- function(components,
+                                            linkage.proportions,
+                                            years,
+                                            start.years='temp')
+{
+    if (is.null(linkage.proportions))
+        components$foreground.linkage.years = components$foreground.linkage.rates = 
+            components$foreground.linkage.start.years = NULL
+    else
+    {
+        if (class(linkage.proportions)!='list')
+            linkage.proportions = list(linkage.proportions)
+        
+        components$foreground.linkage = linkage.proportions
+        names(components$foreground.linkage) = as.character(years)
+        
+        components$foreground.linkage.years = years
+        components$foreground.linkage.start.years = start.years
+    }
+    
+    components = clear.dependent.values(components, 'foreground.linkage')
+    components
+}
+
+
+#-- CHANGE TO YEARS --#
 
 set.background.change.to.years <- function(components,
                                            testing.change.to.year,
                                            suppression.change.to.year,
                                            prep.change.to.year,
-                                           newly.suppressed.change.to.year=NA)
+                                           newly.suppressed.change.to.year=NA,
+                                           linkage.change.to.year=NA)
 {
     components$background.change.to.years = list(testing=testing.change.to.year,
                                                  suppression=suppression.change.to.year,
                                                  prep=prep.change.to.year,
-                                                 newly.suppressed=newly.suppressed.change.to.year)
+                                                 newly.suppressed=newly.suppressed.change.to.year,
+                                                 linkage=linkage.change.to.year)
     
     components = clear.dependent.values(components, c('background.prep.coverage',
                                                       'background.testing.proportions',
                                                       'background.suppression',
-                                                      'background.newly.suppressed'))
+                                                      'background.newly.suppressed',
+                                                      'background.linkage'))
     components
 }
 

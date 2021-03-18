@@ -76,8 +76,8 @@ YEAR.OPTIONS <- list(
 )
 
 OUTCOME.OPTIONS <- list(
-    values = c('incidence','new','prevalence','mortality'),
-    names = c("Incidence", "Reported Diagnoses", "Prevalence (Diagnosed)", "HIV Mortality"),
+    values = c('incidence','new','prevalence','mortality','testing.period','prep','suppression'),
+    names = c("Incidence", "Reported Diagnoses", "Prevalence (Diagnosed)", "HIV Mortality","HIV Testing","PrEP Uptake","Viral Suppression"),
     code = 'outcome',
     label = "Outcome"
 )
