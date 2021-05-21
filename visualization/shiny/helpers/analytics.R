@@ -175,7 +175,7 @@ do.track.request <- function(method=c('S3', 'DB')[1],
         # For now, just put it to S3
         if (method == 'S3') {
           filename = get.analytics.filename()
-          s3save(data, object=filename, bucket=ANALYTICS.BUCKET)          
+          s3save(df, object=filename, bucket=ANALYTICS.BUCKET)          
         } else
          db.write.rows(
           table.name='analytics',

@@ -1,6 +1,5 @@
 
-CONTACT.EMAILS = c('anthony.fojo@jhmi.edu',
-                   'jflack1@jhu.edu')
+CONTACT.EMAILS = c('anthony.fojo@jhmi.edu')#,'jflack1@jhu.edu')
 
 add.contact.handlers <- function(session, input, output)
 {
