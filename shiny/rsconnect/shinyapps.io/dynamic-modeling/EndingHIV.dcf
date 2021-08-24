@@ -1,0 +1,12 @@
+name: EndingHIV
+title: EndingHIV
+username:
+account: dynamic-modeling
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2955620
+bundleId: 4600319
+url: https://jheem.shinyapps.io/EndingHIV/
+when: 1621046592.13487
+asMultiple: FALSE
+asStatic: FALSE

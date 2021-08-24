@@ -7,14 +7,8 @@
 *.Rproj
 
 # Project-specific
-visualization/shiny/sim_cache
-cached
-cached_surveillance
-mcmc_runs
-results
+shiny/sim_cache
 env.R
-visualization/test_simset.Rdata
-code/debugging
 
 R_scripts/master_scripts
 R_scripts/setup_scripts
