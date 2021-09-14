@@ -68,12 +68,25 @@ DIMENSION.OPTIONS.1 = list(
 )
 
 
-YEAR.OPTIONS <- list(
-    values = 2020:2030,
-    names = as.character(2020:2030),
-    code = 'year',
-    label = 'Year'
-)
+get.year.options <- function(web.version)
+{   
+    web.version.data = get.web.version.data(web.version)
+    
+    years = web.version.data$min.intervention.year:web.version.data$max.intervention.year
+    list(
+        values = years,
+        names = as.character(years),
+        code = 'year',
+        label = 'Year'
+    )
+}
+
+#YEAR.OPTIONS <- list(
+#    values = 2020:2030,
+#    names = as.character(2020:2030),
+#    code = 'year',
+#    label = 'Year'
+#)
 
 OUTCOME.OPTIONS <- list(
     values = c('incidence','new','prevalence','mortality','testing.rate','prep','suppression','diagnosed'),
@@ -89,16 +102,41 @@ PLOT.FORMAT.OPTIONS <- list(
     label = "Plot Format"
 )
 
+PLOT.STATISTIC.OPTIONS <- list(
+    values = c("Change Over Time", 
+               "Change Over Time (Absolute)", 
+               "Cumulative Cases", 
+               "Change in Cumulative Cases from Baseline", 
+               "Change in Cumulative Cases from Baseline (Absolute)"),
+    names = c('time.diff.relative','time.diff.absolute','cumulative','cumulative.diff.relative','cumulative.diff.absolute'),
+    code = 'plot.statistic',
+    label = "Plot Summary Statistic"
+)
+
+
+COVID.NORMALIZE.SPAN.OPTIONS <- list(
+    values = c(0, 1,2,3,4,6,9,12,18,24),
+    default = 6
+)
+COVID.NORMALIZE.SPAN.OPTIONS$names = paste0(COVID.NORMALIZE.SPAN.OPTIONS$values, ' month')
+COVID.NORMALIZE.SPAN.OPTIONS$names[COVID.NORMALIZE.SPAN.OPTIONS$values>1] = 
+    paste0(COVID.NORMALIZE.SPAN.OPTIONS$names[COVID.NORMALIZE.SPAN.OPTIONS$values>1], 's')
+COVID.NORMALIZE.SPAN.OPTIONS$names[COVID.NORMALIZE.SPAN.OPTIONS$values==0] = "Immediately"
+
 ##-------------------------------##
 ##-- OPTIONS FOR INTERVENTIONS --##
 ##-------------------------------##
 
 TESTING.OPTIONS <- list(
-    values = c(3,6,12,24),
+    values = c(3,6,12,24), # the reciprocal of the number of tests per year - this is for backwards compatibility with original formulation of frequency
+    names = c('Four times per year',
+              'Twice per year',
+              'Once per year',
+              'Once every two years'),
     code = 'testing',
     label = "Testing"
 )
-TESTING.OPTIONS$names = paste0(TESTING.OPTIONS$values, " months")
+#TESTING.OPTIONS$names = paste0(12/TESTING.OPTIONS$values, " times per year")
 
 
 PREP.OPTIONS <- list(

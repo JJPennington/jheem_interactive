@@ -1,0 +1,13 @@
+name: beta
+title:
+username:
+account: jheem
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3384439
+bundleId: 5030441
+url: https://jheem.shinyapps.io/beta/
+when: 1631585321.13866
+lastSyncTime: 1631585321.13866
+asMultiple: FALSE
+asStatic: FALSE

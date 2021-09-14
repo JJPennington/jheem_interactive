@@ -8,8 +8,6 @@ TEXT.SIZE = 16
 #'@param description The function that actually generates plots
 #'
 #' THE FUNDAMENTAL ARGUMENTS THAT DEFINE THE PLOT
-#'@param version The indicator for the version of the model. Corresponds
-#' to one of the values of names(get.version.options)
 #'@param location A location code. Corresponds to one of the values of
 #' names(get.location.options(version))
 #'@param intervention.name
@@ -61,11 +59,11 @@ TEXT.SIZE = 16
 #' $notes - a character vector (which may be empty) of notes
 make.simulations.plot.and.table <- function(
     cache,
-    # Private meta params
-    version,
     # Public params; Selectable in UI
     location,
     filenames,
+    simset.filter,
+    apply.filter.function,
     years,
     data.types,
     data.type.names,
@@ -86,20 +84,34 @@ make.simulations.plot.and.table <- function(
     simulation.line.size=if (plot.format=='individual.simulations') 2 else 5,
     truth.point.size=10,
     
-    ncol=NULL
+    baseline.name = 'Baseline',
+    noint.name = 'No Intervention',
+    
+    post.baseline.year = NA,
+    
+    ncol=NULL,
+    change.statistic = 'time.diff.relative'
 ) {
     withProgress(min=0, max=1, value = 0, 
                  message="Building Figure and Table...", {
         
         simsets = get.simsets.from.cache(filenames, cache)
         names(simsets) = names(filenames)
+        for (simset.name in names(simsets))
+        {
+            simsets[[simset.name]] = apply.filter.function(simsets[[simset.name]], 
+                                                           simset.name,
+                                                           simset.filter)
+            
+#            print(paste0("After filter, '", simset.name, "' has ", simsets[[simset.name]]@n.sim, " simulations"))
+        }
         
         #Figure out coloring
         if (length(simsets)<=2 && length(split.by)>0)
             color.by = 'split'
         else
             color.by = 'intervention'
-    
+        
         rv = do.plot.simulations(
             return.plot.components = T,
             
@@ -144,7 +156,13 @@ make.simulations.plot.and.table <- function(
             margin.top=30,
             
             label.change.size = 12,
-            text.size = TEXT.SIZE
+            text.size = TEXT.SIZE,
+            
+            use.simset.names.to.categorize=T,
+            baseline.name = baseline.name,
+            noint.name = noint.name,
+            post.baseline.year = post.baseline.year,
+            change.statistic=change.statistic
             )
         
         

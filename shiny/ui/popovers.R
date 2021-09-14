@@ -6,11 +6,28 @@
 OVERVIEW.POPOVER.TITLE = 'What this Site is About'
 OVERVIEW.POPOVER = "We apply the JHEEM model of HIV transmission to the Ending the HIV Epidemic Initiative"
 
-PRERUN.POPOVER.TITLE = "Explore Pre-defined Interventions Quickly"
-PRERUN.POPOVER = "This tab allows you to try out interventions that we have already simulated. You can get results within a few seconds."
 
-CUSTOM.POPOVER.TITLE = "Define and Simulate Your Own Interventions"
-CUSTOM.POPOVER = "This tab allows you to define any intervention you want. It will take several minutes to simulate these interventions."
+get.prerun.popover.title <- function(web.version.data)
+{
+    paste0("Explore Pre-defined ", web.version.data$intervention.label, "s Quickly")
+}
+get.prerun.popover <- function(web.version.data)
+{
+    paste0("This tab allows you to try out ", 
+           tolower(web.version.data$intervention.label), 
+           "s that we have already simulated. You can get results within a few seconds.")
+}
+
+get.custom.popover.title <- function(web.version.data)
+{
+    paste0("Define and Simulate Your Own ", web.version.data$intervention.label, "s")
+}
+get.custom.popover <- function(web.version.data)
+{
+    paste0("This tab allows you to define any ", tolower(web.version.data$intervention.label),
+           " you want. It will take several minutes to simulate these ",
+           tolower(web.version.data$intervention.label), "s")
+}
 
 FAQ.POPOVER.TITLE = "Frequently Asked Questions"
 FAQ.POPOVER = "Answers to common questions about our model and its application here."

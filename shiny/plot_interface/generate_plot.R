@@ -9,25 +9,84 @@
 # Plot functionality ####
 ##---------------------------------------------##
 ##-- THE MAIN PLOT/TABLE GENERATING FUNCTION --##
+##        (Plus a convenience wrapper)         ##
 ##---------------------------------------------##
+
+do.generate.plot.and.table <- function(session,
+                                       input,
+                                       type=c('prerun','custom')[1],
+                                       intervention.settings,
+                                       intervention.codes,
+                                       web.version,
+                                       cache,
+                                       intervention.map
+                                       )
+{
+    web.version.data = get.web.version.data(web.version)
+    
+    if (type=='custom')
+    {
+        if (is.null(intervention.settings))
+            intervention.settings = web.version.data$get.custom.settings.function(input)   
+        simset.filter = web.version.data$get.custom.filter.from.settings(intervention.settings)
+        apply.filter.function = web.version.data$apply.custom.filter.function
+    }
+    else
+    {
+        if (is.null(intervention.settings))
+            intervention.settings = web.version.data$get.prerun.settings.function(input)
+        simset.filter = web.version.data$get.prerun.filter.from.settings(intervention.settings)
+        apply.filter.function = web.version.data$apply.prerun.filter.function
+        if (is.null(intervention.codes))
+            intervention.codes = web.version.data$get.prerun.intervention.codes.from.settings(intervention.settings)
+    }
+    
+    generate.plot.and.table(session=session,
+                            main.settings = get.main.settings(input, type),
+                            control.settings = get.control.settings(input, type),
+                            intervention.settings=intervention.settings,
+                            intervention.codes=intervention.codes,
+                            simset.filter=simset.filter,
+                            apply.filter.function=apply.filter.function,
+                            web.version=web.version,
+                            cache=cache,
+                            intervention.map=intervention.map
+                            )
+}
 
 generate.plot.and.table <- function(session,
                                     main.settings,
+                                    intervention.settings,
                                     control.settings,
                                     intervention.codes,
-                                    intervention.settings=NULL,
-                                    cache, 
+                                    simset.filter,
+                                    apply.filter.function,
+                                    web.version,
+                                    cache,
                                     intervention.map=NULL) 
 {
+    web.version.data = get.web.version.data(web.version)
+  
     tryCatch({
         #-- Set up intervention filenames and pull to cache --#
         
         filenames = c(
-            'Baseline' = get.baseline.filename(version=main.settings$version, location=main.settings$location),
-            'No Intervention' = get.no.intervention.filename(version=main.settings$version, location=main.settings$location),
-            'Intervention' = get.intervention.filenames(intervention.codes,
-                                                        version=main.settings$version, location=main.settings$location)
-        )
+            Baseline = get.baseline.filename(version=web.version.data$baseline.model.version, 
+                                               location=main.settings$location),
+            noint = get.simset.filename(version=web.version.data$noint.model.version, 
+                                                             location=main.settings$location,
+                                                    intervention = NO.INTERVENTION)
+            )
+        
+        if (length(intervention.codes)>0)
+            filenames = c(filenames,
+                          int = get.simset.filename(intervention.code = intervention.codes,
+                                                    version=web.version.data$interventions.model.version, 
+                                                    location=main.settings$location)
+            )
+        
+        names(filenames)[names(filenames)=='noint'] = web.version.data$noint.name
+        names(filenames)[names(filenames)=='int'] = web.version.data$intervention.name
         
         if (!pull.files.to.cache(session, filenames, cache))
             return (NULL)
@@ -35,9 +94,10 @@ generate.plot.and.table <- function(session,
         #-- Make the plot --# ####
         plot.results = make.simulations.plot.and.table(
             cache=cache,
-            version=main.settings$version,
             location=main.settings$location,
             filenames = filenames,
+            simset.filter = simset.filter,
+            apply.filter.function = apply.filter.function,
             years=control.settings$years,
             data.types=control.settings$data.types,
             facet.by=control.settings$facet.by,
@@ -48,13 +108,23 @@ generate.plot.and.table <- function(session,
             label.change = control.settings$label.change,
             change.years = control.settings$change.years,
             data.type.names = WEB.DATA.TYPE.NAMES,
-            change.decrease.is.positive = F)
+            change.decrease.is.positive = F,
+            baseline.name = 'Baseline',
+            noint.name = web.version.data$noint.name,
+            post.baseline.year = web.version.data$min.intervention.year,
+            change.statistic = control.settings$plot.statistic)
         
         
+        #-- Store Settings --#
+        plot.results$main.settings = main.settings
+        plot.results$control.settings = control.settings
+        plot.results$int.settings = intervention.settings
+        plot.results$web.version = web.version
         
         #-- Add the intervention --#
         # This is assuming just ONE intervention code for now
         selected.int = NULL
+        
         if (!is.null(intervention.codes))
         {
             if (!is.null(intervention.map))
@@ -64,14 +134,10 @@ generate.plot.and.table <- function(session,
             
             plot.results$intervention = selected.int
         }
+        else
+            plot.results$intervention = NULL
         
         plot.results$intervention.codes = intervention.codes
-        
-        #-- Store Settings --#
-        
-        plot.results$main.settings = main.settings
-        plot.results$control.settings = control.settings
-        plot.results$intervention.settings = intervention.settings
         
         
         #-- Return --#

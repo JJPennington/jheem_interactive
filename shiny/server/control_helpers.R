@@ -3,8 +3,13 @@
 ##-- CONSTRUCTOR FOR THE PANEL GUI --##
 ##-----------------------------------##
 
-create.plot.control.panel <- function(suffix)
+create.plot.control.panel <- function(suffix, web.version.data)
 {
+    year.options = get.year.options(web.version.data$name)
+    
+    plot.statistic.choices = PLOT.STATISTIC.OPTIONS$names
+    names(plot.statistic.choices) = PLOT.STATISTIC.OPTIONS$values
+
     tags$div(
         class='controls controls_narrow',
         
@@ -31,27 +36,37 @@ create.plot.control.panel <- function(suffix)
         
         
         tags$div(id=paste0('show_change_panel_', suffix),
-                 tags$b('Calculate the Change in Outcomes'),
+                 tags$b('Summarize the Outcomes As:'),
                  
-                 tags$table(class='table_select',
-                     tags$tr(
-                         tags$td("from:"),
-                         tags$td(selectInput(inputId = paste0('change_from_', suffix),
-                                             label = NULL,
-                                             width = '120px',
-                                             choices = YEAR.OPTIONS$values[YEAR.OPTIONS$values<max(YEAR.OPTIONS$values)],
-                                             selected = min(YEAR.OPTIONS$values[1]),
-                                             selectize = F))
-                     ),
-                     tags$tr(
-                         tags$td("to:"),
-                         tags$td(selectInput(inputId = paste0('change_to_', suffix),
-                                             label = NULL,
-                                             width='120px',
-                                             choices = YEAR.OPTIONS$values[-1],
-                                             selected = max(YEAR.OPTIONS$values),
-                                             selectize = F))
-                     )
+                  tags$table(class='table_select',
+                    tags$tr(
+                     # tags$td("As:"),
+                      tags$td(colspan=2,
+                        selectInput(inputId = paste0('plot_statistic_', suffix),
+                                          label = NULL,
+                                          width = '95%',
+                                          choices = plot.statistic.choices,
+                                          selected = web.version.data$default.plot.statistic,
+                                          selectize = F))
+                    ),       
+                    tags$tr(
+                      tags$td("from:"),
+                      tags$td(selectInput(inputId = paste0('change_from_', suffix),
+                                         label = NULL,
+                                         width = '120px',
+                                         choices = year.options$values[year.options$values<max(year.options$values)],
+                                         selected = min(year.options$values[1]),
+                                         selectize = F))
+                    ),
+                    tags$tr(
+                      tags$td("to:"),
+                      tags$td(selectInput(inputId = paste0('change_to_', suffix),
+                                          label = NULL,
+                                          width='120px',
+                                          choices = year.options$values[-1],
+                                          selected = max(year.options$values),
+                                          selectize = F))
+                    )
                  ), #</table>
                  
                  tags$div(class='squish_up',
@@ -64,8 +79,8 @@ create.plot.control.panel <- function(suffix)
              ), #</div>
          
         make.popover(paste0('show_change_panel_', suffix),
-                     title='Calculate a Change In Outcomes',
-                     content="The tigure and table will display the change in each outcome over this time period.",
+                     title='Summarize the Outcomes Over Time',
+                     content="Decide how and over what time to summarize the outcomes (as a change over time, cumulative sum, or change from baseline) in the figure and table.",
                      placement='left'),
 
         tags$div(style='height: 20px;'),
@@ -125,7 +140,7 @@ add.control.event.handlers <- function(session, input, output, cache, suffix)
 add.year.range.dropdown.handler <- function(session, input,
                                             from.id, to.id,
                                             min.delta,
-                                            years = YEAR.OPTIONS$values)
+                                            years = get.year.options(get.web.version(input))$values)
 {
     observeEvent(input[[from.id]], {
         prev.to = input[[to.id]]
@@ -171,6 +186,7 @@ get.control.settings <- function(input, suffix)
         split.by=get.selected.split.by(input, suffix),
         dimension.subsets=get.selected.dimension.subsets(input, suffix),
         plot.format=get.selected.plot.format(input, suffix),
+        plot.statistic=get.selected.plot.statistic(input, suffix),
         plot.interval.coverage = get.selected.interval.coverage(input, suffix),
         label.change = get.selected.show.change(input, suffix),
         change.years = get.selected.change.years(input, suffix)
@@ -188,16 +204,41 @@ set.controls.to.settings <- function(session,
     set.selected.split.by(session, suffix, split.by = settings$split.by)
     set.selected.dimension.subsets(session, suffix, dimension.subsets = settings$dimension.subsets)
     set.selected.plot.format(session, suffix, plot.format = settings$plot.format)
+    set.selected.plot.statistic(session, suffix, plot.statistic = settings$plot.statistic)
     set.selected.interval.coverage(session, suffix, interval.coverage = settings$plot.interval.coverage)
     set.selected.show.change(session, suffix, show.change = settings$label.change)
     set.selected.change.years(session, input, suffix, change.years = settings$change.years)
 }
 
+#puts into a key-value list for analytics to upload
+control.settings.to.trackable <- function(control.settings, web.version.data)
+{
+  rv = list(
+    show.years=paste0(control.settings$years, collapse=ANALYTICS.DELIMITER),
+    outcomes = paste0(control.settings$data.types, collapse=ANALYTICS.DELIMITER),
+    facet.by = paste0(control.settings$facet.by, collapse=ANALYTICS.DELIMITER),
+    split.by = paste0(control.settings$split.by, collapse=ANALYTICS.DELIMITER),
+    plot.statistic = control.settings$plot.statistic,
+    change.outcome.start = control.settings$change.years[1],
+    change.outcome.end = control.settings$change.years[2],
+    show.change = control.settings$label.change,
+    plot.format = control.settings$plot.format,
+    show.ages = paste0(control.settings$dimension.subsets$age, collapse=ANALYTICS.DELIMITER),
+    show.races = paste0(control.settings$dimension.subsets$race, collapse=ANALYTICS.DELIMITER),
+    show.sexes = paste0(control.settings$dimension.subsets$sex, collapse=ANALYTICS.DELIMITER),
+    show.risks = paste0(control.settings$dimension.subsets$risk, collapse=ANALYTICS.DELIMITER),
+    plot.interval.coverage = control.settings$plot.interval.coverage
+  )
+  
+  rv
+}
+
+
 get.main.settings <- function(input,
                               suffix)
 {
     list(
-        version = get.version(),
+#        version = get.version(),
         location = get.selected.location(input, suffix)
     )
 }
@@ -206,7 +247,7 @@ set.main.to.settings <- function(session,
                                  suffix,
                                  settings)
 {
-    set.version(session, suffix, version=setting$version)
+ #   set.version(session, suffix, version=setting$version)
     set.selected.location(session, suffix, settings$location)
 }
 
@@ -218,11 +259,13 @@ set.main.to.settings <- function(session,
 # Hard-coded for now
 get.version <- function(input, suffix)
 {
+    stop("get.version is deprecated")
     '1.0'
 }
 
 set.version <- function(session, suffix, version)
 {
+    stop('set.version is deprecated')
     # Do nothing - this is hard coded
 }
 
@@ -240,7 +283,8 @@ set.selected.location <- function(session, suffix, location)
 
 get.selected.years <- function(input, suffix)
 {
-    2010:2030
+    web.version.data = get.web.version.data(get.web.version(input))
+    web.version.data$min.pre.intervention.year:web.version.data$max.intervention.year
 }
 
 set.selected.years <- function(session, suffix, years)
@@ -300,6 +344,19 @@ get.selected.dimension.subsets <- function(input, suffix)
 set.selected.dimension.subsets <- function(session, suffix, dimension.subsets)
 {
     # Do nothing - this is hard coded
+}
+
+
+get.selected.plot.statistic <- function(input, suffix)
+{
+    input[[paste0('plot_statistic_', suffix)]]
+}
+
+set.selected.plot.statistic <- function(session, suffix, plot.statistic)
+{
+    updateSelectInput(session,
+                       inputId = paste0('plot_statistic_', suffix),
+                       selected = plot.statistic)
 }
 
 

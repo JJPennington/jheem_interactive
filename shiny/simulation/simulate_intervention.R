@@ -1,27 +1,31 @@
 
 MAX.KEEP.FROM.YEAR = 2018
-RUN.TO.YEAR = 2030
 
 simulate.intervention <- function(session,
-                                  version,
+                                  web.version.data,
                                   location,
                                   intervention,
                                   cache)
 {
     seed.filename = get.seed.filename(location=location,
-                                          version=version)
+                                          version=web.version.data$seed.model.version)
     
     success = pull.files.to.cache(session, seed.filename, cache)
     if (!success)
-        return(NULL)
+        return(NULL) 
     
     tryCatch({
         
         seed.simset = get.simsets.from.cache(seed.filename, cache)[[1]]
         
-#print("Using limited seed for now")
-#seed.simset = subset.simset(seed.simset, 1:5)
-        
+    #THIS IS FOR TESTING - in the local environment
+        is.local = Sys.getenv('SHINY_PORT') == ''
+        if (is.local)
+        {
+            print("Using limited seed for now")
+            seed.simset = subset.simset(seed.simset, 1:5)
+        }
+
         withProgress(
             message=paste0("Preparing to run ", seed.simset@n.sim, " simulations"), 
             min=0, max=seed.simset@n.sim, value=0,
@@ -31,11 +35,11 @@ simulate.intervention <- function(session,
                 keep.from.year = min(run.from.year-1, MAX.KEEP.FROM.YEAR-1)
                 
                 start.time = Sys.time()
-                simset = run.simset.intervention(seed.simset, 
-                                                 intervention,
+                simset = web.version.data$simulate.function(simset = seed.simset, 
+                                                 intervention = intervention,
                                                  run.from.year = run.from.year,
-                                                 run.to.year = RUN.TO.YEAR,
-                                                 keep.years = keep.from.year:RUN.TO.YEAR,
+                                                 run.to.year = web.version.data$run.simulations.to.year,
+                                                 keep.years = keep.from.year:web.version.data$run.simulations.to.year,
                                                  
                                                  update.progress=function(i){
                                                      time.diff = as.numeric(difftime(Sys.time(), start.time, units='secs'))
@@ -57,14 +61,14 @@ simulate.intervention <- function(session,
     })
 }
 
-get.selected.custom.intervention <- function(input, suffix)
+get.ehe.custom.intervention.from.settings <- function(settings)
 {
-    subpopulation.nums = 1:get.custom.n.subpopulations(input)
+    subpopulation.nums = 1:settings$n.subpopulations
     target.populations = lapply(subpopulation.nums,
-                                get.custom.subpopulation, input=input)
+                                get.custom.subpopulation, settings=settings)
     
     unit.interventions = lapply(subpopulation.nums,
-                                get.custom.unit.interventions, input=input)
+                                get.custom.unit.interventions, settings=settings)
     
     sub.interventions = lapply(subpopulation.nums, function(i){
         create.intervention(target.populations[[i]], unit.interventions[[i]])
@@ -76,13 +80,12 @@ get.selected.custom.intervention <- function(input, suffix)
 
 ##-- MID-LEVEL --##
 
-get.custom.subpopulation <- function(input, num)
+get.custom.subpopulation <- function(settings, num)
 {
-    print("Get Custom Subpopulation: We need to do error checking here")
-    ages = get.custom.ages(input, num)
-    races = get.custom.races(input, num)
-    sexes = get.custom.sexes(input, num)
-    risks = get.custom.risks(input, num)
+    ages = settings$sub.populations[[num]]$age #get.custom.ages(input, num)
+    races = settings$sub.populations[[num]]$race #get.custom.races(input, num)
+    sexes = settings$sub.populations[[num]]$sex #get.custom.sexes(input, num)
+    risks = settings$sub.populations[[num]]$risk #get.custom.risks(input, num)
     
     tpop = NULL
     iterated.sexes = rep(sexes, each=length(risks))
@@ -121,64 +124,64 @@ get.custom.subpopulation <- function(input, num)
     tpop
 }
 
-get.custom.unit.interventions <- function(input, num)
+get.custom.unit.interventions <- function(settings, num)
 {
-    start.year = get.custom.start.year(input, num)
-    end.year = get.custom.end.year(input, num)
+    start.year = settings$sub.units[[num]]$start.year # get.custom.start.year(input, num)
+    end.year = settings$sub.units[[num]]$end.year # get.custom.end.year(input, num)
     
     rv = list()
     
     #-- Testing --#
-    if (get.custom.use.testing(input, num))
+    if (settings$sub.units[[num]]$use.testing) # (get.custom.use.testing(input, num))
     {
         rv = c(rv,
                list(create.intervention.unit(type = 'testing', 
-                                 start.year = start.year, 
-                                 rates = 12/get.custom.testing.frequency(input, num),
-                                 years = end.year)
+                                             start.year = start.year, 
+                                             rates = 12/settings$sub.units[[num]]$testing.frequency, #get.custom.testing.frequency(input, num),
+                                             years = end.year)
                ))
     }
     
     #-- PrEP --#
-    if (get.custom.use.prep(input, num))
+    if (settings$sub.units[[num]]$use.prep) #(get.custom.use.prep(input, num))
     {
         rv = c(rv,
                list(create.intervention.unit(type = 'prep', 
                                              start.year = start.year, 
-                                             rates = get.custom.prep.uptake(input, num),
+                                             rates = settings$sub.units[[num]]$prep.uptake, #get.custom.prep.uptake(input, num),
                                              years = end.year)
                ))
     }
     
     #-- Suppression --#
-    if (get.custom.use.suppression(input, num))
+    if (settings$sub.units[[num]]$use.suppression) #(get.custom.use.suppression(input, num))
     {
         rv = c(rv,
                list(create.intervention.unit(type = 'suppression', 
                                              start.year = start.year, 
-                                             rates = get.custom.suppressed.proportion(input, num),
+                                             rates = settings$sub.units[[num]]$suppressed.proportion, #get.custom.suppressed.proportion(input, num),
                                              years = end.year)
                ))
     }
-
+    
     #-- Needle Exchange --#
-    if (get.custom.use.needle.exchange(input, num))
+    if (settings$sub.units[[num]]$use.needle.exchange) #(get.custom.use.needle.exchange(input, num))
     {
         rv = c(rv,
                list(create.intervention.unit(type = 'needle.exchange', 
                                              start.year = start.year, 
-                                             rates = get.custom.needle.exchange.proportion(input, num),
+                                             rates = settings$sub.units[[num]]$needle.exchange.proportion, #get.custom.needle.exchange.proportion(input, num),
                                              years = end.year)
                ))
     }
-
+    
     #-- MOUDs --#
-    if (get.custom.use.moud(input, num))
+    if (settings$sub.units[[num]]$use.moud) #(get.custom.use.moud(input, num))
     {
         rv = c(rv,
                list(create.moud.intervention(start.year=start.year,
-                                                         coverages=get.custom.moud.proportion(input, num),
-                                                         years = end.year)
+                                             coverages=settings$sub.units[[num]]$moud.proportion, #get.custom.moud.proportion(input, num),
+                                             years = end.year)
                ))
     }    
     rv

@@ -47,7 +47,7 @@ BATON.ROUGE.MSA = '12940'
 SACRAMENTO.MSA = '40900'
 CLEVELAND.MSA = '17460'
 
-MSA.SHORT.NAMES = c(
+MSA.SHORT.NAMES = list(
     '35620' = 'NYC',
     '33100' = 'Miami',
     '31080' = 'LA',
@@ -55,7 +55,7 @@ MSA.SHORT.NAMES = c(
     '26420' = 'Houston',
     '19100' = 'Dallas',
     '16980' = 'Chicago',
-    '47900' = 'DC',
+    '47900' = c("Washington D.C.", 'DC'),
     '37980' = 'Philadelphia',
     '36740' = 'Orlando',
     '41860' = 'SF',
@@ -68,9 +68,9 @@ MSA.SHORT.NAMES = c(
     '14460' = 'Boston',
     '41740' = 'San_Diego',
     '16740' = 'Charlotte',
-    '41700' = 'San_Antonio',
+    '41700' = 'San Antonio',
     '27260' = 'Jacksonville',
-    '35380' = 'New_Orleans',
+    '35380' = 'New Orleans',
     '32820' = 'Memphis',
     '42660' = 'Seattle',
     '12420' = 'Austin',
@@ -79,17 +79,32 @@ MSA.SHORT.NAMES = c(
     '18140' = 'Columbus',
     '12940' = 'Baton_Rouge',
     '40900' = 'Sacramento',
-    '17460' = 'Cleveland'
+    '17460' = 'Cleveland',
+    '41180' = c("St. Louis", "Saint Louis")
 )
+
+MSA.SHORT.NAMES.UNDERSCORED = lapply(MSA.SHORT.NAMES, function(msa.names){
+    tolower(gsub(" ", "_", gsub("\\.", '', msa.names)))
+})
+
+MSA.SHORT.NAMES.CONDENSED = lapply(MSA.SHORT.NAMES.UNDERSCORED, function(msa.names){
+    tolower(gsub("_", "", msa.names))
+})
 
 get.location.short.name <- function(location)
 {
-    MSA.SHORT.NAMES[location]
+    MSA.SHORT.NAMES[[location]][1]
 }
 
 match.location.name <- function(name)
 {
-    mask = tolower(name) == tolower(MSA.SHORT.NAMES)
+    name = tolower(name)
+    mask = sapply(names(MSA.SHORT.NAMES), function(msa){
+        any(tolower(MSA.SHORT.NAMES[[msa]])==name) ||
+            any(MSA.SHORT.NAMES.UNDERSCORED[[msa]]==name) ||
+            any(MSA.SHORT.NAMES.CONDENSED[[msa]]==name)
+    })
+    
     if (any(mask))
         names(MSA.SHORT.NAMES)[mask][1]
     else

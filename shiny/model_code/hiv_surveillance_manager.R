@@ -1570,7 +1570,7 @@ max.marginal.sum <- function(arr1, arr2, keep=c('race','risk'))
 ##-- READ STATE SURVEILLANCE --##
 ##-----------------------------##
 
-read.state.surveillance.manager <- function(dir='cleaned_data',
+OLD.read.state.surveillance.manager <- function(dir='cleaned_data',
                                             verbose=T)
 {
     if (verbose)

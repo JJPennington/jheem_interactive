@@ -1,3 +1,8 @@
+make.prerun.content <- function(location,
+                                web.version.data,
+                                intervention.selector.panel)
+{
+
 PRERUN.CONTENT = tags$table(id='prerun_table',
                             class='display_table fill_page1', tags$tbody(class='display_tbody',
     
@@ -6,15 +11,16 @@ tags$tr(
     #-- Left Header --#
     tags$td(id='left_controls_prerun_header',
             class='controls_header_td controls_narrow header_color collapsible',
-            tags$div(class='controls_narrow', "Select Intervention")
-            ),
+            tags$div(class='controls_narrow', 
+                     paste0("Select ", web.version.data$intervention.label)
+            )),
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_prerun_td',
             rowspan=2,
             tags$div(class='display',
                      create.share.menu('prerun'),
-                     create.display.panel('prerun')
+                     create.display.panel('prerun', web.version.data=web.version.data)
             ),
                      
             #-- ACCORDION BUTTONS --#
@@ -31,7 +37,7 @@ tags$tr(
                                   shiny.values=0,
                                   visible=T
             ),
-            bsTooltip('prerun_collapse_left', 'Hide Intervention Selection', placement='right'),
+            bsTooltip('prerun_collapse_left', paste0('Hide ', web.version.data$intervention.label, ' Selection'), placement='right'),
             
             make.accordion.button('prerun_expand_left', 
                                   left.offset='0px',
@@ -45,8 +51,11 @@ tags$tr(
                                   shiny.values=LEFT.PANEL.SIZE['prerun'],
                                   visible=F
             ),  
-            make.popover('prerun_expand_left', 'Show Intervention Selection',
-                         'Click for controls to select an intervention.',
+            make.popover('prerun_expand_left', paste0('Show ', web.version.data$intervention.label, ' Selection'),
+                         paste0('Click for controls to select ', 
+                                web.version.data$intervention.label.article, 
+                                ' ', tolower(web.version.data$intervention.label),
+                                '.'),
                          placement='right'),
             
             
@@ -101,33 +110,21 @@ tags$tr(
     tags$td(id='left_controls_prerun',
             class='controls_td controls_narrow controls_color collapsible',
             tags$div(class='controls controls_narrow',
-                     tags$div(id='locatoin_prerun_holder',
-                         selectInput(
-                             inputId="location_prerun", 
-                             # label=NULL,
-                             label="Location",
-                             choices=invert.keyVals(get.prerun.locations(version=VERSION)),
-                             # selected=location.choice,
-                             selected=NULL,
-                             multiple=FALSE,
-                             selectize=TRUE, 
-                             width=NULL, 
-                             size=NULL)
-                     ),
-                     
-                     make.popover('location_prerun_holder',
-                                  title='What City to Project Interventions For',
-                                  content="Choose from among the 32 Metropolitan Statistical Areas encompassing the 48 high-burden counties and Washington DC identified by the Ending the HIV Epidemic Initiative.",
-                                  placement='right'),
-                   
-                     create.intervention.selector.panel('prerun')
+                              create.location.input(location=location,
+                                                    web.version.data=web.version.data,
+                                                    suffix='prerun',
+                                                    inline=F,
+                                                    popover=T),
+                  
+                     intervention.selector.panel
             )),
     
     #-- The Right Panel --#
     tags$td(id='right_controls_prerun',
             class='controls_td controls_color collapsible collapsed',
             rowspan=2,
-            create.plot.control.panel('prerun')
+            create.plot.control.panel('prerun',
+                                      web.version.data=web.version.data)
     )
     
 ), #</tr>
@@ -150,7 +147,7 @@ tags$tr(
     tags$td(id='under_display_prerun',
             class='under_display_td content_color',
             rowspan=2,
-            create.projected.intervention.panel(suffix='prerun')
+            create.projected.intervention.panel(suffix='prerun', web.version.data=web.version.data)
     )
     
 ), #</tr>
@@ -175,3 +172,7 @@ tags$tr(
 ) #</tr>
 
 )) #</tbody></table>
+
+
+PRERUN.CONTENT
+}

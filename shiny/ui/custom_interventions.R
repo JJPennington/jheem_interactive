@@ -1,3 +1,8 @@
+make.custom.content <- function(location,
+                                web.version.data,
+                                create.custom.intervention.unit.selector.function=web.version.data$create.custom.intervention.unit.selector.function)
+{
+
 CUSTOM.CONTENT = tags$table(id='custom_table',
                             class='display_table fill_page2', tags$tbody(
     class='display_tbody',
@@ -7,14 +12,16 @@ tags$tr(
     #-- Left Header --#
     tags$td(id='left_controls_custom_header',
             class='controls_header_td controls_wide header_color collapsible',
-            tags$div(class='controls_wide', "Specify Intervention")),
+            tags$div(class='controls_wide', 
+                     paste0("Specify ", web.version.data$intervention.label)
+                     )),
     
     #-- The Main Panel --#
     tags$td(class='display_td content_color', id='display_custom_td',
             rowspan=2,
             tags$div(class='display',
                      create.share.menu('custom'),
-                     create.display.panel('custom')        
+                     create.display.panel('custom', web.version.data=web.version.data)        
             ),
             
             #-- ACCORDION BUTTONS --#
@@ -31,7 +38,7 @@ tags$tr(
                                   shiny.values=0,
                                   visible=T
             ),
-            bsTooltip('custom_collapse_left', 'Hide Intervention Selection', placement='right'),
+            bsTooltip('custom_collapse_left', paste0('Hide ', web.version.data$intervention.label, ' Selection'), placement='right'),
             
             make.accordion.button('custom_expand_left', 
                                   left.offset='0px',
@@ -45,8 +52,11 @@ tags$tr(
                                   shiny.values=LEFT.PANEL.SIZE['custom'],
                                   visible=F
             ),  
-            make.popover('custom_expand_left', 'Show Intervention Selection',
-                         'Click for controls to select an intervention.',
+            make.popover('custom_expand_left', 
+                         paste0('Show ', web.version.data$intervention.label, ' Selection'),
+                         paste0('Click for controls to select ', 
+                                web.version.data$intervention.label.article, ' ', 
+                                tolower(web.version.data$intervention.label)),
                          placement='right'),
             
             
@@ -102,30 +112,29 @@ tags$tr(
     tags$td(id='left_controls_custom',
             class='controls_td controls_wide controls_color collapsible',
             tags$div(class='controls controls_wide',
-                     tags$div(id='location_custom_holder',
-                              inline.select.input(inputId='location_custom',
-                                                  label='Location: ',
-                                                  choices=invert.keyVals(get.prerun.locations(version=VERSION)))
-                     ),
-                     
-                     make.popover('location_custom_holder',
-                                  title='What City to Simulate Interventions For',
-                                  content="Choose from among the 32 Metropolitan Statistical Areas encompassing the 48 high-burden counties and Washington DC identified by the Ending the HIV Epidemic Initiative.",
-                                  placement='right'),
-                     
+                              create.location.input(location=location,
+                                                    web.version.data=web.version.data,
+                                                    suffix='custom',
+                                                    inline=T,
+                                                    popover=T),
+
                      tags$div(id='n_subpop_panel',
                               inline.select.input(inputId='n_subpops',
-                                                  label='How Many Distinct Subgroups to Target Interventions To:',
+                                                  label=paste0('How Many Distinct Subgroups to Target ', web.version.data$intervention.label,'s To:'),
                                                   choices=1:MAX.N.SUBPOPULATIONS,
                                                   width='60px',
                                                   selectize=F)
                      ),
                      make.popover('n_subpop_panel',
                                   title="Number of Target Subgroups",
-                                  content="Select the number of different subgroups to which you want to deliver an intervention. Each subgroup can have a distinct intervention applied. Once you have chosen the number, specify the details for each subgroup below.",
+                                  content=paste0("Select the number of different subgroups to which you want to deliver a different ", 
+                                                 tolower(web.version.data$intervention.label), 
+                                                 " Each subgroup can have a distinct ",
+                                                 tolower(web.version.data$intervention.label),
+                                                 " applied. Once you have chosen the number, specify the details for each subgroup below."),
                                   placement='right'),
                      
-                     HTML('<strong>Specify Intervention for Subgroup:</strong>'),
+                     HTML(paste0('<strong>Specify ', web.version.data$intervention.label, ' for Subgroup:</strong>')),
                               
                      do.call(tabsetPanel,
                              c(list(id='custom_tabset_panel', type='pills'),
@@ -136,11 +145,11 @@ tags$tr(
                                                       tags$table(class='specify_custom',
                                                                  tags$tr(
                                                                      tags$th(paste0("Subgroup ", i, " Characteristics:")),
-                                                                     tags$th("Intervention Components:")
+                                                                     tags$th(paste0(web.version.data$intervention.label, " Components:"))
                                                                  ),
                                                                  tags$tr(
                                                                      tags$td(create.custom.tpop.box(i)),
-                                                                     tags$td(create.custom.intervention.unit.selector(i))
+                                                                     tags$td(create.custom.intervention.unit.selector.function(i, web.version.data))
                                                                  )
                                                       )
                                             ) #</wellPanel>
@@ -157,7 +166,8 @@ tags$tr(
     #-- The Right Panel --#
     tags$td(id='right_controls_custom',
             class='controls_td controls_color collapsible collapsed',
-            create.plot.control.panel('custom')
+            create.plot.control.panel('custom',
+                                      web.version.data=web.version.data)
     )
     
 ), #</tr>
@@ -173,7 +183,7 @@ tags$tr(
                      
                      tags$table(class='cta_text_wrapper', tags$tr(
                          tags$td(
-                             actionButton(class='cta cta_color', inputId='run_custom', label='Simulate Intervention')
+                             actionButton(class='cta cta_color', inputId='run_custom', label=paste0('Simulate ', web.version.data$intervention.label))
                          ),
                          tags$td(class='cta_text',
                                  HTML("This will take 2-5 minutes<BR>
@@ -188,7 +198,7 @@ tags$tr(
     
     tags$td(id='under_display_custom',
             class='under_display_td content_color',
-            create.projected.intervention.panel(suffix='custom')
+            create.projected.intervention.panel(suffix='custom', web.version.data = web.version.data)
     ),
     
     #-- Right panel button --#
@@ -201,3 +211,6 @@ tags$tr(
 ) #</tr>
 
 )) #</tbody></table>
+
+CUSTOM.CONTENT
+}

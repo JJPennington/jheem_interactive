@@ -24,6 +24,7 @@ create.link <- function(type = c('prerun','custom')[1],
          main.settings=plot.and.table$main.settings,
          control.settings=plot.and.table$control.settings,
          intervention.settings=plot.and.table$intervention.settings,
+         web.version=plot.and.table$web.version,
          time=Sys.time())
 }
 
@@ -91,6 +92,10 @@ get.link.data <- function(id)
     tryCatch({
         filename = paste0(id, '.Rdata')
         s3load(filename, bucket=LINK.BUCKET)
+        
+        if (is.null(data$web.version))
+            data$web.version = DEFAULT.WEB.VERSION
+        
         data
     },
     error=function(e){

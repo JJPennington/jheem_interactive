@@ -64,18 +64,41 @@ crunch.intervention.rates <- function(components)
     components
 }
 
+# setting aggressive=T will save a lot of memory
+# but it will render the components unable to run further simulations
+# (basically, it keeps just the pre-computed rates for suppression, testing, prep, etc)
 pare.jheem.components <- function(components,
-                            keep.rates.and.times=T)
+                                  keep.rates.and.times=T,
+                                  aggressive=F,
+                                  keep.years=NULL)
 {
     components = unfix.jheem.components(components)
     
-    to.clear = ALL.DEPENDENT.NAMES
+    # Decide what we're going to keep
+    to.keep = character()
     if (keep.rates.and.times)
-        to.clear = to.clear[!grepl('rates.and.times', to.clear)]
+        to.keep = ALL.DEPENDENT.NAMES[grepl('rates.and.times', ALL.DEPENDENT.NAMES)]
+    
+    # Decide what we're going to remove
+    if (aggressive)
+        to.clear = setdiff(names(components), to.keep)
+    else
+        to.clear = setdiff(ALL.DEPENDENT.NAMES, to.keep)
+    
+    # remove
     for (elem in to.clear)
         components[[elem]] = NULL
+
+    # trim years for what we keep
+    if (!is.null(keep.years))
+    {
+        for (elem in to.keep)
+            components[[elem]] = trim.rates.and.times(components[[elem]], keep.times=keep.years)
+    }
     
-    components = do.setup.jheem.skeleton(components)
+    # package and return
+    if (!aggressive)
+        components = do.setup.jheem.skeleton(components)
     
     components
 }
@@ -1199,9 +1222,25 @@ do.setup.continuum.transitions <- function(components)
     components
 }
 
-##-----------------------------##
-##-- SUPPRESSION AND TESTING --##
-##-----------------------------##
+##--------------------------------------------------##
+##-- RATES and TIMES (for suppression, prep, etc) --##
+##--------------------------------------------------##
+
+
+trim.rates.and.times <- function(rates.and.times,
+                                 keep.times)
+{
+    if (length(rates.and.times$times)>0)
+    {
+        mask = sapply(rates.and.times$times, function(time){
+            any(time==keep.times)
+        })
+        rates.and.times$times = rates.and.times$times[mask]
+        rates.and.times$rates = rates.and.times$rates[mask]
+    }
+    
+    rates.and.times
+}
 
 calculate.suppression <- function(components)
 {

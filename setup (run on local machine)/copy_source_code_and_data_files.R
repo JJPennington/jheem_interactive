@@ -46,3 +46,6 @@ file.copy(file.path(SRC.DIR, 'code/calibration/calibrated_parameters_113_helpers
 
 file.copy(file.path(SRC.DIR, 'code/data_managers/prep_manager_2.R'), file.path(CODE.DIR, 'prep_manager_2.R'), overwrite=T)
 file.copy(file.path(SRC.DIR, 'code/data_managers/pairing_manager.R'), file.path(CODE.DIR, 'pairing_manager.R'), overwrite=T)
+
+file.copy(file.path(SRC.DIR, 'code/covid/covid_jheem_web_interface.R'), file.path(CODE.DIR, 'covid_jheem_web_interface.R'), overwrite=T)
+

@@ -5,7 +5,6 @@
 add.display.event.handlers <- function(session, input, output, cache,
                                        suffixes = c('prerun','custom'))
 {
-    
     #-- Variables for storing plot/table --#
     plot.and.table.list = lapply(suffixes, function(s){NULL})
     names(plot.and.table.list) = suffixes
@@ -24,15 +23,21 @@ add.display.event.handlers <- function(session, input, output, cache,
     
     #-- The Intervention Map for Custom Interventions --#
     custom.int.map = create.intervention.map()
-
     
-
+    
+    #-- Outputs --#
+    observe({
+        setup.outputs = get.web.version.data(get.web.version(input))$setup.outputs
+        if (!is.null(setup.outputs))
+            setup.outputs(input, output)
+    })
+    
     
     #-- General Handler for Running/Redrawing --#
     do.run = function(intervention.codes, 
                       suffix, 
+                      intervention.settings,
                       called.from,
-                      intervention.settings=NULL,
                       chime.if.id=NULL,
                       thin.custom.cache = F)
     {   
@@ -45,13 +50,15 @@ add.display.event.handlers <- function(session, input, output, cache,
         need.to.track = F
         if (check.plot.controls(session, input, suffix))
         {
-            new.plot.and.table = generate.plot.and.table(session,
-                                                         main.settings = get.main.settings(input, suffix),
-                                                         control.settings = get.control.settings(input, suffix),
-                                                         intervention.codes=intervention.codes,
-                                                         intervention.settings=intervention.settings,
-                                                         cache=cache,
-                                                         intervention.map = custom.int.map)
+            web.version = get.web.version(input)
+            new.plot.and.table = do.generate.plot.and.table(session=session,
+                                                            input=input,
+                                                            type=suffix,
+                                                            intervention.codes=intervention.codes,
+                                                            intervention.settings=intervention.settings,
+                                                            web.version=web.version,
+                                                            cache=cache,
+                                                            intervention.map=custom.int.map)
  
             if (!is.null(new.plot.and.table))
             {
@@ -59,7 +66,8 @@ add.display.event.handlers <- function(session, input, output, cache,
                 links[[suffix]] <<- NULL
                 
                 #-- Update the UI --#
-                set.display(input, output, suffix, plot.and.table.list[[suffix]])
+                set.display(input, output, suffix, plot.and.table.list[[suffix]],
+                            web.version.data = get.web.version.data(web.version))
                 sync.buttons.to.plot(input, plot.and.table.list)
                 
                 need.to.track=T
@@ -95,26 +103,44 @@ add.display.event.handlers <- function(session, input, output, cache,
             js$chime_if_checked(chime.if.id)
         
         # Track with analytics
-        track.request(session.id=session.id,
-                      called.from=called.from,
-                      main.settings=new.plot.and.table$main.settings,
-                      control.settings=new.plot.and.table$control.settings,
-                      intervention.code=paste0(new.plot.and.table$intervention.codes, collapse=';'),
-                      intervention=new.plot.and.table$intervention)
+        if (!is.null(new.plot.and.table))
+        {
+            track.request(session.id=session.id,
+                          suffix=suffix,
+                          called.from=called.from,
+                          web.version.data=get.web.version.data(get.web.version(input)),
+                          main.settings=new.plot.and.table$main.settings,
+                          intervention.settings=new.plot.and.table$int.settings,
+                          control.settings=new.plot.and.table$control.settings,
+                          intervention.codes=new.plot.and.table$intervention.codes,
+                          intervention=new.plot.and.table$intervention,
+                          query.string=session$clientData$url_search
+                          )
+        }
     }
     
     #-- The Handlers for Generating/Redrawing Pre-Run --#
     observeEvent(input$run_prerun, {
-  #    progress.test(session)
-  #    return()
-      
-        do.run(intervention.codes = get.intervention.selection(input, 'prerun'),
-               called.from = 'run_prerun', suffix='prerun',
-               chime.if.id = 'chime_run_prerun')
+        #    progress.test(session)
+        #    return()
+        
+        web.version.data = get.web.version.data(get.web.version(input))
+        int.settings = web.version.data$get.prerun.settings.function(input)
+        
+        if (check.prerun.errors(session=session,
+                                settings=int.settings,
+                                web.version.data=web.version.data))
+        {
+            do.run(intervention.codes = NULL, 
+                   intervention.settings=int.settings,
+                   called.from = 'run_prerun', suffix='prerun',
+                   chime.if.id = 'chime_run_prerun')
+        }
     })
-
+    
     observeEvent(input$redraw_prerun, {
         do.run(intervention.codes=plot.and.table.list$prerun$intervention.codes,
+               intervention.settings=plot.and.table.list$prerun$int.settings,
                called.from = 'redraw_prerun', suffix='prerun')
     })
     
@@ -122,29 +148,36 @@ add.display.event.handlers <- function(session, input, output, cache,
     #-- The Handlers for Generating/Redrawing Custom --#
     
     observeEvent(input$run_custom, {
-      
-      
-        if (check.custom.inputs(session, input))
+        
+        # Get the settings
+        web.version.data = get.web.version.data(get.web.version(input))
+        int.settings = get.custom.settings(input, web.version.data=web.version.data)
+        
+        # Check for errors
+        if (check.custom.errors(session=session,
+                                settings=int.settings,
+                                web.version.data = web.version.data))
         {
             # Lock the appropriate buttons
             lock.cta.buttons(input, called.from.suffix = suffix,
                              plot.and.table.list=plot.and.table.list)
-            
+          
             # Get the selected intervention
-            selected.int = get.selected.custom.intervention(input)
-            int.settings = get.custom.settings(input)
-            selected.int.code = map.interventions.to.codes(selected.int, custom.int.map)
+            selected.int = web.version.data$get.custom.intervention.from.settings(int.settings)
+            #            selected.int = get.selected.custom.intervention(input)
+            #           int.settings = get.custom.settings(input)
+            selected.int.code = map.interventions.to.codes(selected.int, custom.int.map,
+                                                           web.version.data=web.version.data)
             
             #set.intervention.panel(output, 'custom', selected.int)
             
             # Run simulation if needed and store
             if (is.na(selected.int.code))
             {
-                version = get.version()
                 location = get.selected.location(input, 'custom')
                 
                 simset = simulate.intervention(session,
-                                               version = version,
+                                               web.version.data = web.version.data,
                                                location = location,
                                                intervention = selected.int,
                                                cache = cache)
@@ -158,12 +191,15 @@ add.display.event.handlers <- function(session, input, output, cache,
                 }
                 else                
                 {
-                      selected.int.code = get.new.custom.intervention.code()
-                      custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
-                      cache <<- put.simset.to.explicit.cache(get.intervention.filenames(selected.int.code, 
-                                                                                        version=version, location=location), 
-                                                             simset,
-                                                             cache=cache, explicit.name = 'custom')
+                    selected.int.code = get.new.custom.intervention.code()
+                    
+                    print(paste0("custom code is '", selected.int.code, "'"))
+                    custom.int.map <<- put.intervention.to.map(selected.int.code, selected.int, custom.int.map)
+                    cache <<- put.simset.to.explicit.cache(get.simset.filename(intervention.code = selected.int.code,
+                                                                               version=web.version.data$interventions.model.version, 
+                                                                               location=location),
+                                                           simset,
+                                                           cache=cache, explicit.name = 'custom')
                 }
             }
             
@@ -173,7 +209,7 @@ add.display.event.handlers <- function(session, input, output, cache,
                    intervention.settings = int.settings,
                    chime.if.id = 'chime_run_custom',
                    thin.custom.cache = T)
-          }
+        }
     })
     
     
@@ -181,7 +217,7 @@ add.display.event.handlers <- function(session, input, output, cache,
         do.run(intervention.codes = plot.and.table.list$custom$intervention.codes,
                called.from = 'redraw_custom',
                suffix='custom',
-               intervention.settings = plot.and.table.list$custom$intervention.settings)
+               intervention.settings = plot.and.table.list$custom$int.settings)
     })
     
     #-- The Handler for Locations --#
@@ -200,22 +236,34 @@ add.display.event.handlers <- function(session, input, output, cache,
     })
     
     #-- Share Handlers --#
- 
+    
     lapply(names(plot.and.table.list), function(suffix){
-      
+        
         #-- Figure --#
+        
+        # this handler launches the modal to get width and height
         observeEvent(input[[paste0('download_figure_', suffix)]], {
             if (!is.null(plot.and.table.list[[suffix]]))
-                download.plot(plot.and.table.list[[suffix]], 
-                              input=input,
-                              suffix=suffix)
+                show.download.plot.modal(session=session,
+                                         plot.and.table=plot.and.table.list[[suffix]], 
+                                         input=input,
+                                         suffix=suffix)
+        })
+        
+        # this handler processes the 'Download' click from the modal
+        observeEvent(input[[paste0('do_download_figure_', suffix)]], {
+            removeModal()
+            do.download.plot(plot.and.table=plot.and.table.list[[suffix]], 
+                             suffix=suffix,
+                             width=input[[paste0('download_figure_width_', suffix)]],
+                             height=input[[paste0('download_figure_height_', suffix)]])
         })
         
         #-- Table --#
         output[[paste0('download_table_', suffix)]] = downloadHandler(
-                filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
-                content = function(filepath) {
-                    write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
+            filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
+            content = function(filepath) {
+                write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
             }
         )
         
@@ -262,15 +310,16 @@ add.display.event.handlers <- function(session, input, output, cache,
     render.from.link <- function()
     {   
         is.first.plot <<- F # So we don't pop out the sidebar controls
-      
+        
         int.code = initial.link.data$intervention.codes
-
+        
         do.run(intervention.codes = int.code, 
                suffix=initial.link.data$type, 
+               called.from = 'link',
                intervention.settings = initial.link.data$intervention.settings)
         links[[initial.link.data$type]] <<- initial.link
         js$chime_if_checked(paste0('chime_run_', initial.link.data$type))
-
+        
         initial.link.data <<- NULL
         initial.link <<- NULL
     }
@@ -288,14 +337,15 @@ add.display.event.handlers <- function(session, input, output, cache,
                     set.display(input=input,
                                 output=output,
                                 suffix=suffix,
-                                plot.and.table = plot.and.table.list[[suffix]])
+                                plot.and.table = plot.and.table.list[[suffix]],
+                                web.version.data = get.web.version.data(get.web.version(input)))
                 }
                 else # We check here for render from a link, because we don't want to 
-                     #  render before display size is synced up
+                    #  render before display size is synced up
                 {
                     if (!is.null(initial.link.data) && initial.link.data$type == suffix)
                         render.from.link()
-                        
+                    
                 }
             }
         })
@@ -309,65 +359,49 @@ add.display.event.handlers <- function(session, input, output, cache,
     observeEvent(input$right_width_custom, handle.resize('custom') )
     
     observeEvent(input$main_nav, {
-      js$ping_display_size() 
+        js$ping_display_size() 
     })
     
-    # The observe handler that sets things in motion
+    # The observe handler that sets things in motion if we need to set up a link
     initial.link = NULL
     initial.link.data = NULL
     observe({
-
+        
         # Check for a query string to kick us off
         query.string = session$clientData$url_search
-        if (query.string != '')
+        query.settings = parse.query.settings(query.string)
+        
+        if (!is.null(query.settings$link.data))
         {
-            query.string = substr(query.string, 2, nchar(query.string))
+            link.data = query.settings$link.data
             
-            print(paste0('query string: ', query.string))
+            set.main.to.settings(session, suffix=link.data$type, link.data$main.settings)
+            set.controls.to.settings(session, input, suffix=link.data$type, link.data$control.settings)
             
-            query.location = match.location.name(query.string)
-            
-            if (is.null(query.location))
+            web.version.data = get.web.version.data(get.web.version(input))        
+            if (link.data$type=='custom')
             {
-                if (link.exists(query.string))
-                {
-                    link.data = get.link.data(query.string)
-                    
-                    if (link.data$type=='custom')
-                    {} #need to pull the saved intervention
-                    
-                    if (!is.null(link.data))
-                    {
-                        set.main.to.settings(session, suffix=link.data$type, link.data$main.settings)
-                        set.controls.to.settings(session, input, suffix=link.data$type, link.data$control.settings)
-                        
-                        if (link.data$type=='custom')
-                        {
-                            set.custom.to.settings(session,
-                                                   input,
-                                                   settings = link.data$intervention.settings)
-                        }
-                        else
-                        {
-                            set.intervention.selection(session, 
-                                                       suffix='prerun', 
-                                                       int.code=link.data$intervention.codes)
-                        }
-                        
-                        initial.link <<- query.string
-                        initial.link.data <<- link.data 
-                        
-                        updateNavbarPage(session,
-                                         inputId = 'main_nav',
-                                         selected = paste0(initial.link.data$type, "_interventions"))
-                    }
-                }
+                set.custom.to.settings(session,
+                                       input,
+                                       link.data$intervention.settings,
+                                       web.version.data=web.version.data)
+                #                set.custom.to.settings(session,
+                #                                      input,
+                #                                     settings = link.data$intervention.settings)
             }
             else
             {
-                lapply(names(plot.and.table.list), set.selected.location,
-                       session=session, location=query.location)
+                set.intervention.selection(session, 
+                                           suffix='prerun', 
+                                           int.code=link.data$intervention.codes)
             }
+            
+            initial.link <<- query.settings$link.query
+            initial.link.data <<- link.data 
+            
+            updateNavbarPage(session,
+                             inputId = 'main_nav',
+                             selected = paste0(initial.link.data$type, "_interventions"))
         }
     })
     
@@ -384,6 +418,7 @@ sync.buttons.to.plot <- function(input, plot.and.table.list)
         enable = !is.null(plot.and.table.list[[suffix]])
         
         set.redraw.button.enabled(input, suffix, enable)
+        
         set.share.enabled(input, suffix, enable)
     }
 }

@@ -6,30 +6,40 @@
 # 
 # If valid, return true
 #  else pop up a dialog and return false
-check.custom.inputs <- function(session, input)
+check.custom.errors <- function(session, settings, web.version.data)
 {
-    errors = get.custom.errors(input)
+    errors = get.custom.errors(settings, web.version.data=web.version.data)
+    errors = aggregate.errors.to.message(errors)
+    
+    if (is.null(errors))
+        T
+    else
+    {
+        show.warning.message(session,
+                             title='Intervention Not Fully Specified:',
+                             message = errors)
+        
+        F
+    }
+}
+
+check.prerun.errors <- function(session, settings, web.version.data)
+{
+    errors = web.version.data$check.prerun.errors(settings)
     if (length(errors)==0)
         T
     else
     {
-        msg = do.call(tags$div, lapply(names(errors), function(i){
-            sub.errors = errors[[i]]
-            names(sub.errors) = NULL
-            
-            errors.list = do.call(tags$ul, lapply(sub.errors, tags$li))
-            tags$div(tags$h4(paste0("Subgroup ", i, ":")),
-                     errors.list)
-        }))
-        msg = tagAppendAttributes(msg,
-                                  class='errors')
+     #   errors = tagAppendAttributes(errors,
+         #                            class='errors')
         
         show.warning.message(session,
-                           title='Intervention Not Fully Specified:',
-                           message = msg)
+                             title=paste0('Invalid ', web.version.data$intervention.label, ' Settings:'),
+                             message = errors)
         
         F
     }
+        
 }
 
 
@@ -62,15 +72,31 @@ check.plot.controls <- function(session, input, suffix)
  }
 
 
-
-
-get.custom.errors <- function(input)
+error.check.custom.ehe.intervention.unit <- function(settings, i)
 {
-    errors = lapply(1:get.custom.n.subpopulations(input), function(i){
+    unit = settings$sub.units[[i]]
+    if (!unit$use.testing &&
+        !unit$use.prep &&
+        !unit$use.suppression &&
+        !unit$use.needle.exchange &&
+        !unit$use.moud)
+    {
+        "You must specify at least one intervention component (HIV Testing, PrEP, Viral Suppression, Needle Exchange, or MOUDs)"
+    }
+    else
+        NULL
+}
+
+
+get.custom.errors <- function(settings, web.version.data)
+{
+    errors = lapply(1:settings$n.subpopulations, function(i){
+        sub.pop = settings$sub.populations[[i]]
         
         sub.errors = sapply(DIMENSION.VALUES.2, function(dimension){
             
-            selection = do.get.custom.tpop.selection(input, i, dim=dimension)
+            selection = sub.pop[[dimension$code]]
+            #selection = do.get.custom.tpop.selection(input, i, dim=dimension)
             if (length(selection)>0)
                 as.character(NA)
             else
@@ -81,24 +107,46 @@ get.custom.errors <- function(input)
         
         if (all(names(sub.errors)!='sex') &&
             all(names(sub.errors)!='risk') &&
-            all(get.custom.sexes(input, i) != 'male') &
-            any(grepl('msm', get.custom.risks(input, i))))
+            all(sub.pop$sex != 'male') &
+            any(grepl('msm', sub.pop$risk)))
             sub.errors = c(sub.errors,
                            "If you include MSM as a risk factor, you must include male sex")
         
-        if (!get.custom.use.testing(input, i) &&
-            !get.custom.use.prep(input, i) &&
-            !get.custom.use.suppression(input, i) &&
-            !get.custom.use.needle.exchange(input, i) &&
-            !get.custom.use.moud(input, i))
-            sub.errors = c(sub.errors,
-                           "You must specify at least one intervention component (HIV Testing, PrEP, Viral Suppression, Needle Exchange, or MOUDs)")
+        unit.errors = web.version.data$check.custom.unit.errors(settings, i)
+        if (!is.null(unit.errors))
+            sub.errors = c(sub.errors, unit.errors)
         
         names(sub.errors) = NULL
         sub.errors
     })
-    names(errors) = 1:get.custom.n.subpopulations(input)
+    names(errors) = 1:settings$n.subpopulations
     
     errors = errors[sapply(errors, function(sub){length(sub)>0})]
     errors
+}
+
+
+# A helper that aggregates different errors into one message
+# errors should be a list with one element for each subpopulation
+# each element is a vector of one or more errors
+aggregate.errors.to.message <- function(errors)
+{
+    if (length(errors)==0)
+        NULL
+    else
+    {
+        msg = do.call(tags$div, lapply(names(errors), function(i){
+            sub.errors = errors[[i]]
+            names(sub.errors) = NULL
+            
+            errors.list = do.call(tags$ul, lapply(sub.errors, tags$li))
+            tags$div(tags$h4(paste0("Subgroup ", i, ":")),
+                     errors.list)
+        }))
+        
+        msg = tagAppendAttributes(msg,
+                                  class='errors')
+        
+        msg
+    } 
 }

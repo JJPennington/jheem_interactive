@@ -4,7 +4,7 @@ library(DT)
 ##-- CREATE THE DISPLAY PANEL --##
 ##------------------------------##
 
-create.display.panel <- function(suffix)
+create.display.panel <- function(suffix, web.version.data)
 {
     
     if (suffix=='custom')
@@ -12,32 +12,7 @@ create.display.panel <- function(suffix)
     else
         css.class = 'display_panel_table display_wide_smaller'
     
-    if (1==2)
-    {
-    tags$table(class=css.class,
-               create.share.menu(suffix),
-               
-        tags$tr(class='display_panel_main_tr', tags$td(class='display_panel_main_td',
-            tabsetPanel(
-                id=paste0('nav_', suffix),
-                tabPanel(
-                    title="Figure",
-                    uiOutput(outputId = paste0('figure_', suffix), class='fill_div')
-                ),
-                tabPanel(
-                    title="Table",
-                    uiOutput(outputId = paste0('table_', suffix), class='fill_div')
-                )
-            ),  # </tabsetPanel>
-        )), # </td></tr>
-        
-        tags$tr(class='display_panel_intervention_tr', tags$td(class='intervention_panel_buffer',
-            ' '
-        )), #</td></tr>
-        create.projected.intervention.panel(suffix)
-    ) #</table>
-    }
-    
+
     tabsetPanel(
         id=paste0('nav_', suffix),
         tabPanel(
@@ -76,13 +51,16 @@ create.share.menu <- function(suffix)
              ))
 }
 
-create.projected.intervention.panel <- function(suffix)
+create.projected.intervention.panel <- function(suffix,
+                                                web.version.data)
 {
-    if (1==1)
+    if (!web.version.data$allow.intervention.summary)
+        tags$div()
+    else if (1==1)
     {
     #I have hacked CSS (with file box_colors.css) to use custom color for 'info' status boxes
     tags$div(class='intervention_panel_holder',
-                      box(title='Details of Projected Intervention',
+                      box(title=paste0('Details of Projected ', web.version.data$intervention.label),
                           width=12,
                           collapsible = T,
                           collapsed = T,
@@ -92,7 +70,7 @@ create.projected.intervention.panel <- function(suffix)
              
     )
     }   
-    else
+    else #an older version - keeping it here just in case
     {
     tags$div(class='intervention_panel_holder',
              make.accordion.div(
@@ -137,11 +115,13 @@ create.projected.intervention.panel <- function(suffix)
 ##-- MANIPULATE THE CONTENTS --##
 ##-----------------------------##
 
-set.display <- function(input, output, suffix, plot.and.table)
+set.display <- function(input, output, suffix, plot.and.table,
+                        web.version.data)
 {
     set.plot(input, output, suffix, plot.and.table)
     set.table(input, output, suffix, plot.and.table$change.df)
-    set.intervention.panel(output, suffix, plot.and.table$intervention)
+    set.intervention.panel(output, suffix, plot.and.table$intervention,
+                           web.version.data=web.version.data)
 }
 
 clear.display <- function(input, output, suffix)
@@ -231,19 +211,21 @@ set.table <- function(input,
 
 set.intervention.panel <- function(output,
                                    suffix,
-                                   intervention)
+                                   intervention,
+                                   web.version.data)
 {
-    panel.id = paste0('selected_intervention_', suffix)
-    if (is.null(intervention))
-        output[[panel.id]] = renderUI(
-            tags$div("No intervention has been set")
+    if (web.version.data$allow.intervention.summary)
+    {
+        panel.id = paste0('selected_intervention_', suffix)
+        if (is.null(intervention))
+            output[[panel.id]] = renderUI(
+                tags$div("No intervention has been set")
+                )
+        else
+            output[[panel.id]] = renderUI(
+                tags$div(make.intervention.pretty.table(intervention, suffix))
             )
-    else
-        output[[panel.id]] = renderUI(
-            tags$div(make.intervention.pretty.table(intervention,
-                                                    use.default.tpop.names = suffix=='custom'))
-        )
-        
+    }        
 }
 
 clear.plot <- function(output,
@@ -340,7 +322,6 @@ get.figure.size <- function(plot.and.table,
                             y.cushion=DISPLAY_Y_CUSHION+2*FIGURE.PADDING)
 {
     display.size = get.display.size(input, suffix)
-    
     settings = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(plot.and.table$control.settings),
                                        display.width = display.size$width,
                                        display.height = display.size$height,
@@ -357,7 +338,6 @@ calculate.optimal.nrows.and.label.size <- function(plot.and.table,
                                                    ideal.w.h.ratio=1.5)
 {
     display.size = get.display.size(input, suffix)
-    
     settings = do.calculate.optimal.nrows(n.panels = get.num.panels.to.plot(plot.and.table$control.settings),
                                        display.width = display.size$width,
                                        display.height = display.size$height,
@@ -378,11 +358,25 @@ do.calculate.label.height <- function(height,nrows)
         height.per.panel^.25 * 14 / (700^.25))
 }
 
+DEFAULT.DISPLAY.WIDTH = 1366-20
+DEFAULT.DISPLAY.HEIGHT = 784-100
 do.calculate.optimal.nrows <- function(n.panels,
                                        display.width,
                                        display.height,
                                        ideal.w.h.ratio=1.5)
 {
+    if (length(display.width)==0)
+    {
+        print("NOTE: Using default display width")
+        display.width = DEFAULT.DISPLAY.WIDTH
+    }
+    if (length(display.height)==0)
+    {
+        print("NOTE: Using default display width")
+        display.height = DEFAULT.DISPLAY.HEIGHT
+    }
+
+    
     possible.n.col = 1:n.panels
     possible.n.row = ceiling(n.panels / possible.n.col)
     
@@ -390,7 +384,6 @@ do.calculate.optimal.nrows <- function(n.panels,
     possible.heights = display.height / possible.n.row
     
     possible.ratios = possible.widths/possible.heights
-    
     ratio.diff = abs(possible.ratios - ideal.w.h.ratio)
     best.mask = ratio.diff == min(ratio.diff)
     
@@ -433,8 +426,9 @@ get.num.panels.to.plot <- function(control.settings)
 ##-- LOWER LEVEL HELPERS --##
 ##-------------------------##
 
-make.intervention.pretty.table <- function(int, use.default.tpop.names)
+make.ehe.intervention.pretty.table <- function(int, suffix)
 {
+    use.default.tpop.names = suffix=='custom'
     tryCatch({
         raw = get.intervention.description.table(int, 
                                                  include.start.time = F,

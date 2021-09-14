@@ -1,6 +1,9 @@
 VERSION = '1.0'
 
-##-- LIBRARY CALLS --##
+#-- CHECKS FOR WHICH MACHINE WE'RE ON --#
+ON.TODDS.DESKTOP = dir.exists('\\homer.win.ad.jhu.edu')
+
+#-- LIBRARY CALLS --#
 
 library(shiny)
 library(shinyalert)
@@ -9,8 +12,15 @@ library(shinyjs)
 library(shinyWidgets)
 library(DT)
 library(shinyBS)
-library(mailR)
 library(shinycssloaders)
+
+# For geolocation
+library(geoloc)
+library(rgeolocate)
+library(geosphere)
+
+if (!ON.TODDS.DESKTOP)
+    library(mailR) #the java 
 
 #-- RESOURCES --#
 source('load_resources.R')
@@ -23,7 +33,7 @@ source('links/link_interface.R')
 
 #-- MASTER SETTINGS --#
 source('master_settings/options.R')
-
+source('links/parse_query.R')
 
 #-- PLOT INTERFACE --#
 source('plot_interface/generate_plot.R')
@@ -44,9 +54,10 @@ source('helpers/time_text.R')
 source('helpers/multi_cache.R')
 source('helpers/intervention_map.R')
 source('helpers/analytics.R')
+source('helpers/geolocation.R')
+source('helpers/filters.R')
 
-
-#-- SERVER FILES --##
+#-- SERVER FILES --#
 source('server/server_utils.R')
 source('server/simulation_storage.R')
 source('server/prerun_interface.R')
@@ -59,9 +70,17 @@ source('server/display_event_handlers.R')
 #-- UI Files --#
 source('ui/ui_helpers.R')
 source('ui/popovers.R')
-source('ui/intervention_selector.R')
 source('ui/display_helpers.R')
 source('ui/custom_helpers.R')
 
+source('ui/ehe_1.0/intervention_selector.R')
+
+source('ui/covid_1.0/covid_prerun_scenario_selector.R')
+source('ui/covid_1.0/covid_custom_unit_selector.R')
+
 source('ui/custom_interventions.R', local=T)
 source('ui/modals.R')
+
+
+#-- VERSION MANAGER --#
+source('master_settings/version_manager.R')

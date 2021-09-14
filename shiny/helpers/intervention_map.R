@@ -6,20 +6,29 @@ create.intervention.map <- function()
 }
 
 map.interventions.to.codes <- function(interventions,
-                                       map)
+                                       map,
+                                       web.version.data)
 {
     if (!is(interventions, 'list'))
         interventions = list(interventions)
     
     sapply(interventions, function(int){
         mask = sapply(map, function(mapped.int){
-            interventions.equal(int, mapped.int)
+            web.version.data$interventions.equal(int, mapped.int)
         })
         if (any(mask))
             names(map)[mask][1]
         else
             NA
     })
+}
+
+web.tool.interventions.equal <- function(int1, int2)
+{
+    if (is(int1, 'intervention') && is(int2, 'intervention'))
+        interventions.equal(int1, int2)
+    else
+        F
 }
 
 map.codes.to.interventions <- function(codes,

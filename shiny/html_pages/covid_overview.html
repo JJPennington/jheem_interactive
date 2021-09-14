@@ -1,0 +1,34 @@
+
+
+
+<center>
+<div style='height: 25px'></div>
+<div class='overview'><table>
+    <tr>
+        <td colspan="2" class='overview_header header_color'>
+            <h1>The Johns Hopkins Epidemiologic and Economic Model: COVID-19 Pandemic Projections</h1>
+            <h2>A Mathematical Model of HIV Transmission that Explores the Potential Impacts on HIV Control from the COVID-19 Pandemic</h2>
+        </td>
+    </tr>
+    <tr>
+        <td colspan='2'>
+            <p>The JHEEM is a mathematical model of HIV transmission calibrated to US cities that generates local predictions of the HIV epidemic. In this application, we generate projections - under different scenarios of how the pandemic might affect sexual transmission, viral suppression, HIV testing, and pre-exposure prophylaxis (PrEP) use - to forecast possible effects of the pandemic on HIV transmission.</p>
+        </td>
+   </tr>
+   <tr>
+       <td>
+            <p class='figure_title'>Projected HIV Incidence for Baltimore, MD with and without Pandemic</p>
+            <img src="images/covid_baltimore_demo.png" alt="Sample Projections" width='400px'>
+            <p class='caption' style='width: 400px'>Orange lines show projections if the COVID-19 pandemic had never occurred; blue lines indicate projections under a range of pandemic effects on sexual transmission, viral suppression, HIV testing, and PrEP use.</p>
+       </td>
+       <td>
+           <div style='height: 10px'></div>
+            <h3>Getting Started:</h3>
+            <p><a class='overview_link' onclick='Shiny.setInputValue("link_from_overview", "prerun_interventions", {priority: "event"})'>Prerun Scenarios</a> let you quickly visualize projections for scenarios of pandemic effects that we have already defined and run ahead of time.</p>
+            <p>
+                <a class='overview_link' onclick='Shiny.setInputValue("link_from_overview", "custom_interventions", {priority: "event"})'>Custom Scenarios</a> let you simulate - in real time - different time frames for the pandemic's effects as well as different effects on viral suppression among PWH, HIV testing, and PrEP use across to demographic subgroups of your choosing.
+            </p>
+        </td>
+    </tr>
+</table></div>
+</center>

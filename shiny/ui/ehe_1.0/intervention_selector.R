@@ -132,6 +132,20 @@ set.intervention.selection <- function(session, suffix, int.code)
     }
 }
 
+# wrappers for compatibility with version manager
+get.ehe.prerun.settings <- function(input)
+{
+    list(intervention.codes=get.intervention.selection(input, suffix='prerun'))
+}
+
+set.ehe.prerun.settings <- function(session,
+                                    input, #input is just here for compatibility with version manager - not used
+                                    settings)
+{
+    set.intervention.selection(session=session, suffix='prerun', 
+                               int.code=settings$intervention.codes)
+}
+
 ##----------------------------------##
 ##-- HELPERS FOR MAKING THE PANEL --##
 ##----------------------------------##
