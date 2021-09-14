@@ -381,6 +381,7 @@ add.display.event.handlers <- function(session, input, output, cache,
             web.version.data = get.web.version.data(get.web.version(input))        
             if (link.data$type=='custom')
             {
+                browser()
                 set.custom.to.settings(session,
                                        input,
                                        link.data$intervention.settings,

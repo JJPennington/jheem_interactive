@@ -23,7 +23,7 @@ create.link <- function(type = c('prerun','custom')[1],
          intervention.codes=plot.and.table$intervention.codes,
          main.settings=plot.and.table$main.settings,
          control.settings=plot.and.table$control.settings,
-         intervention.settings=plot.and.table$intervention.settings,
+         intervention.settings=plot.and.table$int.settings,
          web.version=plot.and.table$web.version,
          time=Sys.time())
 }

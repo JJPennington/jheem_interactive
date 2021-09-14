@@ -1,0 +1,8 @@
+
+Beta-testing procedure from JHEEM
+- test pre-run
+- test custom (with >= 2 subpopulations)
+- generate link
+- test current link
+- test old links:
+BHBIQ
