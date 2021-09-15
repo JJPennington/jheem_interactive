@@ -191,7 +191,7 @@ ALL.WEB.VERSIONS = names(ALL.WEB.VERSION.DATA) = sapply(ALL.WEB.VERSION.DATA, fu
 WEB.VERSION.QUERY.STRINGS = tolower(sapply(ALL.WEB.VERSION.DATA, function(wv){wv$query}))
 
 
-WEB.VERSION.IN.DEVELOPMENT = 'covid_1_0' #used to go straight to this web version for testing/development
+WEB.VERSION.IN.DEVELOPMENT = 'EHE_1_0' #used to go straight to this web version for testing/development
 
 ##-------------------------##
 ##-- GETTERS and HELPERS --##

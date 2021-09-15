@@ -120,7 +120,7 @@ set.display <- function(input, output, suffix, plot.and.table,
 {
     set.plot(input, output, suffix, plot.and.table)
     set.table(input, output, suffix, plot.and.table$change.df)
-    set.intervention.panel(output, suffix, plot.and.table$intervention,
+    set.intervention.panel(output, suffix, plot.and.table[['intervention']],
                            web.version.data=web.version.data)
 }
 
@@ -223,7 +223,7 @@ set.intervention.panel <- function(output,
                 )
         else
             output[[panel.id]] = renderUI(
-                tags$div(make.intervention.pretty.table(intervention, suffix))
+                tags$div(web.version.data$make.intervention.summary(intervention, suffix))
             )
     }        
 }
@@ -254,20 +254,13 @@ clear.table <- function(output,
 
 clear.intervention.panel <- function(output,
                                       input,
-                                      suffix)
+                                      suffix,
+                                     web.version.data)
 {
     panel.id = paste0('selected_intervention_', suffix)
     output[[panel.id]] = renderUI(
         tags$div("No intervention has been set")
     )
-    
-    if (1==2) #for testing - so we don't have to make the projections before seeing what the table looks like
-    {
-        intervention = INTERVENTION.MANAGER.1.0$intervention[[48]]
-        
-        output[[panel.id]] = renderUI(
-            tags$div(make.intervention.pretty.table(intervention, T)))
-    }
 }
 
 set.run.button.enabled <- function(input,

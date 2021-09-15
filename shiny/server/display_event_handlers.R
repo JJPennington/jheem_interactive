@@ -263,7 +263,9 @@ add.display.event.handlers <- function(session, input, output, cache,
         output[[paste0('download_table_', suffix)]] = downloadHandler(
             filename = function() {get.default.download.filename(plot.and.table.list[[suffix]], ext='csv')},
             content = function(filepath) {
-                write.csv(plot.and.table.list[[suffix]]$change.df, filepath) 
+                tab = plot.and.table.list[[suffix]]$change.df
+                tab = round(tab, 3)
+                write.csv(tab, filepath) 
             }
         )
         
@@ -312,6 +314,16 @@ add.display.event.handlers <- function(session, input, output, cache,
         is.first.plot <<- F # So we don't pop out the sidebar controls
         
         int.code = initial.link.data$intervention.codes
+        
+        if (initial.link.data$type=='custom') #we need to put the intervention to the map
+        {
+            web.version.data = get.web.version.data(get.web.version(input))
+            selected.int = web.version.data$get.custom.intervention.from.settings(initial.link.data$intervention.settings)
+            if (!is.null(selected.int))
+                custom.int.map <<- put.intervention.to.map(code=int.code,
+                                                           intervention=selected.int, 
+                                                           map=custom.int.map)
+        }
         
         do.run(intervention.codes = int.code, 
                suffix=initial.link.data$type, 

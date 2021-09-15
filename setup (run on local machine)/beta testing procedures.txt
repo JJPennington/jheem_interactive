@@ -1,8 +1,23 @@
 
 Beta-testing procedure from JHEEM
 - test pre-run
+-- split by race
+-- split by risk
+-- change plot statistic
+-- check individual plots
+-- check the intervention description
+
 - test custom (with >= 2 subpopulations)
-- generate link
-- test current link
+-- split by age
+-- check suppression and knowledge of status
+-- cumulative cases
+-- generate link
+-- test current link
+-- check the intervention description
+
 - test old links:
 BHBIQ
+
+
+This one has suppression >100% error
+1EJMN

@@ -60,7 +60,8 @@ conditionalDropdown <- function(
     materialSwitch.label,
     choices,
     popover.title,
-    popover.content
+    popover.content,
+    selected=NULL
 ) {
     panel.id = paste0(inputId.prefix, '_panel_', i)
     div(id = panel.id,
@@ -88,7 +89,8 @@ conditionalDropdown <- function(
                 inputId=paste0(inputId.prefix, '_value', i),
                 label=NULL,
                 choices=choices,
-                selectize = F
+                selectize = F,
+                selected = selected
             )
             
         )),  # </conditionalPanel/fluidRow>
@@ -191,6 +193,7 @@ create.custom.intervention.unit.selector <- function(i, web.version.data)
                 selectInput.label='Average number of tests per person:',
                 choices=make.named.choices(choiceValues=TESTING.OPTIONS$values, 
                                            choiceNames=TESTING.OPTIONS$names),
+                selected=TESTING.OPTIONS$default,
                 popover.title="Freqency of HIV Testing",
                 popover.content='Specify how frequently, on average, individuals in the targeted subgroup are tested.'
             ),

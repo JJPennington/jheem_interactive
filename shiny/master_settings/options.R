@@ -128,13 +128,14 @@ COVID.NORMALIZE.SPAN.OPTIONS$names[COVID.NORMALIZE.SPAN.OPTIONS$values==0] = "Im
 ##-------------------------------##
 
 TESTING.OPTIONS <- list(
-    values = c(3,6,12,24), # the reciprocal of the number of tests per year - this is for backwards compatibility with original formulation of frequency
-    names = c('Four times per year',
-              'Twice per year',
+    values = c(24,12,6,3), # the reciprocal of the number of tests per year - this is for backwards compatibility with original formulation of frequency
+    names = c('Once every two years',
               'Once per year',
-              'Once every two years'),
+              'Twice per year',
+              'Four times per year'),
     code = 'testing',
-    label = "Testing"
+    label = "Testing",
+    default = 12
 )
 #TESTING.OPTIONS$names = paste0(12/TESTING.OPTIONS$values, " times per year")
 
