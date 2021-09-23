@@ -1,8 +1,7 @@
 VERSION = '1.0'
 
 #-- CHECKS FOR WHICH MACHINE WE'RE ON --#
-ON.TODDS.DESKTOP = dir.exists('\\homer.win.ad.jhu.edu')
-
+ON.TODDS.DESKTOP = dir.exists('\\homer.win.ad.jhu.edu') | dir.exists("/home/verloc")
 #-- LIBRARY CALLS --#
 
 library(shiny)
@@ -21,6 +20,19 @@ library(geosphere)
 
 if (!ON.TODDS.DESKTOP)
     library(mailR) #the java 
+
+# -- JP
+# I'm not convinced that mailR is the right package
+# I'm going to replace it with blastula
+
+library(blastula)
+
+# Include the promises/futures library
+
+library(promises)
+library(future)
+
+# -- JP
 
 #-- RESOURCES --#
 source('load_resources.R')

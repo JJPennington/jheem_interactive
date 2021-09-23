@@ -26,11 +26,14 @@ simulate.intervention <- function(session,
             seed.simset = subset.simset(seed.simset, 1:5)
         }
 
+        print ("Step")
+
         withProgress(
             message=paste0("Preparing to run ", seed.simset@n.sim, " simulations"), 
             min=0, max=seed.simset@n.sim, value=0,
             detail=NULL,
             {   
+                print ("Step")
                 run.from.year = attr(seed.simset, 'run.from.year')
                 keep.from.year = min(run.from.year-1, MAX.KEEP.FROM.YEAR-1)
                 
@@ -59,6 +62,7 @@ simulate.intervention <- function(session,
                            "There was an error running the simulations for the specified intervention. We apologize - please try again later.")
         NULL
     })
+    print ("OUT")
 }
 
 get.ehe.custom.intervention.from.settings <- function(settings)

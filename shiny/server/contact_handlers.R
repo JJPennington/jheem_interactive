@@ -1,5 +1,6 @@
 
-CONTACT.EMAILS = c('anthony.fojo@jhmi.edu')#,'jflack1@jhu.edu')
+#CONTACT.EMAILS = c('anthony.fojo@jhmi.edu')#,'jflack1@jhu.edu')
+CONTACT.EMAILS = c('jj.penn@gmail.com')#,'jflack1@jhu.edu')
 
 add.contact.handlers <- function(session, input, output)
 {
@@ -42,31 +43,36 @@ add.contact.handlers <- function(session, input, output)
                 show_modal_spinner(session=session,
                                    text=HTML('<div class="uploading_custom"><h1>Sending message...</h1></div>'),
                                    spin='bounce')
-                
-                send.mail(
-                    from=email, 
-                    to=CONTACT.EMAILS,
-                    subject=paste0('EndingHIV email from: ', name),
-                    body=paste0(
+
+                #Converting from mailR to blastula
+                #Hopefully more reliable, not based on javax
+
+                email.body <- paste0(
                         # Keep indented like this for email formatting purposes.
                         'Name: ', name, '
         Email: ', email, '
         Contents: 
-        ', contents),
-                    smtp=list(
-                        host.name="smtp.gmail.com",
-                        port=list(
-                            'ssl'=465,
-                            'tls'=587
-                        )[['tls']],
-                        user.name=Sys.getenv("EMAIL_USERNAME"),
-                        passwd=Sys.getenv("EMAIL_PASSWORD"),
-                        #ssl=T,
-                        tls=T),
-                    # debug=T
-                    authenticate=T, 
-                    send=T)
-                
+        ', contents)
+
+                email.account <- Sys.getenv("EMAIL_USERNAME")
+
+                smtp_send( 
+                    email = compose_email(body = email.body),
+                    to = CONTACT.EMAILS,
+                    from = email.account,
+                    subject = paste0('EndingHIV email from: ', name),
+                    credentials = creds_envvar(
+                        user = email.account,
+                        #creds_envvar uses Sys.getenv(pass_envvar) internally
+                        pass_envvar = "EMAIL_PASSWORD",
+                        provider = "gmail",
+                        host = "smtp.gmail.com",
+                        port=465,
+                        use_ssl=T
+                    )
+                )
+
+
                 # Warning: Error in : FATAL:  no pg_hba.conf entry for host 
                 # "73.135.116.183", user "jklcmyywfuzgrf", database "d7kjdf34erfuu8", 
                 # SSL off

@@ -51,71 +51,84 @@ add.display.event.handlers <- function(session, input, output, cache,
         if (check.plot.controls(session, input, suffix))
         {
             web.version = get.web.version(input)
-            new.plot.and.table = do.generate.plot.and.table(session=session,
+
+            #Generate a promise instead of a value
+
+            #Only continue processing when the future is finished.
+            #The external options used to be outside of the check.plot.controls if statement;
+            #I have simply included it in the then() condition for the promise.
+
+            new.plot.and.table.prom = future_promise(do.generate.plot.and.table(session=session,
                                                             input=input,
                                                             type=suffix,
                                                             intervention.codes=intervention.codes,
                                                             intervention.settings=intervention.settings,
                                                             web.version=web.version,
                                                             cache=cache,
-                                                            intervention.map=custom.int.map)
- 
-            if (!is.null(new.plot.and.table))
-            {
-                plot.and.table.list[[suffix]] <<- new.plot.and.table
-                links[[suffix]] <<- NULL
+                                                            intervention.map=custom.int.map),
+                                                     seed=TRUE)
+
+            then(new.plot.and.table.prom,
+                 function(new.plot.and.table) {
+                     if (!is.null(new.plot.and.table))
+                     {
+                        plot.and.table.list[[suffix]] <<- new.plot.and.table
+                        links[[suffix]] <<- NULL
                 
-                #-- Update the UI --#
-                set.display(input, output, suffix, plot.and.table.list[[suffix]],
-                            web.version.data = get.web.version.data(web.version))
-                sync.buttons.to.plot(input, plot.and.table.list)
+                        #-- Update the UI --#
+                        set.display(input, output, suffix, plot.and.table.list[[suffix]],
+                                    web.version.data = get.web.version.data(web.version))
+                        sync.buttons.to.plot(input, plot.and.table.list)
                 
-                need.to.track=T
-            }
-        }
-        
-        unlock.cta.buttons(input, called.from.suffix = suffix,
-                           plot.and.table.list=plot.and.table.list)
-        
-        # Expand the control panel if this is the first plot we have generated
-        if (is.first.plot)
-        {
-            is.first.plot <<- F
-            js$trigger_accordion('prerun_expand_right')
-        }
-        
-        # Remove saved custom interventions, if needed
-        if (thin.custom.cache)
-        {
-            custom.int.map <<- thin.map(keep.codes = plot.and.table.list$custom$intervention.codes,
-                                        map = custom.int.map)
-            
-            intervention.filenames = get.intervention.filenames(plot.and.table.list$custom$intervention.codes,
-                                                                version=plot.and.table.list$custom$main.settings$version, 
-                                                                location=plot.and.table.list$custom$main.settings$location)
-            cache <<- thin.explicit.cache(keep.codes = intervention.filenames,
-                                          cache = cache,
-                                          explicit.name = 'custom')
-        }
-        
-        # Chime (if applicable)
-        if (!is.null(chime.if.id))
-            js$chime_if_checked(chime.if.id)
-        
-        # Track with analytics
-        if (!is.null(new.plot.and.table))
-        {
-            track.request(session.id=session.id,
-                          suffix=suffix,
-                          called.from=called.from,
-                          web.version.data=get.web.version.data(get.web.version(input)),
-                          main.settings=new.plot.and.table$main.settings,
-                          intervention.settings=new.plot.and.table$int.settings,
-                          control.settings=new.plot.and.table$control.settings,
-                          intervention.codes=new.plot.and.table$intervention.codes,
-                          intervention=new.plot.and.table$intervention,
-                          query.string=session$clientData$url_search
-                          )
+                        need.to.track=T
+                        unlock.cta.buttons(input, called.from.suffix = suffix,
+                                           plot.and.table.list=plot.and.table.list)
+
+                        # Expand the control panel if this is the first plot we have generated
+                        if (is.first.plot)
+                        {
+                            is.first.plot <<- F
+                            js$trigger_accordion('prerun_expand_right')
+                        }
+
+                        # Remove saved custom interventions, if needed
+                        if (thin.custom.cache)
+                        {
+                            custom.int.map <<- thin.map(keep.codes =
+                                                        plot.and.table.list$custom$intervention.codes,
+                                                        map = custom.int.map)
+                            
+                            intervention.filenames = get.intervention.filenames(
+                                                      plot.and.table.list$custom$intervention.codes,
+                                                      version=plot.and.table.list$custom$main.settings$version,
+                                                      location=plot.and.table.list$custom$main.settings$location)
+
+                            cache <<- thin.explicit.cache(keep.codes = intervention.filenames,
+                                                          cache = cache,
+                                                          explicit.name = 'custom')
+                        }
+
+                        # Chime (if applicable)
+                        if (!is.null(chime.if.id))
+                            js$chime_if_checked(chime.if.id)
+
+                        # Track with analytics
+                        if (!is.null(new.plot.and.table))
+                        {
+                            track.request(session.id=session.id,
+                                          suffix=suffix,
+                                          called.from=called.from,
+                                          web.version.data=get.web.version.data(get.web.version(input)),
+                                          main.settings=new.plot.and.table$main.settings,
+                                          intervention.settings=new.plot.and.table$int.settings,
+                                          control.settings=new.plot.and.table$control.settings,
+                                          intervention.codes=new.plot.and.table$intervention.codes,
+                                          intervention=new.plot.and.table$intervention,
+                                          query.string=session$clientData$url_search
+                                          )
+                        }
+                    }
+                 })
         }
     }
     
