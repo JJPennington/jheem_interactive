@@ -21,6 +21,12 @@ library(geosphere)
 
 if (!ON.TODDS.DESKTOP)
     library(mailR) #the java 
+#JP I think our reliance on the javax object class is going to bite us
+#   We don't need a functional email address/contact form
+#   Use 'blastula' email library instead.  It only uses SSL security,
+#   but the account doesn't need more.  We can also run it on our desktops
+
+library(blastula)
 
 #-- RESOURCES --#
 source('load_resources.R')
